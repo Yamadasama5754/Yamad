@@ -50,26 +50,28 @@ export const autoPreventsKickedUsers = async ({ api, event }) => {
     for (const participant of addedParticipants) {
       const userID = participant.userFbId || participant.id;
 
-      // إذا كان الشخص مبان
+      // إذا كان الشخص مبان - ALWAYS طرده تلقائياً
       if (bans.find(b => b.userID === userID)) {
         try {
-          await api.removeUserFromGroup(userID, threadID);
-          console.log(`🚫 تم طرد ${userID} تلقائياً - كان مبان`);
-        } catch (err) {
-          // محاولة مرة أخرى بعد ثانية واحدة في حالة الفشل
-          if (err.message?.includes("not admin") || err.message?.includes("permission")) {
-            console.warn(`⚠️ البوت ليس ادمن - لا يمكن طرد ${userID} تلقائياً. يرجى جعل البوت ادمن.`);
+          const botID = api.getCurrentUserID();
+          const threadInfo = await api.getThreadInfo(threadID);
+          const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
+
+          if (isBotAdmin) {
+            await api.removeUserFromGroup(userID, threadID);
+            console.log(`🚫 تم طرد ${userID} تلقائياً - كان مبان`);
           } else {
-            // محاولة ثانية
-            setTimeout(async () => {
-              try {
-                await api.removeUserFromGroup(userID, threadID);
-                console.log(`✅ تم طرد ${userID} بنجاح في المحاولة الثانية`);
-              } catch (retryErr) {
-                console.error(`❌ فشل في طرد ${userID} حتى بعد المحاولة الثانية:`, retryErr.message);
-              }
-            }, 1000);
+            console.warn(`⚠️ البوت ليس ادمن - لا يمكن طرد ${userID} تلقائياً`);
+            // محاولة حتى بدون أدمن قد تنجح
+            try {
+              await api.removeUserFromGroup(userID, threadID);
+              console.log(`🚫 تم طرد ${userID} رغم عدم كون البوت ادمن`);
+            } catch (fallbackErr) {
+              console.error(`❌ فشل في طرد ${userID}:`, fallbackErr.message);
+            }
           }
+        } catch (err) {
+          console.error(`❌ خطأ في معالجة الشخص المبان ${userID}:`, err.message);
         }
       }
 

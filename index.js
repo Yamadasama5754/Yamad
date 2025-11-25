@@ -1,3 +1,7 @@
+setInterval(() => {
+  import("./autoPush.js");
+}, 5 * 60 * 1000); // كل 5 دقائق
+
 // تشغيل السيرفر HTTP ليبقي البوت نشط على Render
 import http from "http"; 
 

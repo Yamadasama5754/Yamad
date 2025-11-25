@@ -47,6 +47,10 @@ class BadWords {
       case "ازالة": {
         if (!word) return api.sendMessage("⚠️ | يجب تحديد كلمة لإزالتها.", threadID, event.messageID);
 
+        if (!badWords[threadID].includes(word)) {
+          return api.sendMessage(`❌ | الكلمة "${word}" غير موجودة في القائمة.`, threadID, event.messageID);
+        }
+
         badWords[threadID] = badWords[threadID].filter(w => w !== word);
         fs.writeFileSync(configPath, JSON.stringify(badWords, null, 2));
         api.sendMessage(`✅ | تمت إزالة الكلمة "${word}" من القائمة.`, threadID, event.messageID);
