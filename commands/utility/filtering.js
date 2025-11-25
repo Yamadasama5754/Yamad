@@ -38,10 +38,20 @@ class PurgeCommand {
         let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n\n`;
         pageCommands.forEach((cmd, idx) => {
           const cmdNumber = startIdx + idx + 1;
-          msg += `${cmdNumber}️⃣ | ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
+          
+          // إضافة إيموجي بناءً على الدور
+          let roleEmoji = "✨"; // للجميع
+          if (cmd.role === 2) {
+            roleEmoji = "🔑"; // مطور فقط
+          } else if (cmd.role === 1) {
+            roleEmoji = "👑"; // أدمن فقط
+          }
+          
+          msg += `${cmdNumber}️⃣ ${roleEmoji} | ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
         });
 
-        msg += `\n💡 لعرض صفحة أخرى: .تصنيف قائمة [رقم الصفحة]`;
+        msg += `\n🔑 = مطور فقط | 👑 = أدمن فقط | ✨ = الجميع\n`;
+        msg += `💡 لعرض صفحة أخرى: .تصنيف قائمة [رقم الصفحة]`;
 
         return api.sendMessage(msg, event.threadID, event.messageID);
       }
