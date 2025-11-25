@@ -35,19 +35,22 @@ class PurgeCommand {
         const endIdx = startIdx + itemsPerPage;
         const pageCommands = allCommands.slice(startIdx, endIdx);
 
-        let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n━━━━━━━━━━━━━━━━━━━━\n\n`;
-        pageCommands.forEach((cmd) => {
-          let roleEmoji = ""; // للجميع - بدون إيموجي إضافي
+        let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n\n`;
+        pageCommands.forEach((cmd, idx) => {
+          const cmdNumber = startIdx + idx + 1;
+          
+          // إضافة إيموجي بناءً على الدور
+          let roleEmoji = "✨"; // للجميع
           if (cmd.role === 2) {
-            roleEmoji = "⚙️ "; // مطور فقط
+            roleEmoji = "🔑"; // مطور فقط
           } else if (cmd.role === 1) {
-            roleEmoji = "👑 "; // أدمن ومطور
+            roleEmoji = "👑"; // أدمن فقط
           }
           
-          msg += `${roleEmoji}${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
+          msg += `${cmdNumber}️⃣ | ${roleEmoji} | ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
         });
 
-        msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `\n🔑 = مطور فقط | 👑 = أدمن فقط | ✨ = الجميع\n`;
         msg += `💡 لعرض صفحة أخرى: .تصنيف قائمة [رقم الصفحة]`;
 
         return api.sendMessage(msg, event.threadID, event.messageID);
