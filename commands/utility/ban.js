@@ -126,7 +126,6 @@ class BanCommand {
 
     // منع بان النفس أو البوت أو المطور
     const botID = api.getCurrentUserID();
-    const developerID = "100092990751389";
     
     if (targetID === senderID || targetID === botID) {
       return api.sendMessage(
