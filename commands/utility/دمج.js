@@ -34,24 +34,11 @@ class MergeEmojiCommand {
         );
       }
 
-      const emoji1 = encodeURIComponent(content[0]);
-      const emoji2 = encodeURIComponent(content[1]);
+      const emoji1 = content[0];
+      const emoji2 = content[1];
 
-      // Fetch the merged emoji image
-      const response = await axios.get(
-        `https://smfahim.xyz/emojimix?one=${emoji1}&two=${emoji2}`,
-        { timeout: 10000 }
-      );
-
-      if (!response.data.results || response.data.results.length === 0) {
-        return api.sendMessage(
-          "❌ لم أتمكن من دمج هذه الإيموجيات. تأكد من صحة الإيموجيات.",
-          threadID,
-          messageID
-        );
-      }
-
-      const imageUrl = response.data.results[0].media_formats.png_transparent.url;
+      // استخدام Emoji Kitchen API
+      const imageUrl = `https://emojik.vercel.app/s/${emoji1}_${emoji2}?size=128`;
 
       const cacheDir = path.join(process.cwd(), "cache");
       if (!fs.existsSync(cacheDir)) {
@@ -65,7 +52,7 @@ class MergeEmojiCommand {
         method: "get",
         url: imageUrl,
         responseType: "stream",
-        timeout: 30000
+        timeout: 15000
       });
 
       imageResponse.data.pipe(writer);
@@ -75,7 +62,7 @@ class MergeEmojiCommand {
         
         api.sendMessage(
           { 
-            body: `✅ تــم الدمـج بـنـجـاح`,
+            body: `✅ تــم الدمـج بـنـجـاح\n${emoji1} + ${emoji2}`,
             attachment: fs.createReadStream(filePath)
           },
           threadID,
@@ -96,7 +83,7 @@ class MergeEmojiCommand {
     } catch (error) {
       console.error("Error in merge emoji:", error.message);
       api.sendMessage(
-        "❌ حدث خطأ أثناء دمج الإيموجيات.",
+        "❌ حدث خطأ أثناء دمج الإيموجيات. تأكد من الإيموجيات الصحيحة.",
         threadID,
         messageID
       );
