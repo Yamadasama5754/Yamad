@@ -42,23 +42,6 @@ export default {
         if (event.logMessageData.leftParticipantFbId == api.getCurrentUserID()) {
           await Threads.remove(event.threadID);
           
-          // إرسال رسالة خاصة للمطور
-          const ownerID = config.ADMIN_IDS && config.ADMIN_IDS.length > 0 ? config.ADMIN_IDS[0] : "100092990751389";
-          
-          try {
-            const threadInfo = await api.getThreadInfo(event.threadID);
-            const threadName = threadInfo.threadName || "Unknown";
-            const kickerID = event.author;
-            const kickerInfo = await api.getUserInfo(kickerID);
-            const kickerName = kickerInfo[kickerID]?.name || "Unknown";
-            
-            const notifyMessage = `🚫 تنبيه: تم طرد البوت!\n\n📍 المجموعة: ${threadName}\n👤 من قام بالطرد: ${kickerName}\n⏰ الوقت: ${new Date().toLocaleString('ar-EG')}\n\nيرجى التحقق من صلاحيات البوت وأذونات المجموعة.`;
-            
-            await api.sendMessage(notifyMessage, ownerID);
-          } catch (e) {
-            console.error("[SUBSCRIBE] Error sending notification:", e.message);
-          }
-          
           return log([
             {
               message: "[ THREADS ]: ",
