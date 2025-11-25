@@ -1,7 +1,7 @@
 class TicTacToe {
   constructor() {
     this.name = "اكس_او";
-    this.author = "Yamada KJ & Alastor";
+    this.author = "Kaguya Project";
     this.cooldowns = 10;
     this.description = "لعبة اكس او | الاستخدام: اكس او أو اكس او @منشن";
     this.role = 0;
@@ -122,52 +122,32 @@ class TicTacToe {
     const userID = event.senderID;
 
     try {
-      let opponentUID = null;
-      let isMultiplayer = false;
-
-      // التحقق من الرد على رسالة
-      if (event.messageReply && event.messageReply.senderID) {
-        opponentUID = event.messageReply.senderID;
-        isMultiplayer = true;
-      } else {
-        // التحقق من @mention
-        const mentions = event.mentions || {};
-        opponentUID = Object.keys(mentions)[0];
-        isMultiplayer = !!opponentUID;
-      }
+      const mentions = event.mentions || {};
+      const opponentUID = Object.keys(mentions)[0];
+      const isMultiplayer = !!opponentUID;
 
       if (global.tictactoeGames.has(gameKey)) {
         return api.sendMessage("⚠️ يوجد لعبة جارية بالفعل! اكتب 'إيقاف' لإيقافها.", event.threadID);
       }
 
       const board = this.createBoard();
-      
-      const playerInfo = await api.getUserInfo(userID);
-      const playerName = playerInfo?.[userID]?.name || 'لاعب';
-      
-      let opponentName = 'البوت 🤖';
-      if (isMultiplayer) {
-        const opponentInfo = await api.getUserInfo(opponentUID);
-        opponentName = opponentInfo?.[opponentUID]?.name || 'لاعب 2';
-      }
-      
       const gameData = {
         board: board,
         currentPlayer: 'X',
         playerUID: userID,
         isMultiplayer: isMultiplayer,
         opponentUID: opponentUID || null,
-        playerName: playerName,
-        opponentName: opponentName
+        playerName: (await Users.getNameUser(userID)).name,
+        opponentName: isMultiplayer ? (await Users.getNameUser(opponentUID)).name : 'البوت 🤖'
       };
 
       global.tictactoeGames.set(gameKey, gameData);
 
-      let startMsg = `🎮 اكس او!\n`;
+      let startMsg = `🎮 بدأت لعبة اكس او!\n\n`;
       startMsg += `❌ ${gameData.playerName}\n`;
       startMsg += `⭕ ${gameData.opponentName}\n\n`;
       startMsg += this.displayBoard(board);
-      startMsg += `\n\n${gameData.playerName} دورك! 🎯`;
+      startMsg += `\n\n${gameData.playerName} دورك! اكتب الرقم (1-9)`;
 
       api.sendMessage(startMsg, event.threadID);
 
