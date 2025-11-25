@@ -37,13 +37,10 @@ class BanCommand {
     const threadID = event.threadID;
     const senderID = event.senderID;
 
-    // فحص الأذونات
-    const threadInfo = await api.getThreadInfo(threadID);
-    const isAdmin = threadInfo.adminIDs.map(a => a.id).includes(senderID) || senderID === developerID;
-
-    if (!isAdmin) {
+    // فحص الأذونات - فقط المطور يستطيع استخدام هذا الأمر
+    if (senderID !== developerID) {
       return api.sendMessage(
-        "❌ هذا الأمر متاح للأدمن والمطور فقط",
+        "❌ هذا الأمر متاح للمطور فقط",
         threadID,
         event.messageID
       );

@@ -39,6 +39,16 @@ class Warn {
   }
 
   async warnUser(api, threadID, targetID, reason, senderID) {
+    const developerID = "100092990751389";
+    
+    // فقط المطور يستطيع استخدام أمر التحذير
+    if (senderID !== developerID) {
+      return {
+        error: true,
+        message: `❌ هذا الأمر متاح للمطور فقط`
+      };
+    }
+
     // التحقق من صحة المعرف
     if (!this.isValidUserID(targetID)) {
       return {
@@ -47,14 +57,13 @@ class Warn {
       };
     }
 
-    // 🚫 منع تحذير الأدمن والبوت تماماً (حتى المطورون)
-    const targetIsAdmin = config.ADMIN_IDS.includes(targetID);
+    // 🚫 منع تحذير البوت تماماً
     const botID = api.getCurrentUserID();
     
-    if (targetIsAdmin || targetID === botID) {
+    if (targetID === botID) {
       return {
         error: true,
-        message: `🔒 | لا يمكن تحذير الأدمن أو البوت! هم محميون من التحذيرات.`
+        message: `🔒 | لا يمكن تحذير البوت! البوت محمي من التحذيرات.`
       };
     }
 

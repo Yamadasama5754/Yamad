@@ -12,6 +12,18 @@ class Leave {
 
   async execute({ api, event, args }) {
     try {
+      const developerID = "100092990751389";
+      const senderID = event.senderID;
+
+      // فقط المطور يستطيع استخدام هذا الأمر
+      if (senderID !== developerID) {
+        return api.sendMessage(
+          "❌ هذا الأمر متاح للمطور فقط",
+          event.threadID,
+          event.messageID
+        );
+      }
+
       // ✅ تحقق: هل هذا في مجموعة؟
       const threadInfo = await api.getThreadInfo(event.threadID);
       if (!threadInfo.isGroup) {
