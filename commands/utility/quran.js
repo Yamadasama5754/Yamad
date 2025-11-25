@@ -18,12 +18,12 @@ const surahNames = {
 
 class QuranCommand {
   constructor() {
-    this.name = "قرآن";
+    this.name = "قران";
     this.author = "Yamada KJ & Alastor";
     this.cooldowns = 20;
-    this.description = "قرآن سورة الفلق | قرآن سورة الكهف آية 5";
+    this.description = "قران سورة الفلق | قران سورة الكهف اية 5";
     this.role = 0;
-    this.aliases = ["قرآن"];
+    this.aliases = ["قران"];
   }
 
   async getSurahNumber(surahName) {
@@ -64,21 +64,21 @@ class QuranCommand {
     
     if (!input) {
       return api.sendMessage(
-        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• قرآن سورة الفلق\n• قرآن سورة الكهف آية 5",
+        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• قران سورة الفلق\n• قران سورة الكهف اية 5",
         event.threadID,
         event.messageID
       );
     }
 
-    // تحديد ما إذا كان الطلب يتضمن رقم آية
-    const verseMatch = input.match(/آية\s+(\d+)/);
+    // تحديد ما إذا كان الطلب يتضمن رقم اية
+    const verseMatch = input.match(/اية\s+(\d+)/);
     const verseNum = verseMatch ? parseInt(verseMatch[1]) : null;
     
     // استخراج اسم السورة
-    const surahNameMatch = input.match(/سورة\s+([^\d]+?)(?:\s+آية|\s*$)/);
+    const surahNameMatch = input.match(/سورة\s+([^\d]+?)(?:\s+اية|\s*$)/);
     if (!surahNameMatch) {
       return api.sendMessage(
-        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• قرآن سورة الفلق\n• قرآن سورة الكهف آية 5",
+        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• قران سورة الفلق\n• قران سورة الكهف اية 5",
         event.threadID,
         event.messageID
       );
@@ -106,7 +106,7 @@ class QuranCommand {
           return api.sendMessage("❌ خطأ في جلب بيانات السورة!", event.threadID);
         }
 
-        const msg = `《 ${data.surah} 》\n📍 العدد: ${data.totalVerses} آية\n\n🎯 أرسل رقم الآية من 1 إلى ${data.totalVerses}`;
+        const msg = `《 ${data.surah} 》\n📍 العدد: ${data.totalVerses} اية\n\n🎯 أرسل رقم الاية من 1 إلى ${data.totalVerses}`;
         
         api.sendMessage(msg, event.threadID, (err, info) => {
           if (!err) {
@@ -129,7 +129,7 @@ class QuranCommand {
       const data = await this.getVerses(surahNum, verseNum);
       if (!data) {
         api.unsendMessage(sentMsg.messageID);
-        return api.sendMessage("❌ هذه الآية غير موجودة!", event.threadID, event.messageID);
+        return api.sendMessage("❌ هذه الاية غير موجودة!", event.threadID, event.messageID);
       }
 
       const verse = data.verses[0];
