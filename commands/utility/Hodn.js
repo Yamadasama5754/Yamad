@@ -7,7 +7,7 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 class HugCommand {
   constructor() {
-    this.name = "احضن";
+    this.name = "حضن";
     this.author = "S H A D O W - Updated by Yamada KJ";
     this.cooldowns = 5;
     this.description = "احضن حبيبك | الاستخدام: احضن @منشن أو رد على رسالة وقل احضن";
@@ -127,7 +127,7 @@ class HugCommand {
 
       // إرسال الصورة
       api.sendMessage(
-        { body: "🫂 احضن!", attachment: fs.createReadStream(imagePath) },
+        { body: "🫂🩷🐍 احضن!", attachment: fs.createReadStream(imagePath) },
         threadID,
         () => {
           try {
