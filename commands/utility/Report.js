@@ -43,6 +43,11 @@ class BroadcastCommand {
 
       for (const thread of threads) {
         try {
+          // تصفية الرسائل الخاصة - إرسال للمجموعات فقط
+          if (thread.isGroup === false || thread.threadType === "user") {
+            continue;
+          }
+
           await api.sendMessage(
             `📢 ابلاغ من المطور:\n\n${message}`,
             thread.threadID

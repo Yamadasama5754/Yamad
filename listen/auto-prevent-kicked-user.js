@@ -56,7 +56,20 @@ export const autoPreventsKickedUsers = async ({ api, event }) => {
           await api.removeUserFromGroup(userID, threadID);
           console.log(`🚫 تم طرد ${userID} تلقائياً - كان مبان`);
         } catch (err) {
-          console.error(`❌ فشل في طرد ${userID}:`, err.message);
+          // محاولة مرة أخرى بعد ثانية واحدة في حالة الفشل
+          if (err.message?.includes("not admin") || err.message?.includes("permission")) {
+            console.warn(`⚠️ البوت ليس ادمن - لا يمكن طرد ${userID} تلقائياً. يرجى جعل البوت ادمن.`);
+          } else {
+            // محاولة ثانية
+            setTimeout(async () => {
+              try {
+                await api.removeUserFromGroup(userID, threadID);
+                console.log(`✅ تم طرد ${userID} بنجاح في المحاولة الثانية`);
+              } catch (retryErr) {
+                console.error(`❌ فشل في طرد ${userID} حتى بعد المحاولة الثانية:`, retryErr.message);
+              }
+            }, 1000);
+          }
         }
       }
 
