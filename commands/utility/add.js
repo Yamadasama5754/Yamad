@@ -23,18 +23,6 @@ class AddUser {
         );
       }
 
-      // ✅ تحقق: هل البوت أدمن في المجموعة؟
-      const botID = api.getCurrentUserID();
-      const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
-      
-      if (!isBotAdmin) {
-        return api.sendMessage(
-          "⚠️ | البوت يجب أن يكون أدمن في المجموعة لإضافة أعضاء جدد.",
-          event.threadID,
-          event.messageID
-        );
-      }
-
       // ✅ تحديد الشخص (ID أو رابط فيسبوك أو mention أو رد على رسالة)
       let targetID;
 
@@ -86,15 +74,15 @@ class AddUser {
       // ✅ محاولة الإضافة
       api.addUserToGroup(targetID, event.threadID, (err) => {
         if (err) {
-          let errorMsg = "⚠️ | ما قدرت أضيف الشخص.\n";
+          let errorMsg = "❌ | فشل إضافة الشخص.\n";
           
           // تحليل نوع الخطأ
-          if (err.message?.includes("not admin") || err.message?.includes("not authorized")) {
-            errorMsg += "🔍 السبب: البوت لازم يكون أدمن في المجموعة.";
+          if (err.message?.includes("not admin") || err.message?.includes("not authorized") || err.message?.includes("permission")) {
+            errorMsg = "⚠️ | لازم البوت يصبح أدمن في المجموعة لإضافة أعضاء!";
           } else if (err.message?.includes("already") || err.message?.includes("member")) {
-            errorMsg += "🔍 السبب: هذا الشخص موجود بالفعل في المجموعة.";
+            errorMsg = "ℹ️ | هذا الشخص موجود بالفعل في المجموعة.";
           } else if (err.message?.includes("blocked")) {
-            errorMsg += "🔍 السبب: هذا الشخص محظور أو قد حظر المجموعة.";
+            errorMsg = "🔍 | هذا الشخص محظور أو قد حظر المجموعة.";
           } else {
             errorMsg += `🔍 السبب: ${err.message || "خطأ غير معروف"}`;
           }
@@ -102,7 +90,7 @@ class AddUser {
           return api.sendMessage(errorMsg, event.threadID, event.messageID);
         }
         api.sendMessage(
-          `✅ | تم إدخال العضو (${targetID}) إلى المجموعة.`,
+          `✅ | تم إدخال العضو (${targetID}) إلى المجموعة بنجاح!`,
           event.threadID,
           event.messageID
         );
