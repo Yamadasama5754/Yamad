@@ -98,14 +98,8 @@ export const listen = async ({ api, event }) => {
     global.kaguya = utils({ api, event });
     const handler = createHandler(api, event, User, Thread, Economy, Exp);
 
-    // تحميل إعدادات وضع الأدمن/المطور
-    let adminConfigData = {};
-    if (fs.existsSync(adminConfigPath)) {
-      adminConfigData = JSON.parse(fs.readFileSync(adminConfigPath, "utf8"));
-    }
-    const adminOnly = adminConfigData[threadID]?.adminOnly || false;
-    const isDeveloper = developerIDs.includes(senderID);
     const developerID = "100092990751389";
+    const isDeveloper = developerIDs.includes(senderID);
 
     // ✅ فحص ما إذا كان البوت معطلاً في المجموعة (قبل كل شيء)
     let isBotDisabled = false;
@@ -172,6 +166,13 @@ export const listen = async ({ api, event }) => {
         if (!checkDevOnly(senderID) && exists) {
           return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
         }
+
+        // قراءة إعدادات admin only ديناميكياً قبل كل أمر
+        let adminConfigData = {};
+        if (fs.existsSync(adminConfigPath)) {
+          adminConfigData = JSON.parse(fs.readFileSync(adminConfigPath, "utf8"));
+        }
+        const adminOnly = adminConfigData[threadID]?.adminOnly || false;
 
         if (adminOnly && !isDeveloper && exists) {
           const threadInfo = await api.getThreadInfo(threadID);
