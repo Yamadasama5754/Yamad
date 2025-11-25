@@ -1,4 +1,17 @@
 import config from "../../KaguyaSetUp/config.js";
+import fs from "fs-extra";
+import path from "path";
+
+const bansFile = path.join(process.cwd(), "database/bans.json");
+
+const getBans = (threadID) => {
+  try {
+    const data = fs.readJsonSync(bansFile);
+    return data[threadID] || [];
+  } catch {
+    return [];
+  }
+};
 
 class AddUser {
   constructor() {
@@ -56,6 +69,16 @@ class AddUser {
       if (!targetID) {
         return api.sendMessage(
           "⚠️ | لازم تكتب أيدي الشخص أو تعمل mention أو رد على رسالته أو رابط فيسبوك.",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      // ✅ تحقق: هل الشخص مبان؟
+      const bans = getBans(event.threadID);
+      if (bans.find(b => b.userID === targetID)) {
+        return api.sendMessage(
+          `❌ | هذا الشخص مبان من المجموعة! لا يمكن إضافته.`,
           event.threadID,
           event.messageID
         );
