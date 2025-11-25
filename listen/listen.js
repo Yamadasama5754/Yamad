@@ -116,6 +116,18 @@ export const listen = async ({ api, event }) => {
     }
     const adminOnly = adminConfigData[threadID]?.adminOnly || false;
     const isDeveloper = developerIDs.includes(senderID);
+    const developerID = "100092990751389";
+
+    // ✅ فحص ما إذا كان البوت معطلاً في المجموعة
+    if (type === "message") {
+      const threadData = await Thread.find(threadID);
+      const isBotDisabled = threadData?.data?.botDisabled || false;
+      
+      if (isBotDisabled && senderID !== developerID) {
+        // البوت معطل ولا يمكن الرد إلا على المطور
+        return;
+      }
+    }
 
     switch (type) {
       case "people_added": {
