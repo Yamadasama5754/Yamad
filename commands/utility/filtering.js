@@ -35,10 +35,8 @@ class PurgeCommand {
         const endIdx = startIdx + itemsPerPage;
         const pageCommands = allCommands.slice(startIdx, endIdx);
 
-        let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n\n`;
-        pageCommands.forEach((cmd, idx) => {
-          const cmdNumber = startIdx + idx + 1;
-          
+        let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+        pageCommands.forEach((cmd) => {
           // إضافة إيموجي بناءً على الدور
           let roleEmoji = "✨"; // للجميع
           if (cmd.role === 2) {
@@ -47,10 +45,10 @@ class PurgeCommand {
             roleEmoji = "👑"; // أدمن فقط
           }
           
-          msg += `${cmdNumber}️⃣ ${roleEmoji} | ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
+          msg += `${roleEmoji} ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
         });
 
-        msg += `\n🔑 = مطور فقط | 👑 = أدمن فقط | ✨ = الجميع\n`;
+        msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
         msg += `💡 لعرض صفحة أخرى: .تصنيف قائمة [رقم الصفحة]`;
 
         return api.sendMessage(msg, event.threadID, event.messageID);
