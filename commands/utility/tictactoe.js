@@ -167,12 +167,121 @@ class TicTacToe {
       startMsg += `❌ ${gameData.playerName}\n`;
       startMsg += `⭕ ${gameData.opponentName}\n\n`;
       startMsg += this.displayBoard(board);
-      startMsg += `\n\n${gameData.playerName} دورك! 🎯`;
+      startMsg += `\n\n${gameData.playerName} دورك! اكتب رقم (1-9) 🎯`;
 
-      api.sendMessage(startMsg, event.threadID);
+      api.sendMessage(startMsg, event.threadID, (err, info) => {
+        if (!err && info) {
+          global.client.handler.reply.set(info.messageID, {
+            name: this.name,
+            author: this.author
+          });
+        }
+      });
 
     } catch (err) {
       console.error('TicTacToe Error:', err);
+      api.sendMessage("❌ حدث خطأ: " + err.message, event.threadID);
+    }
+  }
+
+  async onReply({ api, event, Users }) {
+    const gameKey = `${event.threadID}`;
+    const userID = event.senderID;
+    
+    try {
+      const gameData = global.tictactoeGames.get(gameKey);
+      
+      if (!gameData) {
+        return api.sendMessage("❌ لا توجد لعبة جارية حالياً!", event.threadID);
+      }
+
+      // التحقق من أن اللاعب الحالي هو من يرسل الحركة
+      if (gameData.currentPlayer === 'X' && userID !== gameData.playerUID) {
+        return api.sendMessage(`⚠️ ليس دورك الآن! دور ${gameData.playerName}`, event.threadID);
+      }
+
+      if (gameData.currentPlayer === 'O' && gameData.isMultiplayer && userID !== gameData.opponentUID) {
+        return api.sendMessage(`⚠️ ليس دورك الآن! دور ${gameData.opponentName}`, event.threadID);
+      }
+
+      const moveText = event.body?.trim();
+      const move = parseInt(moveText);
+
+      if (isNaN(move) || move < 1 || move > 9) {
+        return api.sendMessage("❌ أدخل رقم صحيح من 1 إلى 9", event.threadID);
+      }
+
+      if (!this.makeMove(gameData.board, move, gameData.currentPlayer)) {
+        return api.sendMessage("❌ الخانة مشغولة بالفعل! اختر خانة أخرى", event.threadID);
+      }
+
+      // التحقق من الفوز
+      if (this.checkWinner(gameData.board, gameData.currentPlayer)) {
+        let winMsg = `🎉 ${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} فاز!\n\n`;
+        winMsg += this.displayBoard(gameData.board);
+        api.sendMessage(winMsg, event.threadID);
+        global.tictactoeGames.delete(gameKey);
+        global.client.handler.reply.delete(event.messageReply.messageID);
+        return;
+      }
+
+      // التحقق من التعادل
+      if (this.isBoardFull(gameData.board)) {
+        let tieMsg = `🤝 تعادل!\n\n`;
+        tieMsg += this.displayBoard(gameData.board);
+        api.sendMessage(tieMsg, event.threadID);
+        global.tictactoeGames.delete(gameKey);
+        global.client.handler.reply.delete(event.messageReply.messageID);
+        return;
+      }
+
+      // تبديل اللاعب
+      gameData.currentPlayer = gameData.currentPlayer === 'X' ? 'O' : 'X';
+
+      // إذا كان اللاعب الآخر هو البوت
+      if (!gameData.isMultiplayer && gameData.currentPlayer === 'O') {
+        const botMove = this.getBotMove(gameData.board);
+        this.makeMove(gameData.board, botMove, 'O');
+
+        // التحقق من فوز البوت
+        if (this.checkWinner(gameData.board, 'O')) {
+          let botWinMsg = `🤖 البوت فاز!\n\n`;
+          botWinMsg += this.displayBoard(gameData.board);
+          api.sendMessage(botWinMsg, event.threadID);
+          global.tictactoeGames.delete(gameKey);
+          global.client.handler.reply.delete(event.messageReply.messageID);
+          return;
+        }
+
+        // التحقق من التعادل
+        if (this.isBoardFull(gameData.board)) {
+          let tieMsg = `🤝 تعادل!\n\n`;
+          tieMsg += this.displayBoard(gameData.board);
+          api.sendMessage(tieMsg, event.threadID);
+          global.tictactoeGames.delete(gameKey);
+          global.client.handler.reply.delete(event.messageReply.messageID);
+          return;
+        }
+
+        gameData.currentPlayer = 'X';
+      }
+
+      // إرسال حالة اللعبة
+      let msg = `🎮 اللعبة جارية...\n\n`;
+      msg += this.displayBoard(gameData.board);
+      msg += `\n\n${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} دورك! 🎯`;
+
+      api.sendMessage(msg, event.threadID, (err, info) => {
+        if (!err && info) {
+          global.client.handler.reply.set(info.messageID, {
+            name: this.name,
+            author: this.author
+          });
+        }
+      });
+
+    } catch (err) {
+      console.error('TicTacToe Reply Error:', err);
       api.sendMessage("❌ حدث خطأ: " + err.message, event.threadID);
     }
   }
