@@ -98,17 +98,6 @@ export const listen = async ({ api, event }) => {
     global.kaguya = utils({ api, event });
     const handler = createHandler(api, event, User, Thread, Economy, Exp);
 
-    // ✅ تشغيل الأحداث من eventFunctions (دوال فقط)
-    if (global.client.eventFunctions && type === "message") {
-      global.client.eventFunctions.forEach((fn, name) => {
-        try {
-          fn({ api, event, Users: User, Threads: Thread, Economy, Exp });
-        } catch (err) {
-          console.error(`❌ خطأ أثناء تنفيذ حدث ${name}:`, err.message);
-        }
-      });
-    }
-
     // تحميل إعدادات وضع الأدمن/المطور
     let adminConfigData = {};
     if (fs.existsSync(adminConfigPath)) {
@@ -118,14 +107,28 @@ export const listen = async ({ api, event }) => {
     const isDeveloper = developerIDs.includes(senderID);
     const developerID = "100092990751389";
 
-    // ✅ فحص ما إذا كان البوت معطلاً في المجموعة
-    if (type === "message") {
+    // ✅ فحص ما إذا كان البوت معطلاً في المجموعة (قبل كل شيء)
+    let isBotDisabled = false;
+    if (type === "message" && isGroup) {
       const threadData = await Thread.find(threadID);
-      const isBotDisabled = threadData?.data?.botDisabled || false;
+      isBotDisabled = threadData?.data?.botDisabled === true;
       
       if (isBotDisabled && senderID !== developerID) {
         // البوت معطل ولا يمكن الرد إلا على المطور
         return;
+      }
+    }
+
+    // ✅ تشغيل الأحداث من eventFunctions (دوال فقط) - فقط إذا لم يكن البوت معطل أو الشخص مطور
+    if (global.client.eventFunctions && type === "message") {
+      if (!isBotDisabled || senderID === developerID) {
+        global.client.eventFunctions.forEach((fn, name) => {
+          try {
+            fn({ api, event, Users: User, Threads: Thread, Economy, Exp });
+          } catch (err) {
+            console.error(`❌ خطأ أثناء تنفيذ حدث ${name}:`, err.message);
+          }
+        });
       }
     }
 

@@ -825,7 +825,8 @@
         "status": false,
         "reason": null,
         "time": null
-      }
+      },
+      "botDisabled": true
     }
   },
   {
