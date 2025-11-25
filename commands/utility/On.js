@@ -6,6 +6,7 @@ class EnableCommand {
     this.description = "تشغيل البوت في المجموعة | الاستخدام: تشغيل";
     this.role = 2;
     this.aliases = ["تشغيل", "enable"];
+    this.hidden = true;
   }
 
   async execute({ api, event, Threads }) {

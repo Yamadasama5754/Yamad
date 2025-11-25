@@ -6,6 +6,7 @@ class DisableCommand {
     this.description = "تعطيل البوت في المجموعة (يرد فقط على المطور) | الاستخدام: تعطيل";
     this.role = 2;
     this.aliases = ["تعطيل", "disable"];
+    this.hidden = true;
   }
 
   async execute({ api, event, Threads }) {
