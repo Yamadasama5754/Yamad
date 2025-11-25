@@ -37,15 +37,14 @@ class PurgeCommand {
 
         let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n━━━━━━━━━━━━━━━━━━━━\n\n`;
         pageCommands.forEach((cmd) => {
-          // إضافة إيموجي بناءً على الدور
-          let roleEmoji = "✨"; // للجميع
+          let roleEmoji = ""; // للجميع - بدون إيموجي إضافي
           if (cmd.role === 2) {
-            roleEmoji = "🔑"; // مطور فقط
+            roleEmoji = "⚙️ "; // مطور فقط
           } else if (cmd.role === 1) {
-            roleEmoji = "👑"; // أدمن فقط
+            roleEmoji = "👑 "; // أدمن ومطور
           }
           
-          msg += `${roleEmoji} ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
+          msg += `${roleEmoji}${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
         });
 
         msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
