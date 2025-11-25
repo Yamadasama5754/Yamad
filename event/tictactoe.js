@@ -16,7 +16,12 @@ export default {
       return api.sendMessage("⏹️ تم إيقاف اللعبة.", event.threadID);
     }
 
+    // تقبل الأرقام فقط (1-9)
     if (isNaN(move) || move < 1 || move > 9) {
+      // فقط رسالة خفيفة للأرقام غير الصحيحة
+      if (!isNaN(move)) {
+        return api.sendMessage("❌ الرقم يجب أن يكون بين 1 و 9", event.threadID);
+      }
       return;
     }
 
