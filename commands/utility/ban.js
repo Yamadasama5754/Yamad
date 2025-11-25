@@ -145,14 +145,11 @@ class BanCommand {
     }
 
     try {
-      const name = await Users.getNameUser(targetID);
-      
       // إضافة للقائمة أولاً
       bans.push({
         userID: targetID,
         bannedBy: senderID,
-        bannedAt: new Date().toISOString(),
-        name: name || targetID
+        bannedAt: new Date().toISOString()
       });
       saveBans(threadID, bans);
 
@@ -166,7 +163,7 @@ class BanCommand {
       }
 
       // إرسال الرسالة بناءً على نتيجة الطرد
-      let msg = `✅ تم بان ${name || targetID}`;
+      let msg = `✅ تم بان ${targetID}`;
       if (kickSuccess) {
         msg += `\n🚫 تم طرده الآن من المجموعة`;
       } else {
