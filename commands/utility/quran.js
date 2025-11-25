@@ -21,7 +21,7 @@ class QuranCommand {
     this.name = "قرآن";
     this.author = "Yamada KJ & Alastor";
     this.cooldowns = 20;
-    this.description = "اجلب آية أو سورة من القرآن - قرآن سورة الكهف آية 6 | قرآن أوديو سورة الكهف آية 6";
+    this.description = "قرآن سورة الفلق | قرآن سورة الكهف آية 5";
     this.role = 0;
     this.aliases = ["قرآن"];
   }
@@ -33,35 +33,19 @@ class QuranCommand {
 
   async getVerses(surahNum, verseNum = null) {
     try {
-      const url = verseNum ? 
-        `https://api.alquran.cloud/v1/surah/${surahNum}/ar.alafasy` :
-        `https://api.alquran.cloud/v1/surah/${surahNum}`;
-      
+      const url = `https://api.alquran.cloud/v1/surah/${surahNum}`;
       const response = await axios.get(url, { timeout: 10000 });
       const data = response.data.data;
       
       if (verseNum) {
         const verse = data.ayahs.find(a => a.numberInSurah === verseNum);
-        return verse ? { surah: data.name, verses: [verse], surahNum } : null;
+        return verse ? { surah: data.name, verses: [verse], surahNum, totalVerses: data.numberOfAyahs } : null;
       }
-      return { surah: data.name, verses: data.ayahs, surahNum };
+      return { surah: data.name, verses: data.ayahs, surahNum, totalVerses: data.numberOfAyahs };
     } catch (error) {
       console.error("خطأ في جلب الآيات:", error);
       return null;
     }
-  }
-
-  parseInput(text) {
-    const regex = /سورة[\s]+([^\s\d]+)[\s]+(?:آية[\s]+(\d+)|كاملة)?/i;
-    const match = text.match(regex);
-    
-    if (!match) return null;
-    
-    return {
-      surah: match[1].trim(),
-      verse: match[2] ? parseInt(match[2]) : null,
-      isComplete: text.includes("كاملة")
-    };
   }
 
   async getVerseAudio(surahNum, verseNum) {
@@ -76,194 +60,185 @@ class QuranCommand {
   }
 
   async execute({ api, event, args }) {
-    const input = args.join(" ");
+    const input = args.join(" ").trim();
     
-    // تحديد نوع الأمر
-    const isAudio = input.toLowerCase().includes("أوديو");
-    const cleanInput = input.replace(/أوديو[\s]*/i, "").trim();
-    
-    const parsed = this.parseInput(cleanInput);
-
-    if (!parsed) {
-      api.sendMessage(
-        "❌ | الاستخدام الصحيح:\n.قرآن سورة الكهف آية 6\n.قرآن سورة الكهف كاملة\n.قرآن أوديو سورة الكهف آية 6",
+    if (!input) {
+      return api.sendMessage(
+        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• قرآن سورة الفلق\n• قرآن سورة الكهف آية 5",
         event.threadID,
         event.messageID
       );
-      return;
     }
 
-    const sentMsg = await api.sendMessage("⏱️ | جاري معالجة الطلب....", event.threadID);
+    // تحديد ما إذا كان الطلب يتضمن رقم آية
+    const verseMatch = input.match(/آية\s+(\d+)/);
+    const verseNum = verseMatch ? parseInt(verseMatch[1]) : null;
+    
+    // استخراج اسم السورة
+    const surahNameMatch = input.match(/سورة\s+([^\d]+?)(?:\s+آية|\s*$)/);
+    if (!surahNameMatch) {
+      return api.sendMessage(
+        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• قرآن سورة الفلق\n• قرآن سورة الكهف آية 5",
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    const surahName = surahNameMatch[1].trim();
+    const surahNum = await this.getSurahNumber(surahName);
+
+    if (!surahNum) {
+      return api.sendMessage(
+        "❌ لم أجد هذه السورة! تأكد من اسم السورة الصحيح.",
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    const sentMsg = await api.sendMessage("⏱️ جاري التحميل...", event.threadID);
 
     try {
-      const surahNum = await this.getSurahNumber(parsed.surah);
-      if (!surahNum) {
-        api.sendMessage("❌ | لم أجد هذه السورة!", event.threadID, event.messageID);
-        api.unsendMessage(sentMsg.messageID);
-        return;
-      }
-
-      // معالجة طلب الأوديو
-      if (isAudio) {
-        if (!parsed.verse) {
-          // طلب أوديو للسورة كاملة - عرض خيارات
-          api.sendMessage(
-            `⚠️ | لا يمكن إرسال أوديو لسورة كاملة!\n\n${parsed.surah} فيها عدة آيات.\n\n🤔 هل تريد أن تتلقى السورة مكتوبة بدلاً منها؟\n\n📝 رد بـ \"نعم\" أو \"لا\"`,
-            event.threadID,
-            (err, info) => {
-              if (!err) {
-                global.client.handler.reply.set(info.messageID, {
-                  name: this.name,
-                  type: "surah_text_offer",
-                  surahNum: surahNum,
-                  surahName: parsed.surah,
-                  author: event.senderID
-                });
-              }
-            }
-          );
+      // إذا لم يحدد رقم آية، عرض خيارات الآيات
+      if (!verseNum) {
+        const data = await this.getVerses(surahNum);
+        if (!data) {
           api.unsendMessage(sentMsg.messageID);
-          return;
+          return api.sendMessage("❌ خطأ في جلب بيانات السورة!", event.threadID);
         }
 
-        // طلب أوديو لآية محددة
-        const data = await this.getVerses(surahNum, parsed.verse);
-        if (!data || !data.verses || data.verses.length === 0) {
-          api.sendMessage("❌ | هذه الآية غير موجودة في هذه السورة!", event.threadID, event.messageID);
-          api.unsendMessage(sentMsg.messageID);
-          return;
-        }
-
-        const verse = data.verses[0];
-        const audioUrl = await this.getVerseAudio(surahNum, parsed.verse);
-
-        if (!audioUrl) {
-          api.sendMessage("❌ | خطأ في جلب الأوديو!", event.threadID, event.messageID);
-          api.unsendMessage(sentMsg.messageID);
-          return;
-        }
-
-        try {
-          const tempDir = path.join(process.cwd(), "temp");
-          if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-
-          const tempAudioPath = path.join(tempDir, `quran_${surahNum}_${parsed.verse}_${Date.now()}.mp3`);
-          const audioResponse = await axios.get(audioUrl, { responseType: "stream", timeout: 60000 });
-          const writeStream = fs.createWriteStream(tempAudioPath);
-          audioResponse.data.pipe(writeStream);
-
-          writeStream.on("finish", async () => {
-            await api.sendMessage({
-              body: `《 ${data.surah} - الآية ${parsed.verse} 》\n\n${verse.text}\n\n{وَإِذَا قَرَأَ الْقُرْآنَ فَاسْتَمِعُوا لَهُ وَأَنْصِتُوا}`,
-              attachment: fs.createReadStream(tempAudioPath)
-            }, event.threadID, () => {
-              if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
+        const msg = `《 ${data.surah} 》\n📍 العدد: ${data.totalVerses} آية\n\n🎯 أرسل رقم الآية من 1 إلى ${data.totalVerses}`;
+        
+        api.sendMessage(msg, event.threadID, (err, info) => {
+          if (!err) {
+            global.client.handler.reply.set(info.messageID, {
+              name: this.name,
+              type: "verse_selection",
+              surahNum: surahNum,
+              surahName: data.surah,
+              totalVerses: data.totalVerses,
+              author: event.senderID
             });
+          }
+        });
 
-            api.unsendMessage(sentMsg.messageID);
-          });
-
-          writeStream.on("error", (error) => {
-            console.error("خطأ في تحميل الأوديو:", error);
-            api.sendMessage("❌ | حدث خطأ أثناء تحميل الأوديو!", event.threadID, event.messageID);
-            api.unsendMessage(sentMsg.messageID);
-          });
-        } catch (error) {
-          console.error("خطأ:", error);
-          api.sendMessage("❌ | حدث خطأ!", event.threadID, event.messageID);
-          api.unsendMessage(sentMsg.messageID);
-        }
-        return;
-      }
-
-      // معالجة طلب النص (الأمر الأصلي)
-      const data = await this.getVerses(surahNum, parsed.verse);
-      if (!data) {
-        api.sendMessage("❌ | خطأ في جلب الآيات!", event.threadID, event.messageID);
         api.unsendMessage(sentMsg.messageID);
         return;
       }
 
-      let message = `《 ${data.surah} 》\n\n`;
-      data.verses.forEach(v => {
-        message += `${v.text}\n(${v.numberInSurah})\n\n`;
-      });
-
-      if (message.length > 4096) {
-        const chunks = [];
-        let chunk = `《 ${data.surah} 》\n\n`;
-        for (const v of data.verses) {
-          const line = `${v.text}\n(${v.numberInSurah})\n\n`;
-          if ((chunk + line).length > 4096) {
-            chunks.push(chunk);
-            chunk = line;
-          } else {
-            chunk += line;
-          }
-        }
-        chunks.push(chunk);
-
-        for (const c of chunks) {
-          await api.sendMessage(c, event.threadID);
-        }
-      } else {
-        await api.sendMessage(message, event.threadID);
+      // إذا حدد آية، أرسل الأوديو
+      const data = await this.getVerses(surahNum, verseNum);
+      if (!data) {
+        api.unsendMessage(sentMsg.messageID);
+        return api.sendMessage("❌ هذه الآية غير موجودة!", event.threadID, event.messageID);
       }
 
-      api.unsendMessage(sentMsg.messageID);
+      const verse = data.verses[0];
+      const audioUrl = await this.getVerseAudio(surahNum, verseNum);
+
+      if (!audioUrl) {
+        api.unsendMessage(sentMsg.messageID);
+        return api.sendMessage("❌ خطأ في جلب الأوديو!", event.threadID);
+      }
+
+      try {
+        const tempDir = path.join(process.cwd(), "temp");
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+        const tempAudioPath = path.join(tempDir, `quran_${surahNum}_${verseNum}_${Date.now()}.mp3`);
+        const audioResponse = await axios.get(audioUrl, { responseType: "stream", timeout: 60000 });
+        const writeStream = fs.createWriteStream(tempAudioPath);
+        audioResponse.data.pipe(writeStream);
+
+        writeStream.on("finish", async () => {
+          await api.sendMessage({
+            body: `《 ${data.surah} - الآية ${verseNum} 》\n\n${verse.text}\n\n{وَإِذَا قَرَأَ الْقُرْآنَ فَاسْتَمِعُوا لَهُ وَأَنْصِتُوا}`,
+            attachment: fs.createReadStream(tempAudioPath)
+          }, event.threadID, () => {
+            if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
+          });
+
+          api.unsendMessage(sentMsg.messageID);
+        });
+
+        writeStream.on("error", (error) => {
+          console.error("خطأ في تحميل الأوديو:", error);
+          api.sendMessage("❌ حدث خطأ أثناء التحميل!", event.threadID);
+          api.unsendMessage(sentMsg.messageID);
+        });
+      } catch (error) {
+        console.error("خطأ:", error);
+        api.sendMessage("❌ حدث خطأ!", event.threadID);
+        api.unsendMessage(sentMsg.messageID);
+      }
     } catch (error) {
       console.error("خطأ:", error);
-      api.sendMessage("❌ | حدث خطأ!", event.threadID, event.messageID);
+      api.sendMessage("❌ حدث خطأ!", event.threadID);
       api.unsendMessage(sentMsg.messageID);
     }
   }
 
   async onReply({ api, event, reply }) {
-    if (!reply || reply.type !== "surah_text_offer") return;
+    if (!reply || reply.type !== "verse_selection") return;
+    if (reply.author !== event.senderID) return;
 
-    const { surahNum, surahName, author } = reply;
-    if (author !== event.senderID) return;
+    const userInput = event.body.trim();
+    
+    if (!/^\d+$/.test(userInput)) {
+      return api.sendMessage("❌ أرسل رقم الآية فقط!", event.threadID, event.messageID);
+    }
 
-    const response = event.body.trim().toLowerCase();
+    const verseNum = parseInt(userInput);
+    const { surahNum, surahName, totalVerses } = reply;
 
-    if (response === "نعم") {
-      try {
-        const data = await this.getVerses(surahNum);
-        if (!data) {
-          api.sendMessage("❌ | خطأ في جلب الآيات!", event.threadID, event.messageID);
-          return;
-        }
+    if (verseNum < 1 || verseNum > totalVerses) {
+      return api.sendMessage(`❌ رقم الآية يجب أن يكون من 1 إلى ${totalVerses}`, event.threadID, event.messageID);
+    }
 
-        let message = `《 ${data.surah} 》\n\n`;
-        data.verses.forEach(v => {
-          message += `${v.text}\n(${v.numberInSurah})\n\n`;
+    const sentMsg = await api.sendMessage("⏱️ جاري التحميل...", event.threadID);
+
+    try {
+      const data = await this.getVerses(surahNum, verseNum);
+      if (!data) {
+        api.unsendMessage(sentMsg.messageID);
+        return api.sendMessage("❌ خطأ في جلب الآية!", event.threadID);
+      }
+
+      const verse = data.verses[0];
+      const audioUrl = await this.getVerseAudio(surahNum, verseNum);
+
+      if (!audioUrl) {
+        api.unsendMessage(sentMsg.messageID);
+        return api.sendMessage("❌ خطأ في جلب الأوديو!", event.threadID);
+      }
+
+      const tempDir = path.join(process.cwd(), "temp");
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+      const tempAudioPath = path.join(tempDir, `quran_${surahNum}_${verseNum}_${Date.now()}.mp3`);
+      const audioResponse = await axios.get(audioUrl, { responseType: "stream", timeout: 60000 });
+      const writeStream = fs.createWriteStream(tempAudioPath);
+      audioResponse.data.pipe(writeStream);
+
+      writeStream.on("finish", async () => {
+        await api.sendMessage({
+          body: `《 ${surahName} - الآية ${verseNum} 》\n\n${verse.text}\n\n{وَإِذَا قَرَأَ الْقُرْآنَ فَاسْتَمِعُوا لَهُ وَأَنْصِتُوا}`,
+          attachment: fs.createReadStream(tempAudioPath)
+        }, event.threadID, () => {
+          if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
         });
 
-        if (message.length > 4096) {
-          const chunks = [];
-          let chunk = `《 ${data.surah} 》\n\n`;
-          for (const v of data.verses) {
-            const line = `${v.text}\n(${v.numberInSurah})\n\n`;
-            if ((chunk + line).length > 4096) {
-              chunks.push(chunk);
-              chunk = line;
-            } else {
-              chunk += line;
-            }
-          }
-          chunks.push(chunk);
+        api.unsendMessage(sentMsg.messageID);
+      });
 
-          for (const c of chunks) {
-            await api.sendMessage(c, event.threadID);
-          }
-        } else {
-          await api.sendMessage(message, event.threadID);
-        }
-      } catch (error) {
-        api.sendMessage("❌ | حدث خطأ!", event.threadID);
-      }
-    } else if (response === "لا") {
-      api.sendMessage("✅ | تم الإلغاء.", event.threadID);
+      writeStream.on("error", (error) => {
+        console.error("خطأ في تحميل الأوديو:", error);
+        api.sendMessage("❌ حدث خطأ أثناء التحميل!", event.threadID);
+        api.unsendMessage(sentMsg.messageID);
+      });
+    } catch (error) {
+      console.error("خطأ:", error);
+      api.sendMessage("❌ حدث خطأ!", event.threadID);
+      api.unsendMessage(sentMsg.messageID);
     }
   }
 }
