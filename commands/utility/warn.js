@@ -47,14 +47,14 @@ class Warn {
       };
     }
 
-    // 🚫 منع تحذير الأدمن إلا المطورون فقط
-    const senderIsDeveloper = config.ADMIN_IDS.includes(senderID);
+    // 🚫 منع تحذير الأدمن والبوت تماماً (حتى المطورون)
     const targetIsAdmin = config.ADMIN_IDS.includes(targetID);
+    const botID = api.getCurrentUserID();
     
-    if (targetIsAdmin && !senderIsDeveloper) {
+    if (targetIsAdmin || targetID === botID) {
       return {
         error: true,
-        message: `🔒 | لا يمكن تحذير الأدمن! فقط المطورون يمكنهم تحذير الأدمن.`
+        message: `🔒 | لا يمكن تحذير الأدمن أو البوت! هم محميون من التحذيرات.`
       };
     }
 

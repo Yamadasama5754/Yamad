@@ -7,26 +7,33 @@ class BotRemovedNotification {
   }
 
   async execute({ api, event }) {
+    // فقط يعمل على حدث طرد البوت من مجموعة
+    if (!event.isGroup) return;
+
     try {
       const { threadID } = event;
       
+      console.log(`🚫 البوت تم طرده من المجموعة: ${threadID}`);
+      
+      // محاولة الحصول على اسم المجموعة قبل الطرد
+      let groupName = "مجموعة غير معروفة";
       try {
         const threadInfo = await api.getThreadInfo(threadID);
-        const threadName = threadInfo.threadName || "مجموعة بدون اسم";
-        
-        console.log(`🚫 البوت تم طرده من المجموعة: ${threadID} - ${threadName}`);
-        
-        // إرسال إشعار للمطور
-        await api.sendMessage(
-          `🚫 تنبيه: تم طرد البوت من المجموعة\n📍 المجموعة: ${threadName}\n🆔 الكود: ${threadID}`,
-          developerID
-        );
+        if (threadInfo && threadInfo.threadName) {
+          groupName = threadInfo.threadName;
+        }
       } catch (err) {
-        // محاولة إرسال رسالة بدون معلومات إضافية
+        // لا نرسل رسالة إذا فشل جلب المعلومات
+      }
+      
+      // إرسال إشعار للمطور فقط مرة واحدة
+      try {
         await api.sendMessage(
-          `🚫 تنبيه: تم طرد البوت من مجموعة\n🆔 الكود: ${threadID}`,
+          `🚫 تنبيه طرد البوت\n📍 المجموعة: ${groupName}\n🆔 الكود: ${threadID}\n⏰ الوقت: ${new Date().toLocaleString('ar-SA')}`,
           developerID
         );
+      } catch (sendErr) {
+        console.error("فشل إرسال الإشعار للمطور:", sendErr.message);
       }
     } catch (error) {
       console.error("❌ خطأ في حدث bot-removed-notification:", error.message);
