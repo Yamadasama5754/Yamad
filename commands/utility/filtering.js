@@ -3,13 +3,50 @@ class PurgeCommand {
     this.name = "تصفية";
     this.author = "Yamada KJ & Alastor";
     this.cooldowns = 300;
-    this.description = "يصفي الحسابات المتبنده من المجموعه";
+    this.description = "يصفي الحسابات المتبنده من المجموعه أو عرض قائمة الأوامر";
     this.role = 1;
     this.aliases = ["تصفية", "purge"];
   }
 
-  async execute({ api, event }) {
+  async execute({ api, event, args }) {
     try {
+      const action = args[0]?.toLowerCase();
+
+      // ===== ميزة قائمة الأوامر =====
+      if (action === "قائمة") {
+        const page = parseInt(args[1]) || 1;
+        const itemsPerPage = 10;
+
+        if (!global.client.commands || global.client.commands.size === 0) {
+          return api.sendMessage("❌ لا توجد أوامر مسجلة!", event.threadID);
+        }
+
+        const allCommands = Array.from(global.client.commands.values());
+        const totalPages = Math.ceil(allCommands.length / itemsPerPage);
+
+        if (page < 1 || page > totalPages) {
+          return api.sendMessage(
+            `❌ الصفحة ${page} غير موجودة!\n📄 العدد الكلي من الصفحات: ${totalPages}`,
+            event.threadID
+          );
+        }
+
+        const startIdx = (page - 1) * itemsPerPage;
+        const endIdx = startIdx + itemsPerPage;
+        const pageCommands = allCommands.slice(startIdx, endIdx);
+
+        let msg = `📋 قائمة الأوامر (صفحة ${page}/${totalPages})\n\n`;
+        pageCommands.forEach((cmd, idx) => {
+          const cmdNumber = startIdx + idx + 1;
+          msg += `${cmdNumber}️⃣ | ${cmd.name} - ${cmd.description || "بدون وصف"}\n`;
+        });
+
+        msg += `\n💡 لعرض صفحة أخرى: .تصنيف قائمة [رقم الصفحة]`;
+
+        return api.sendMessage(msg, event.threadID, event.messageID);
+      }
+
+      // ===== الميزة الأصلية: تصفية الحسابات المتبندة =====
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
       const threadInfo = await api.getThreadInfo(event.threadID);
