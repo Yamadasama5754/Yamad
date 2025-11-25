@@ -145,27 +145,36 @@ class BanCommand {
     }
 
     try {
-      // إضافة للقائمة
+      const name = await Users.getNameUser(targetID);
+      
+      // إضافة للقائمة أولاً
       bans.push({
         userID: targetID,
         bannedBy: senderID,
-        bannedAt: new Date().toISOString()
+        bannedAt: new Date().toISOString(),
+        name: name || targetID
       });
       saveBans(threadID, bans);
 
-      // طرد الشخص
+      // محاولة طرد الشخص
+      let kickSuccess = false;
       try {
         await api.removeUserFromGroup(targetID, threadID);
+        kickSuccess = true;
       } catch (kickErr) {
-        console.warn("تحذير: فشل الطرد لكن تمت إضافته للقائمة", kickErr.message);
+        console.error("❌ فشل الطرد من المجموعة:", kickErr.message);
       }
 
-      const name = await Users.getNameUser(targetID);
-      api.sendMessage(
-        `✅ تم بان ${name || targetID}\n🚫 إذا تمت إعادته سيتم طرده تلقائياً`,
-        threadID,
-        event.messageID
-      );
+      // إرسال الرسالة بناءً على نتيجة الطرد
+      let msg = `✅ تم بان ${name || targetID}`;
+      if (kickSuccess) {
+        msg += `\n🚫 تم طرده الآن من المجموعة`;
+      } else {
+        msg += `\n⚠️ لم نتمكن من طرده الآن لكن سيتم طرده إذا عاد`;
+      }
+      msg += `\n🔐 إذا تمت إعادته سيتم طرده تلقائياً`;
+      
+      api.sendMessage(msg, threadID, event.messageID);
     } catch (err) {
       console.error("خطأ في تنفيذ الباند:", err);
       api.sendMessage("❌ حدث خطأ", threadID);

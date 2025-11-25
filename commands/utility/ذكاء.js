@@ -31,50 +31,34 @@ class SmartCommand {
 
       api.sendMessage("🔄 جاري البحث...", threadID);
 
-      let success = false;
       let generatedText = "";
 
       // محاولة API الأول
       try {
         const gpt_api = `https://betadash-api-swordslush.vercel.app/gpt3-turbo?question=${encodeURIComponent(prompt)}`;
-        const response = await axios.get(gpt_api, { timeout: 15000 });
+        const response = await axios.get(gpt_api, { timeout: 12000 });
 
-        if (response.data && response.data.response) {
+        if (response.data?.response && response.data.response.trim()) {
           generatedText = response.data.response;
-          success = true;
         }
       } catch (err) {
         console.warn("API 1 failed:", err.message);
       }
 
       // API بديل إذا فشل الأول
-      if (!success) {
+      if (!generatedText) {
         try {
-          const altApi = `https://api.example.com/ask?query=${encodeURIComponent(prompt)}`;
-          const response = await axios.get("https://api.agify.io?name=michael", { timeout: 10000 });
-          
-          // في حالة فشل الـ API الثاني، نعطي إجابة عامة
-          generatedText = `سؤالك: "${prompt}"\n\n🤖 عذراً، الخدمة غير متاحة حالياً. حاول مرة أخرى لاحقاً.`;
-          success = true;
+          const altApi = `https://api.weatherapi.com/v1/current.json?key=test&q=london`;
+          await axios.get(altApi, { timeout: 5000 });
+          generatedText = `💭 سؤالك: "${prompt}"\n\n🤖 عذراً، خادم الذكاء الاصطناعي غير متاح حالياً. يرجى المحاولة لاحقاً.`;
         } catch (err) {
           console.warn("API 2 failed:", err.message);
-          generatedText = `سؤالك: "${prompt}"\n\n🤖 عذراً، الخدمة غير متاحة حالياً. حاول مرة أخرى لاحقاً.`;
-          success = true;
+          generatedText = `💭 سؤالك: "${prompt}"\n\n🤖 عذراً، الخدمة غير متاحة حالياً. حاول مرة أخرى.`;
         }
       }
 
-      if (success && generatedText) {
-        api.sendMessage(
-          generatedText,
-          threadID,
-          messageID
-        );
-      } else {
-        api.sendMessage(
-          "❌ حدث خطأ في الحصول على الإجابة",
-          threadID,
-          messageID
-        );
+      if (generatedText) {
+        api.sendMessage(generatedText, threadID, messageID);
       }
     } catch (error) {
       console.error("Error in smart command:", error.message);
