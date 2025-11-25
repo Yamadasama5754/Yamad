@@ -37,8 +37,8 @@ class MergeEmojiCommand {
       const emoji1 = content[0];
       const emoji2 = content[1];
 
-      // استخدام Emoji Kitchen API
-      const imageUrl = `https://emojik.vercel.app/s/${emoji1}_${emoji2}?size=128`;
+      // استخدام Emoji Kitchen API - حجم 512 بكسل لجودة أفضل
+      const imageUrl = `https://emojik.vercel.app/s/${emoji1}_${emoji2}?size=512`;
 
       const cacheDir = path.join(process.cwd(), "cache");
       if (!fs.existsSync(cacheDir)) {
