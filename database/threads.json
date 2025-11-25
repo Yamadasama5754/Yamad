@@ -1099,7 +1099,10 @@
         "reason": null,
         "time": null
       },
-      "autoDownload": true
+      "autoDownload": true,
+      "data": {
+        "botDisabled": true
+      }
     }
   },
   {

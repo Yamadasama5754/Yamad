@@ -113,6 +113,13 @@ export const listen = async ({ api, event }) => {
       }
     }
 
+    // ✅ قراءة إعدادات admin only ديناميكياً قبل جميع الحالات
+    let adminConfigData = {};
+    if (fs.existsSync(adminConfigPath)) {
+      adminConfigData = JSON.parse(fs.readFileSync(adminConfigPath, "utf8"));
+    }
+    const adminOnly = adminConfigData[threadID]?.adminOnly || false;
+
     // ✅ تشغيل الأحداث من eventFunctions (دوال فقط) - فقط إذا لم يكن البوت معطل أو الشخص مطور
     if (global.client.eventFunctions && type === "message") {
       if (!isBotDisabled || senderID === developerID) {
@@ -166,13 +173,6 @@ export const listen = async ({ api, event }) => {
         if (!checkDevOnly(senderID) && exists) {
           return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
         }
-
-        // قراءة إعدادات admin only ديناميكياً قبل كل أمر
-        let adminConfigData = {};
-        if (fs.existsSync(adminConfigPath)) {
-          adminConfigData = JSON.parse(fs.readFileSync(adminConfigPath, "utf8"));
-        }
-        const adminOnly = adminConfigData[threadID]?.adminOnly || false;
 
         if (adminOnly && !isDeveloper && exists) {
           const threadInfo = await api.getThreadInfo(threadID);
