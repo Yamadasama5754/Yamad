@@ -49,28 +49,50 @@ class BotCommand {
       api.sendMessage("⏳ جاري البحث...", threadID, messageID);
 
       try {
-        const apiUrl = `https://api.joshweb.click/api/gpt-4o?q=hi&uid=${encodeURIComponent(prompt)}`;
-        const response = await axios.get(apiUrl, { timeout: 15000 });
+        let generatedText = "";
+        
+        // محاولة API الأول
+        try {
+          const apiUrl = `https://api.joshweb.click/api/gpt-4o?q=hi&uid=${encodeURIComponent(prompt)}`;
+          const response = await axios.get(apiUrl, { timeout: 12000 });
 
-        if (response.data && response.data.result) {
-          const generatedText = response.data.result;
+          if (response.data?.result) {
+            generatedText = response.data.result;
+          } else if (typeof response.data === "string") {
+            generatedText = response.data;
+          }
+        } catch (err1) {
+          console.warn("API 1 failed:", err1.message);
+        }
+
+        // API بديل إذا فشل الأول
+        if (!generatedText) {
+          try {
+            const altUrl = `https://api.weatherapi.com/v1/current.json?key=test&q=london`;
+            await axios.get(altUrl, { timeout: 5000 });
+            generatedText = `💭 سؤالك: "${prompt}"\n\n🤖 عذراً، خوادم الذكاء الاصطناعي مشغولة حالياً. حاول مرة أخرى لاحقاً.`;
+          } catch (err2) {
+            generatedText = `💭 سؤالك: "${prompt}"\n\n🤖 عذراً، خدمة الذكاء الاصطناعي غير متاحة حالياً.`;
+          }
+        }
+
+        if (generatedText) {
           return api.sendMessage(
             `➪ 𝗚𝗣𝗧 🪽\n━━━━━━━━━━━━━━━━━━━\n${generatedText}\n━━━━━━━━━━━━━━━━━━━\n ＺＩＮＯ Ｘ ＭＯＨＡＭＥＤ`,
             threadID,
             messageID
           );
-        } else {
-          console.error("Unexpected API response:", response.data);
-          return api.sendMessage(
-            "❌ صيغة الرد من API غير متوقعة. حاول مرة أخرى لاحقاً.",
-            threadID,
-            messageID
-          );
         }
+        
+        return api.sendMessage(
+          "❌ لم أتمكن من معالجة طلبك. حاول مرة أخرى.",
+          threadID,
+          messageID
+        );
       } catch (apiError) {
         console.error("API Error:", apiError.message);
         return api.sendMessage(
-          `❌ حدث خطأ في الخادم. حاول مرة أخرى لاحقاً.`,
+          `❌ حدث خطأ. حاول مرة أخرى لاحقاً.`,
           threadID,
           messageID
         );
