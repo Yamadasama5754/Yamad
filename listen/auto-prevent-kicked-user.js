@@ -62,28 +62,13 @@ export const autoPreventsKickedUsers = async ({ api, event }) => {
 
       // إذا كان الشخص قد تم طرده من قبل بسبب تحذيرات
       if (warns[userID] && warns[userID].kicked) {
-        // ✅ إذا أضافه المطور أو أدمن، امسح تحذيراته (يدخل المجموعة)
-        if (senderID === developerID || senderID === addedParticipants[0]?.id) {
-          try {
-            delete warns[userID];
-            saveWarns(threadID, warns);
-            console.log(`✅ تم مسح جميع تحذيرات ${userID} - تمت استدعاؤه من قبل مطور/أدمن`);
-          } catch (err) {
-            console.error(`❌ فشل في مسح التحذيرات:`, err.message);
-          }
-        } else {
-          // ❌ إذا لم يكن مطور/أدمن، طرد الشخص تلقائياً
-          try {
-            delete warns[userID];
-            saveWarns(threadID, warns);
-            
-            await api.removeUserFromGroup(userID, threadID);
-            
-            console.log(`✅ تم طرد ${userID} تلقائياً - كان محظوراً بسبب تحذيرات`);
-            console.log(`✅ تم حذف جميع التحذيرات الخاصة به`);
-          } catch (err) {
-            console.error(`❌ فشل في طرد ${userID}:`, err.message);
-          }
+        // ✅ مسح التحذيرات عند إعادته بغض النظر عمن أضافه
+        try {
+          delete warns[userID];
+          saveWarns(threadID, warns);
+          console.log(`✅ تم مسح جميع تحذيرات ${userID} - تمت إعادته إلى المجموعة`);
+        } catch (err) {
+          console.error(`❌ فشل في مسح التحذيرات:`, err.message);
         }
       }
     }
