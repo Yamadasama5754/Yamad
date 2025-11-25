@@ -155,11 +155,13 @@ class BanCommand {
 
       // محاولة طرد الشخص
       let kickSuccess = false;
+      let kickError = null;
       try {
         await api.removeUserFromGroup(targetID, threadID);
         kickSuccess = true;
       } catch (kickErr) {
         console.error("❌ فشل الطرد من المجموعة:", kickErr.message);
+        kickError = kickErr.message?.toLowerCase() || "";
       }
 
       // إرسال الرسالة بناءً على نتيجة الطرد
@@ -167,7 +169,12 @@ class BanCommand {
       if (kickSuccess) {
         msg += `\n🚫 تم طرده الآن من المجموعة`;
       } else {
-        msg += `\n⚠️ لم نتمكن من طرده الآن لكن سيتم طرده إذا عاد`;
+        // فحص سبب الفشل
+        if (kickError.includes("not admin") || kickError.includes("not authorized") || kickError.includes("permission")) {
+          msg += `\n⚠️ البوت يجب أن يصبح أدمن في المجموعة لطرد الأعضاء!`;
+        } else {
+          msg += `\n⚠️ لم نتمكن من طرده الآن لكن سيتم طرده إذا عاد`;
+        }
       }
       msg += `\n🔐 إذا تمت إعادته سيتم طرده تلقائياً`;
       
