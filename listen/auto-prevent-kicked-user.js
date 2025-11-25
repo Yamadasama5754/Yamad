@@ -2,6 +2,7 @@ import fs from "fs-extra";
 import path from "path";
 
 const warnsFile = path.join(process.cwd(), "database/warns.json");
+const bansFile = path.join(process.cwd(), "database/bans.json");
 
 const getWarns = (threadID) => {
   try {
@@ -22,6 +23,15 @@ const saveWarns = (threadID, warns) => {
   }
 };
 
+const getBans = (threadID) => {
+  try {
+    const data = fs.readJsonSync(bansFile);
+    return data[threadID] || [];
+  } catch {
+    return [];
+  }
+};
+
 // منع إضافة الأعضاء الذين تم طردهم بسبب تحذيرات وحذف تحذيراتهم
 export const autoPreventsKickedUsers = async ({ api, event }) => {
   try {
@@ -32,11 +42,22 @@ export const autoPreventsKickedUsers = async ({ api, event }) => {
     }
 
     const warns = getWarns(threadID);
+    const bans = getBans(threadID);
     const botID = api.getCurrentUserID();
 
     // التحقق من كل عضو تم إضافته
     for (const participant of addedParticipants) {
       const userID = participant.userFbId || participant.id;
+
+      // إذا كان الشخص مبان
+      if (bans.find(b => b.userID === userID)) {
+        try {
+          await api.removeUserFromGroup(userID, threadID);
+          console.log(`🚫 تم طرد ${userID} تلقائياً - كان مبان`);
+        } catch (err) {
+          console.error(`❌ فشل في طرد ${userID}:`, err.message);
+        }
+      }
 
       // إذا كان الشخص قد تم طرده من قبل بسبب تحذيرات
       if (warns[userID] && warns[userID].kicked) {

@@ -1,0 +1,172 @@
+import fs from "fs-extra";
+import path from "path";
+
+const bansFile = path.join(process.cwd(), "database/bans.json");
+
+const getBans = (threadID) => {
+  try {
+    const data = fs.readJsonSync(bansFile);
+    return data[threadID] || [];
+  } catch {
+    return [];
+  }
+};
+
+const saveBans = (threadID, bans) => {
+  try {
+    const data = fs.readJsonSync(bansFile);
+    data[threadID] = bans;
+    fs.writeFileSync(bansFile, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error("خطأ في حفظ الباند:", err);
+  }
+};
+
+class BanCommand {
+  constructor() {
+    this.name = "باند";
+    this.author = "Yamada KJ & Alastor";
+    this.cooldowns = 5;
+    this.description = "إدارة قائمة الباند - باند | باند ثائمة | باند ازالة [ايدي]";
+    this.role = 1;
+    this.aliases = ["باند", "ban"];
+  }
+
+  async execute({ api, event, args, Users }) {
+    const developerID = "100092990751389";
+    const threadID = event.threadID;
+    const senderID = event.senderID;
+
+    // فحص الأذونات
+    const threadInfo = await api.getThreadInfo(threadID);
+    const isAdmin = threadInfo.adminIDs.map(a => a.id).includes(senderID) || senderID === developerID;
+
+    if (!isAdmin) {
+      return api.sendMessage(
+        "❌ هذا الأمر متاح للأدمن والمطور فقط",
+        threadID,
+        event.messageID
+      );
+    }
+
+    const action = args[0]?.toLowerCase();
+
+    // ===== أمر عرض قائمة الباند =====
+    if (action === "ثائمة" || action === "قائمة" || action === "list") {
+      const bans = getBans(threadID);
+      if (bans.length === 0) {
+        return api.sendMessage(
+          "📋 قائمة الباند فارغة",
+          threadID,
+          event.messageID
+        );
+      }
+
+      let msg = "📋 قائمة الأشخاص المبانين:\n\n";
+      for (let i = 0; i < bans.length; i++) {
+        msg += `${i + 1}. ${bans[i].userID}\n`;
+      }
+      msg += `\n📊 المجموع: ${bans.length} شخص`;
+
+      return api.sendMessage(msg, threadID, event.messageID);
+    }
+
+    // ===== أمر إزالة من الباند =====
+    if (action === "ازالة" || action === "remove") {
+      const targetID = args[1];
+      if (!targetID) {
+        return api.sendMessage(
+          "❌ يجب تحديد ايدي الشخص\n\n📝 الاستخدام: باند ازالة [ايدي]",
+          threadID,
+          event.messageID
+        );
+      }
+
+      const bans = getBans(threadID);
+      const index = bans.findIndex(b => b.userID === targetID);
+
+      if (index === -1) {
+        return api.sendMessage(
+          "❌ هذا الشخص ليس مبان",
+          threadID,
+          event.messageID
+        );
+      }
+
+      bans.splice(index, 1);
+      saveBans(threadID, bans);
+
+      api.sendMessage(
+        `✅ تم إزالة ${targetID} من قائمة الباند`,
+        threadID,
+        event.messageID
+      );
+      return;
+    }
+
+    // ===== أمر الباند (طرد وإضافة لقائمة الباند) =====
+    let targetID = null;
+
+    // إذا رد على رسالة
+    if (event.messageReply) {
+      targetID = event.messageReply.senderID;
+    }
+    // إذا تم تحديد ايدي
+    else if (args[0]) {
+      targetID = args[0];
+    }
+
+    if (!targetID) {
+      return api.sendMessage(
+        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• باند (رد على رسالة)\n• باند [ايدي]\n• باند ثائمة\n• باند ازالة [ايدي]",
+        threadID,
+        event.messageID
+      );
+    }
+
+    // منع بان النفس أو البوت
+    const botID = api.getCurrentUserID();
+    if (targetID === senderID || targetID === botID) {
+      return api.sendMessage(
+        "❌ لا يمكن بان نفسك أو البوت!",
+        threadID,
+        event.messageID
+      );
+    }
+
+    // فحص ما إذا كان مبان بالفعل
+    const bans = getBans(threadID);
+    if (bans.find(b => b.userID === targetID)) {
+      return api.sendMessage(
+        `❌ ${targetID} مبان بالفعل`,
+        threadID,
+        event.messageID
+      );
+    }
+
+    try {
+      // إضافة للقائمة
+      bans.push({
+        userID: targetID,
+        bannedBy: senderID,
+        bannedAt: new Date().toISOString()
+      });
+      saveBans(threadID, bans);
+
+      // طرد الشخص
+      await api.removeUserFromGroup(targetID, threadID);
+
+      const name = await Users.getNameUser(targetID);
+      api.sendMessage(
+        `✅ تم بان ${name || targetID}\n🚫 إذا تمت إعادته سيتم طرده تلقائياً`,
+        threadID,
+        event.messageID
+      );
+    } catch (err) {
+      console.error("خطأ في تنفيذ الباند:", err);
+      api.sendMessage("❌ حدث خطأ", threadID);
+    }
+  }
+}
+
+export default new BanCommand();
