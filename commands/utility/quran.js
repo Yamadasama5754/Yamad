@@ -1,0 +1,271 @@
+import axios from "axios";
+import fs from "fs-extra";
+import path from "path";
+
+const surahNames = {
+  الفاتحة: 1, البقرة: 2, آلعمران: 3, النساء: 4, المائدة: 5, الأنعام: 6, الأعراف: 7, الأنفال: 8, التوبة: 9, يونس: 10,
+  هود: 11, يوسف: 12, الرعد: 13, إبراهيم: 14, الحجر: 15, النحل: 16, الإسراء: 17, الكهف: 18, مريم: 19, طه: 20,
+  الأنبياء: 21, الحج: 22, المؤمنون: 23, النور: 24, الفرقان: 25, الشعراء: 26, النمل: 27, القصص: 28, العنكبوت: 29, الروم: 30,
+  لقمان: 31, السجدة: 32, الأحزاب: 33, سبأ: 34, فاطر: 35, يس: 36, الصافات: 37, ص: 38, الزمر: 39, غافر: 40,
+  فصلت: 41, الشورى: 42, الزخرف: 43, الدخان: 44, الجاثية: 45, الأحقاف: 46, محمد: 47, الفتح: 48, الحجرات: 49, ق: 50,
+  الذاريات: 51, الطور: 52, النجم: 53, القمر: 54, الرحمن: 55, الواقعة: 56, الحديد: 57, المجادلة: 58, الحشر: 59, الممتحنة: 60,
+  الصف: 61, الجمعة: 62, المنافقون: 63, التغابن: 64, الطلاق: 65, التحريم: 66, الملك: 67, القلم: 68, الحاقة: 69, المعارج: 70,
+  نوح: 71, الجن: 72, المزمل: 73, المدثر: 74, القيامة: 75, الإنسان: 76, المرسلات: 77, النبأ: 78, النازعات: 79, عبس: 80,
+  التكوير: 81, الانفطار: 82, المطففين: 83, الانشقاق: 84, البروج: 85, الطارق: 86, الأعلى: 87, الغاشية: 88, الفجر: 89, البلد: 90,
+  الشمس: 91, الليل: 92, الضحى: 93, الشرح: 94, التين: 95, العلق: 96, القدر: 97, البينة: 98, الزلزلة: 99, العاديات: 100,
+  القارعة: 101, التكاثر: 102, العصر: 103, الهمزة: 104, الفيل: 105, قريش: 106, الماعون: 107, الكوثر: 108, الكافرون: 109, النصر: 110, الإخلاص: 111, الفلق: 112, الناس: 113
+};
+
+class QuranCommand {
+  constructor() {
+    this.name = "قرآن";
+    this.author = "Yamada KJ & Alastor";
+    this.cooldowns = 20;
+    this.description = "اجلب آية أو سورة من القرآن - قرآن سورة الكهف آية 6 | قرآن أوديو سورة الكهف آية 6";
+    this.role = 0;
+    this.aliases = ["قرآن"];
+  }
+
+  async getSurahNumber(surahName) {
+    const name = surahName.trim().replace(/سورة\s+/i, "");
+    return surahNames[name] || null;
+  }
+
+  async getVerses(surahNum, verseNum = null) {
+    try {
+      const url = verseNum ? 
+        `https://api.alquran.cloud/v1/surah/${surahNum}/ar.alafasy` :
+        `https://api.alquran.cloud/v1/surah/${surahNum}`;
+      
+      const response = await axios.get(url, { timeout: 10000 });
+      const data = response.data.data;
+      
+      if (verseNum) {
+        const verse = data.ayahs.find(a => a.numberInSurah === verseNum);
+        return verse ? { surah: data.name, verses: [verse], surahNum } : null;
+      }
+      return { surah: data.name, verses: data.ayahs, surahNum };
+    } catch (error) {
+      console.error("خطأ في جلب الآيات:", error);
+      return null;
+    }
+  }
+
+  parseInput(text) {
+    const regex = /سورة[\s]+([^\s\d]+)[\s]+(?:آية[\s]+(\d+)|كاملة)?/i;
+    const match = text.match(regex);
+    
+    if (!match) return null;
+    
+    return {
+      surah: match[1].trim(),
+      verse: match[2] ? parseInt(match[2]) : null,
+      isComplete: text.includes("كاملة")
+    };
+  }
+
+  async getVerseAudio(surahNum, verseNum) {
+    try {
+      const surahPadded = String(surahNum).padStart(3, '0');
+      const versePadded = String(verseNum).padStart(3, '0');
+      const audioUrl = `https://everyayah.com/data/Alafasy_64kbps/${surahPadded}${versePadded}.mp3`;
+      return audioUrl;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async execute({ api, event, args }) {
+    const input = args.join(" ");
+    
+    // تحديد نوع الأمر
+    const isAudio = input.toLowerCase().includes("أوديو");
+    const cleanInput = input.replace(/أوديو[\s]*/i, "").trim();
+    
+    const parsed = this.parseInput(cleanInput);
+
+    if (!parsed) {
+      api.sendMessage(
+        "❌ | الاستخدام الصحيح:\n.قرآن سورة الكهف آية 6\n.قرآن سورة الكهف كاملة\n.قرآن أوديو سورة الكهف آية 6",
+        event.threadID,
+        event.messageID
+      );
+      return;
+    }
+
+    const sentMsg = await api.sendMessage("⏱️ | جاري معالجة الطلب....", event.threadID);
+
+    try {
+      const surahNum = await this.getSurahNumber(parsed.surah);
+      if (!surahNum) {
+        api.sendMessage("❌ | لم أجد هذه السورة!", event.threadID, event.messageID);
+        api.unsendMessage(sentMsg.messageID);
+        return;
+      }
+
+      // معالجة طلب الأوديو
+      if (isAudio) {
+        if (!parsed.verse) {
+          // طلب أوديو للسورة كاملة - عرض خيارات
+          api.sendMessage(
+            `⚠️ | لا يمكن إرسال أوديو لسورة كاملة!\n\n${parsed.surah} فيها عدة آيات.\n\n🤔 هل تريد أن تتلقى السورة مكتوبة بدلاً منها؟\n\n📝 رد بـ \"نعم\" أو \"لا\"`,
+            event.threadID,
+            (err, info) => {
+              if (!err) {
+                global.client.handler.reply.set(info.messageID, {
+                  name: this.name,
+                  type: "surah_text_offer",
+                  surahNum: surahNum,
+                  surahName: parsed.surah,
+                  author: event.senderID
+                });
+              }
+            }
+          );
+          api.unsendMessage(sentMsg.messageID);
+          return;
+        }
+
+        // طلب أوديو لآية محددة
+        const data = await this.getVerses(surahNum, parsed.verse);
+        if (!data || !data.verses || data.verses.length === 0) {
+          api.sendMessage("❌ | هذه الآية غير موجودة في هذه السورة!", event.threadID, event.messageID);
+          api.unsendMessage(sentMsg.messageID);
+          return;
+        }
+
+        const verse = data.verses[0];
+        const audioUrl = await this.getVerseAudio(surahNum, parsed.verse);
+
+        if (!audioUrl) {
+          api.sendMessage("❌ | خطأ في جلب الأوديو!", event.threadID, event.messageID);
+          api.unsendMessage(sentMsg.messageID);
+          return;
+        }
+
+        try {
+          const tempDir = path.join(process.cwd(), "temp");
+          if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+          const tempAudioPath = path.join(tempDir, `quran_${surahNum}_${parsed.verse}_${Date.now()}.mp3`);
+          const audioResponse = await axios.get(audioUrl, { responseType: "stream", timeout: 60000 });
+          const writeStream = fs.createWriteStream(tempAudioPath);
+          audioResponse.data.pipe(writeStream);
+
+          writeStream.on("finish", async () => {
+            await api.sendMessage({
+              body: `《 ${data.surah} - الآية ${parsed.verse} 》\n\n${verse.text}\n\n{وَإِذَا قَرَأَ الْقُرْآنَ فَاسْتَمِعُوا لَهُ وَأَنْصِتُوا}`,
+              attachment: fs.createReadStream(tempAudioPath)
+            }, event.threadID, () => {
+              if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
+            });
+
+            api.unsendMessage(sentMsg.messageID);
+          });
+
+          writeStream.on("error", (error) => {
+            console.error("خطأ في تحميل الأوديو:", error);
+            api.sendMessage("❌ | حدث خطأ أثناء تحميل الأوديو!", event.threadID, event.messageID);
+            api.unsendMessage(sentMsg.messageID);
+          });
+        } catch (error) {
+          console.error("خطأ:", error);
+          api.sendMessage("❌ | حدث خطأ!", event.threadID, event.messageID);
+          api.unsendMessage(sentMsg.messageID);
+        }
+        return;
+      }
+
+      // معالجة طلب النص (الأمر الأصلي)
+      const data = await this.getVerses(surahNum, parsed.verse);
+      if (!data) {
+        api.sendMessage("❌ | خطأ في جلب الآيات!", event.threadID, event.messageID);
+        api.unsendMessage(sentMsg.messageID);
+        return;
+      }
+
+      let message = `《 ${data.surah} 》\n\n`;
+      data.verses.forEach(v => {
+        message += `${v.text}\n(${v.numberInSurah})\n\n`;
+      });
+
+      if (message.length > 4096) {
+        const chunks = [];
+        let chunk = `《 ${data.surah} 》\n\n`;
+        for (const v of data.verses) {
+          const line = `${v.text}\n(${v.numberInSurah})\n\n`;
+          if ((chunk + line).length > 4096) {
+            chunks.push(chunk);
+            chunk = line;
+          } else {
+            chunk += line;
+          }
+        }
+        chunks.push(chunk);
+
+        for (const c of chunks) {
+          await api.sendMessage(c, event.threadID);
+        }
+      } else {
+        await api.sendMessage(message, event.threadID);
+      }
+
+      api.unsendMessage(sentMsg.messageID);
+    } catch (error) {
+      console.error("خطأ:", error);
+      api.sendMessage("❌ | حدث خطأ!", event.threadID, event.messageID);
+      api.unsendMessage(sentMsg.messageID);
+    }
+  }
+
+  async onReply({ api, event, reply }) {
+    if (!reply || reply.type !== "surah_text_offer") return;
+
+    const { surahNum, surahName, author } = reply;
+    if (author !== event.senderID) return;
+
+    const response = event.body.trim().toLowerCase();
+
+    if (response === "نعم") {
+      try {
+        const data = await this.getVerses(surahNum);
+        if (!data) {
+          api.sendMessage("❌ | خطأ في جلب الآيات!", event.threadID, event.messageID);
+          return;
+        }
+
+        let message = `《 ${data.surah} 》\n\n`;
+        data.verses.forEach(v => {
+          message += `${v.text}\n(${v.numberInSurah})\n\n`;
+        });
+
+        if (message.length > 4096) {
+          const chunks = [];
+          let chunk = `《 ${data.surah} 》\n\n`;
+          for (const v of data.verses) {
+            const line = `${v.text}\n(${v.numberInSurah})\n\n`;
+            if ((chunk + line).length > 4096) {
+              chunks.push(chunk);
+              chunk = line;
+            } else {
+              chunk += line;
+            }
+          }
+          chunks.push(chunk);
+
+          for (const c of chunks) {
+            await api.sendMessage(c, event.threadID);
+          }
+        } else {
+          await api.sendMessage(message, event.threadID);
+        }
+      } catch (error) {
+        api.sendMessage("❌ | حدث خطأ!", event.threadID);
+      }
+    } else if (response === "لا") {
+      api.sendMessage("✅ | تم الإلغاء.", event.threadID);
+    }
+  }
+}
+
+export default new QuranCommand();
