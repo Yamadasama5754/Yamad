@@ -154,7 +154,11 @@ class BanCommand {
       saveBans(threadID, bans);
 
       // طرد الشخص
-      await api.removeUserFromGroup(targetID, threadID);
+      try {
+        await api.removeUserFromGroup(targetID, threadID);
+      } catch (kickErr) {
+        console.warn("تحذير: فشل الطرد لكن تمت إضافته للقائمة", kickErr.message);
+      }
 
       const name = await Users.getNameUser(targetID);
       api.sendMessage(

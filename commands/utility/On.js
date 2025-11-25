@@ -22,7 +22,7 @@ class EnableCommand {
 
     try {
       await Threads.update(event.threadID, {
-        botDisabled: false
+        data: { botDisabled: false }
       });
 
       api.sendMessage(
