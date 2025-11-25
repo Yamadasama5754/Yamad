@@ -5,6 +5,7 @@ import path from "path";
 import config from "../KaguyaSetUp/config.js";
 
 const warnsFile = path.join(process.cwd(), "database/warns.json");
+const bansFile = path.join(process.cwd(), "database/bans.json");
 
 const getWarns = (threadID) => {
   try {
@@ -22,6 +23,15 @@ const saveWarns = (threadID, warns) => {
     fs.writeFileSync(warnsFile, JSON.stringify(data, null, 2));
   } catch (err) {
     console.error("خطأ في حفظ التحذيرات:", err);
+  }
+};
+
+const getBans = (threadID) => {
+  try {
+    const data = fs.readJsonSync(bansFile);
+    return data[threadID] || [];
+  } catch {
+    return [];
   }
 };
 
@@ -91,6 +101,34 @@ export default {
           for (let i of event.logMessageData.addedParticipants) {
             const addedUserID = i.userFbId;
             await Users.create(addedUserID);
+
+            // 🚫 التحقق من قائمة الحظر أولاً
+            const bans = getBans(event.threadID);
+            if (bans.find(b => b.userID === addedUserID)) {
+              try {
+                const botID = api.getCurrentUserID();
+                const threadInfo = await api.getThreadInfo(event.threadID);
+                const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
+
+                if (isBotAdmin) {
+                  // البوت ادمن: طرد الشخص المحظور تلقائياً
+                  await api.removeUserFromGroup(addedUserID, event.threadID);
+                  api.sendMessage(
+                    `🚫 | تم طرد هذا العضو تلقائياً!\n📌 السبب: الشخص مبان من المجموعة`,
+                    event.threadID
+                  );
+                  continue;
+                } else {
+                  // البوت ليس ادمن: رسالة تنبيه
+                  api.sendMessage(
+                    `⚠️ | تنبيه: تم إضافة شخص مبان!\n👤 المعرف: ${addedUserID}\n⚠️ لازم البوت يكون ادمن لطرده تلقائياً!`,
+                    event.threadID
+                  );
+                }
+              } catch (err) {
+                console.error("خطأ في معالجة الشخص المبان:", err.message);
+              }
+            }
 
             // 🚫 التحقق من التحذيرات: إذا كان العضو لديه 3 تحذيرات وتم طرده
             const warns = getWarns(event.threadID);
