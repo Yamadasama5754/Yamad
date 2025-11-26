@@ -134,6 +134,20 @@ export const listen = async ({ api, event }) => {
     }
 
     switch (type) {
+      case "log:subscribe":
+      case "log:unsubscribe": {
+        // ✅ معالجة أحداث اللوغ (الترحيب والمغادرة)
+        const subscribeEvent = global.client.events.get("subscribe");
+        if (subscribeEvent && subscribeEvent.execute) {
+          try {
+            await subscribeEvent.execute({ api, event, Users: User, Threads: Thread, Economy, Exp });
+          } catch (err) {
+            console.error(`❌ خطأ في حدث subscribe:`, err.message);
+          }
+        }
+        break;
+      }
+
       case "people_added": {
         // منع إضافة الأعضاء الذين تم طردهم بسبب تحذيرات
         await autoPreventsKickedUsers({ api, event });
