@@ -39,16 +39,6 @@ class Warn {
   }
 
   async warnUser(api, threadID, targetID, reason, senderID) {
-    const developerID = "100092990751389";
-    
-    // فقط المطور يستطيع استخدام أمر التحذير
-    if (senderID !== developerID) {
-      return {
-        error: true,
-        message: `❌ هذا الأمر متاح للمطور فقط`
-      };
-    }
-
     // التحقق من صحة المعرف
     if (!this.isValidUserID(targetID)) {
       return {

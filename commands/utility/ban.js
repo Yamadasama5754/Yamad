@@ -37,15 +37,6 @@ class BanCommand {
     const threadID = event.threadID;
     const senderID = event.senderID;
 
-    // فحص الأذونات - فقط المطور يستطيع استخدام هذا الأمر
-    if (senderID !== developerID) {
-      return api.sendMessage(
-        "❌ هذا الأمر متاح للمطور فقط",
-        threadID,
-        event.messageID
-      );
-    }
-
     const action = args[0]?.toLowerCase();
 
     // ===== أمر عرض قائمة الباند =====
