@@ -1,3 +1,5 @@
+import config from "../../KaguyaSetUp/config.js";
+
 class PurgeCommand {
   constructor() {
     this.name = "تصفية";
@@ -49,6 +51,12 @@ class PurgeCommand {
 
           // تصفية الحسابات
           for (const userID of ghostAccounts) {
+            // 🚫 منع طرد البوت والمطورين من التصفية
+            if (userID === botID || config.ADMIN_IDS.includes(userID)) {
+              console.log(`[FILTERING] تم استثناء ${userID} من التصفية (محمي).`);
+              continue;
+            }
+
             try {
               await new Promise(resolve => setTimeout(resolve, 1000));
               await api.removeUserFromGroup(parseInt(userID), event.threadID);
@@ -72,11 +80,9 @@ class PurgeCommand {
           api.setMessageReaction("✅", event.messageID, (err) => {}, true);
         }
       );
-
-    } catch (error) {
-      console.error("خطأ في أمر التصفية:", error);
+    } catch (err) {
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      api.sendMessage("❌ | حدث خطأ أثناء تنفيذ الأمر!", event.threadID);
+      api.sendMessage(`❌ | حدث خطأ: ${err.message}`, event.threadID);
     }
   }
 }

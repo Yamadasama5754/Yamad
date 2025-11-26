@@ -273,7 +273,6 @@ class Warn {
 
       // التحقق من أن البوت أدمن
       const threadInfo = await api.getThreadInfo(threadID);
-      const botID = api.getCurrentUserID();
       const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
 
       if (!isBotAdmin) {
