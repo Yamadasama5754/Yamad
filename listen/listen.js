@@ -205,7 +205,7 @@ export const listen = async ({ api, event }) => {
         if (exists) {
           event.commandName = finalCommandName;
           event.args = args;
-          return handler.handleCommand();
+          return await handler.handleCommand();
         }
 
         // إذا كانت البادئة فارغة في مجموعة، تجاهل الرسالة ولا ترسل رسالة خطأ
@@ -290,7 +290,7 @@ export const listen = async ({ api, event }) => {
           if (exists) {
             event.commandName = finalCommandName;
             event.args = args;
-            return handler.handleCommand();
+            return await handler.handleCommand();
           }
 
           // إذا كانت البادئة فارغة في مجموعة، تجاهل الرسالة ولا ترسل رسالة خطأ

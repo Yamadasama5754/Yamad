@@ -126,9 +126,15 @@ export class CommandHandler {
       }
 
       // ✅ تنفيذ الأمر العادي
-      return await command.execute({ ...this.arguments, args });
+      try {
+        return await command.execute({ ...this.arguments, args });
+      } catch (err) {
+        console.error(`❌ خطأ في تنفيذ أمر "${commandName}":`, err);
+        return api.sendMessage(`❌ حدث خطأ: ${err?.message || "خطأ غير معروف"}`, threadID);
+      }
     } catch (error) {
-      console.log(error);
+      console.error("❌ خطأ عام في معالج الأوامر:", error);
+      return api.sendMessage("❌ حدث خطأ غير متوقع", threadID);
     }
   }
 
