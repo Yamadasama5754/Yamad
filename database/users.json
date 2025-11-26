@@ -5865,5 +5865,97 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "61582901132231",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Sima Kan",
+      "firstName": "Sima",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61582901132231/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61582901132231",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61568146192141",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ヨウコ サクラ",
+      "firstName": "ヨウコ",
+      "vanity": "serin.rijia",
+      "avatar": "https://graph.facebook.com/61568146192141/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/serin.rijia",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61550638853669",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Apas EMad",
+      "firstName": "Apas",
+      "vanity": "shdAhshsgsgedhx",
+      "avatar": "https://graph.facebook.com/61550638853669/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/shdAhshsgsgedhx",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61577074019583",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Malak Otaku",
+      "firstName": "Malak",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61577074019583/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61577074019583",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
   }
 ]
