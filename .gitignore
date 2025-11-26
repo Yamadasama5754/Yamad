@@ -1,1 +1,28 @@
 node_modules
+.env
+.cache
+cache/
+package-lock.json
+*.log
+.DS_Store
+dist/
+build/
+
+# ملفات حساسة - لا تُرسل إلى GitHub
+KaguyaSetUp/KaguyaState.json
+database/*.json
+*.json
+!anime_pairs.json
+!package.json
+
+# ملفات مؤقتة
+temp/
+tmp/
+*.tmp
+
+# ملفات النظام
+.vscode
+.idea
+*.swp
+*.swo
+*~
