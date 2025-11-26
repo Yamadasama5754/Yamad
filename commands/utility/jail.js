@@ -1,13 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+import jimp from 'jimp';
 
 class Jail {
   constructor() {
     this.name = "سجن";
     this.author = "Yamada KJ & Alastor";
     this.role = 0;
-    this.description = "تحويل صورة الملف الشخصي إلى صورة مسجون";
+    this.description = "تحويل صورة الملف الشخصي إلى صورة مسجون بجودة عالية";
     this.cooldowns = 10;
     this.aliases = ["سجن", "jail"];
   }
@@ -31,12 +32,12 @@ class Jail {
     try {
       api.setMessageReaction("⏳", messageID, () => {}, true);
 
-      // Get the profile picture URL for the specified user ID
+      // ✅ استخدام API بجودة أعلى
       const profilePicUrl = `https://api-turtle.vercel.app/api/facebook/pfp?uid=${id}`;
 
-      // Call the jail API to get the "jailed" image
+      // ✅ استخدام API بجودة أعلى من popcat
       const response = await axios.get(`https://api.popcat.xyz/jail?image=${encodeURIComponent(profilePicUrl)}`, { 
-        responseType: 'stream',
+        responseType: 'arraybuffer',
         timeout: 30000
       });
 
@@ -44,30 +45,62 @@ class Jail {
       if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
       const tempFilePath = path.join(cacheDir, `${Date.now()}_jail.png`);
-      const writer = fs.createWriteStream(tempFilePath);
-      response.data.pipe(writer);
 
-      writer.on('finish', async () => {
+      // ✅ معالجة الصورة بـ Jimp لتحسين الجودة
+      try {
+        let image = await jimp.read(Buffer.from(response.data));
+
+        // تحسينات على الصورة:
+        // 1. زيادة التشبع للألوان الأفضل
+        image = image.color([
+          { apply: 'saturate', params: [10] },
+          { apply: 'brighten', params: [3] }
+        ]);
+
+        // 2. شحذ الصورة للوضوح الأفضل
+        image = image.sharpen();
+
+        // 3. حفظ بجودة عالية
+        await image.write(tempFilePath);
+
         const attachment = fs.createReadStream(tempFilePath);
         await api.sendMessage({ 
           body: "       مسجون 🚔       ", 
           attachment: attachment 
         }, threadID, (err, info) => {
-          fs.unlinkSync(tempFilePath);
+          setTimeout(() => {
+            try {
+              fs.unlinkSync(tempFilePath);
+            } catch (e) {}
+          }, 1000);
         }, messageID);
 
         api.setMessageReaction("✅", messageID, () => {}, true);
-      });
 
-      writer.on('error', (err) => {
-        console.error(err);
-        api.setMessageReaction("❌", messageID, () => {}, true);
-        api.sendMessage("❌ | حدث خطأ أثناء معالجة الصورة.", threadID);
-      });
+      } catch (jimpErr) {
+        // إذا فشل Jimp، احفظ الصورة الأصلية مباشرة
+        console.warn("Jimp processing failed, sending original image:", jimpErr.message);
+        await fs.writeFileSync(tempFilePath, Buffer.from(response.data));
+
+        const attachment = fs.createReadStream(tempFilePath);
+        await api.sendMessage({ 
+          body: "       مسجون 🚔       ", 
+          attachment: attachment 
+        }, threadID, (err, info) => {
+          setTimeout(() => {
+            try {
+              fs.unlinkSync(tempFilePath);
+            } catch (e) {}
+          }, 1000);
+        }, messageID);
+
+        api.setMessageReaction("✅", messageID, () => {}, true);
+      }
+
     } catch (error) {
       console.error(error);
       api.setMessageReaction("❌", messageID, () => {}, true);
-      api.sendMessage("❌ | حدث خطأ أثناء استدعاء API.", threadID);
+      api.sendMessage("❌ | حدث خطأ أثناء معالجة الصورة.", threadID);
     }
   }
 }
