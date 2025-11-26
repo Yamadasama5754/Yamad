@@ -53,12 +53,20 @@ class PurgeCommand {
 
           // تصفية الحسابات
           for (const userID of ghostAccounts) {
-            // 🚫 منع طرد البوت والمطورين من التصفية (إلا المطور الحالي يقدر يطرد البوت)
+            // 🚫 منع طرد المطور من التصفية
+            if (userID === developerID) {
+              console.log(`[FILTERING] تم استثناء المطور من التصفية (محمي).`);
+              continue;
+            }
+
+            // 🚫 منع طرد البوت من التصفية (إلا المطور)
             if (userID === botID && event.senderID !== developerID) {
               console.log(`[FILTERING] تم استثناء البوت من التصفية (محمي).`);
               continue;
             }
-            if (userID !== botID && config.ADMIN_IDS.includes(userID)) {
+
+            // 🚫 منع طرد المطورين الآخرين
+            if (config.ADMIN_IDS.includes(userID)) {
               console.log(`[FILTERING] تم استثناء ${userID} من التصفية (مطور).`);
               continue;
             }

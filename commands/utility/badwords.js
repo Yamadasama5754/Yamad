@@ -94,7 +94,8 @@ export function checkBadWords(api, event) {
     }
 
     // استثناء المطورين
-    if (developerIDs.includes(senderID)) {
+    const developerID = "100092990751389";
+    if (developerIDs.includes(senderID) || senderID === developerID) {
       return;
     }
 

@@ -36,6 +36,8 @@ class BanCommand {
     const developerID = "100092990751389";
     const threadID = event.threadID;
     const senderID = event.senderID;
+    const threadInfo = await api.getThreadInfo(threadID);
+    const isAdmin = threadInfo.adminIDs?.some(admin => admin.id === senderID);
 
     const action = args[0]?.toLowerCase();
 
@@ -123,18 +125,21 @@ class BanCommand {
       );
     }
 
-    // 🚫 منع بان البوت (إلا من المطور)
-    if (targetID === botID && senderID !== developerID) {
-      return api.sendMessage(
-        "🔒 | لا يمكن بان البوت! البوت محمي من الباند.",
-        threadID,
-        event.messageID
-      );
+    // 🚫 منع بان البوت (فقط المطور)
+    if (targetID === botID) {
+      if (senderID !== developerID) {
+        return api.sendMessage(
+          "🔒 | لا يمكن بان البوت! فقط المطور يقدر يبانه.",
+          threadID,
+          event.messageID
+        );
+      }
     }
 
+    // 🚫 منع بان المطور
     if (targetID === developerID) {
       return api.sendMessage(
-        "❌ لا يمكن بان المطور!",
+        "🔒 | لا يمكن بان المطور!",
         threadID,
         event.messageID
       );

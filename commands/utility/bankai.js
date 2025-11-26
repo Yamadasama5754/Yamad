@@ -1,5 +1,7 @@
 import config from "../../KaguyaSetUp/config.js";
 
+const developerID = "100092990751389";
+
 class Kick {
   constructor() {
     this.name = "طرد";
@@ -112,24 +114,32 @@ class Kick {
         );
       }
 
-      // 🚫 منع طردك الأشخاص المحمين (إلا إذا كنت المطور)
-      if (protectedIDs.includes(targetID)) {
-        // المطور يقدر يطرد البوت بس
-        if (targetID === botID && senderID !== developerID) {
-          return api.sendMessage(
-            "🚫 | لا يمكن طرد هذا العضو لأنه محمي.",
-            threadID,
-            event.messageID
-          );
-        }
-        // منع طرد المطورين الآخرين
-        if (targetID !== botID) {
-          return api.sendMessage(
-            "🚫 | لا يمكن طرد هذا العضو لأنه محمي.",
-            threadID,
-            event.messageID
-          );
-        }
+      // 🚫 منع طرد المطور
+      if (targetID === developerID) {
+        return api.sendMessage(
+          "🔒 | لا يمكن طرد المطور!",
+          threadID,
+          event.messageID
+        );
+      }
+
+      // 🚫 منع طرد البوت (فقط المطور)
+      if (targetID === botID && senderID !== developerID) {
+        return api.sendMessage(
+          "🔒 | لا يمكن طرد البوت! فقط المطور يقدر يطرده.",
+          threadID,
+          event.messageID
+        );
+      }
+
+      // 🚫 منع الأدمن من طرد المطورين الآخرين
+      const isAdmin = threadInfo.adminIDs?.some(admin => admin.id === senderID);
+      if (isAdmin && senderID !== developerID && config.ADMIN_IDS.includes(targetID)) {
+        return api.sendMessage(
+          "🔒 | لا يمكن طرد هذا العضو (محمي).",
+          threadID,
+          event.messageID
+        );
       }
 
       // ✅ استخراج السبب لو موجود
