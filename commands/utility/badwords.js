@@ -87,6 +87,12 @@ export function checkBadWords(api, event) {
     const senderID = event.senderID;
     const msg = event.body.toLowerCase();
 
+    // 🚫 استثناء البوت - لا طرد البوت نفسه
+    const botID = api.getCurrentUserID();
+    if (senderID === botID) {
+      return;
+    }
+
     let badWords = {};
     if (fs.existsSync(configPath)) {
       badWords = JSON.parse(fs.readFileSync(configPath, "utf8"));

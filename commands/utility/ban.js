@@ -115,9 +115,18 @@ class BanCommand {
     // منع بان النفس أو البوت أو المطور
     const botID = api.getCurrentUserID();
     
-    if (targetID === senderID || targetID === botID) {
+    if (targetID === senderID) {
       return api.sendMessage(
-        "❌ لا يمكن بان نفسك أو البوت!",
+        "❌ لا يمكن بان نفسك!",
+        threadID,
+        event.messageID
+      );
+    }
+
+    // 🚫 منع بان البوت تماماً
+    if (targetID === botID) {
+      return api.sendMessage(
+        "🔒 | لا يمكن بان البوت! البوت محمي من الباند.",
         threadID,
         event.messageID
       );

@@ -264,6 +264,13 @@ class Warn {
         return api.sendMessage("❌ معرف المستخدم غير صحيح", threadID);
       }
 
+      // 🚫 منع تحذير البوت تماماً
+      const botID = api.getCurrentUserID();
+      if (targetID === botID) {
+        api.setMessageReaction("🔒", event.messageID, (err) => {}, true);
+        return api.sendMessage("🔒 | لا يمكن تحذير البوت! البوت محمي من التحذيرات.", threadID);
+      }
+
       // التحقق من أن البوت أدمن
       const threadInfo = await api.getThreadInfo(threadID);
       const botID = api.getCurrentUserID();
