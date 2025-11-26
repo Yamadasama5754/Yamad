@@ -137,12 +137,18 @@ export const listen = async ({ api, event }) => {
       case "log:subscribe":
       case "log:unsubscribe": {
         // ✅ معالجة أحداث اللوغ (الترحيب والمغادرة)
-        const subscribeEvent = global.client.events.get("subscribe");
-        if (subscribeEvent && subscribeEvent.execute) {
-          try {
-            await subscribeEvent.execute({ api, event, Users: User, Threads: Thread, Economy, Exp });
-          } catch (err) {
-            console.error(`❌ خطأ في حدث subscribe:`, err.message);
+        
+        // استدعاء جميع أحداث اللوغ
+        const eventsToCall = ["subscribe", "ترحيب", "ترحيب_ومغادرة"];
+        
+        for (const eventName of eventsToCall) {
+          const event_obj = global.client.events.get(eventName);
+          if (event_obj && event_obj.execute) {
+            try {
+              await event_obj.execute({ api, event, Users: User, Threads: Thread, Economy, Exp });
+            } catch (err) {
+              console.error(`❌ خطأ في حدث ${eventName}:`, err.message);
+            }
           }
         }
         break;
