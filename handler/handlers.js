@@ -126,7 +126,7 @@ export class CommandHandler {
       }
 
       // ✅ تنفيذ الأمر العادي
-      command.execute({ ...this.arguments, args });
+      return await command.execute({ ...this.arguments, args });
     } catch (error) {
       console.log(error);
     }
