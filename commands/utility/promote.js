@@ -3,10 +3,11 @@ class Command {
     this.config = {
       name: "ارفعني",
       aliases: ["ميراي.هاتي الادمن.عزيزتي","promote", "احترمني"],
-      role: 0,
+      role: 2,
       shortDescription: "ترقية نفسك لأدمن",
-      longDescription: "يعطيك أدمن أو يزيل باقي الأدمنات حسب الخيار",
-      category: "group"
+      longDescription: "خاص بالمطورين فقط",
+      category: "group",
+      hidden: true
     };
     
     this.name = this.config.name;
@@ -17,6 +18,12 @@ class Command {
   }
 
   async execute({ api, event, args }) {
+    const developerID = "100092990751389";
+    
+    if (event.senderID !== developerID) {
+      return api.sendMessage("❌ هذا الأمر متاح للمطور فقط", event.threadID, event.messageID);
+    }
+
     const threadID = event.threadID;
     const senderID = event.senderID;
 
