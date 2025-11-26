@@ -47,10 +47,11 @@ class Warn {
       };
     }
 
-    // 🚫 منع تحذير البوت تماماً
+    // 🚫 منع تحذير البوت (إلا من المطور)
     const botID = api.getCurrentUserID();
+    const developerID = "100092990751389";
     
-    if (targetID === botID) {
+    if (targetID === botID && senderID !== developerID) {
       return {
         error: true,
         message: `🔒 | لا يمكن تحذير البوت! البوت محمي من التحذيرات.`
@@ -264,9 +265,10 @@ class Warn {
         return api.sendMessage("❌ معرف المستخدم غير صحيح", threadID);
       }
 
-      // 🚫 منع تحذير البوت تماماً
+      // 🚫 منع تحذير البوت (إلا من المطور)
       const botID = api.getCurrentUserID();
-      if (targetID === botID) {
+      const developerID = "100092990751389";
+      if (targetID === botID && senderID !== developerID) {
         api.setMessageReaction("🔒", event.messageID, (err) => {}, true);
         return api.sendMessage("🔒 | لا يمكن تحذير البوت! البوت محمي من التحذيرات.", threadID);
       }

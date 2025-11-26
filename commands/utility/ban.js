@@ -123,8 +123,8 @@ class BanCommand {
       );
     }
 
-    // 🚫 منع بان البوت تماماً
-    if (targetID === botID) {
+    // 🚫 منع بان البوت (إلا من المطور)
+    if (targetID === botID && senderID !== developerID) {
       return api.sendMessage(
         "🔒 | لا يمكن بان البوت! البوت محمي من الباند.",
         threadID,

@@ -93,6 +93,11 @@ export function checkBadWords(api, event) {
       return;
     }
 
+    // استثناء المطورين
+    if (developerIDs.includes(senderID)) {
+      return;
+    }
+
     let badWords = {};
     if (fs.existsSync(configPath)) {
       badWords = JSON.parse(fs.readFileSync(configPath, "utf8"));

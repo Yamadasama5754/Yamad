@@ -1,5 +1,7 @@
 import config from "../../KaguyaSetUp/config.js";
 
+const developerID = "100092990751389";
+
 class PurgeCommand {
   constructor() {
     this.name = "تصفية";
@@ -51,9 +53,13 @@ class PurgeCommand {
 
           // تصفية الحسابات
           for (const userID of ghostAccounts) {
-            // 🚫 منع طرد البوت والمطورين من التصفية
-            if (userID === botID || config.ADMIN_IDS.includes(userID)) {
-              console.log(`[FILTERING] تم استثناء ${userID} من التصفية (محمي).`);
+            // 🚫 منع طرد البوت والمطورين من التصفية (إلا المطور الحالي يقدر يطرد البوت)
+            if (userID === botID && event.senderID !== developerID) {
+              console.log(`[FILTERING] تم استثناء البوت من التصفية (محمي).`);
+              continue;
+            }
+            if (userID !== botID && config.ADMIN_IDS.includes(userID)) {
+              console.log(`[FILTERING] تم استثناء ${userID} من التصفية (مطور).`);
               continue;
             }
 
