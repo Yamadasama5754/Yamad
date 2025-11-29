@@ -25,12 +25,26 @@ class AddUser {
 
   async execute({ api, event, args }) {
     try {
+      api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+      
       const threadInfo = await api.getThreadInfo(event.threadID);
 
       // ✅ تحقق: هل هذا خاص أم مجموعة؟
       if (!threadInfo.isGroup) {
         return api.sendMessage(
           "⚠️ | هذا الأمر يشتغل فقط داخل المجموعات!",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      // ✅ تحقق: هل البوت أدمن في المجموعة؟
+      const botID = api.getCurrentUserID();
+      const adminIDs = threadInfo.adminIDs || [];
+      if (!adminIDs.includes(botID)) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | البوت يحتاج صلاحيات الأدمن! 👑\n\nاطلب من مسؤول المجموعة يعطيه صلاحيات الأدمن أولاً.",
           event.threadID,
           event.messageID
         );
@@ -110,8 +124,11 @@ class AddUser {
       // 🔄 محاولة الإضافة مع معالجة أفضل للأخطاء
       api.addUserToGroup(targetID, event.threadID, (err) => {
         if (err) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           let errorMsg = "❌ | فشل إضافة الشخص\n\n";
           const errorLower = (err.message || "").toLowerCase();
+          
+          console.error(`❌ خطأ في إضافة ${targetID}:`, err.message);
           
           // تحليل نوع الخطأ بشكل أفضل
           if (errorLower.includes("not admin") || errorLower.includes("not authorized") || errorLower.includes("permission") || errorLower.includes("admin")) {
@@ -131,6 +148,7 @@ class AddUser {
           return api.sendMessage(errorMsg, event.threadID, event.messageID);
         }
         
+        api.setMessageReaction("✅", event.messageID, (err) => {}, true);
         api.sendMessage(
           `✅ | تم إضافة ${targetName || "العضو"} بنجاح! 🎉\n${targetName ? `(${targetID})` : ""}`,
           event.threadID,
