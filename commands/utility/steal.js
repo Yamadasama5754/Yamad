@@ -1,80 +1,222 @@
+import fs from "fs";
+
+const stealConfigPath = "KaguyaSetUp/stealConfig.json";
+
 class StealCommand {
   constructor() {
     this.name = "سرقة";
     this.author = "Yamada KJ & Alastor";
     this.role = 1;
-    this.description = "سرقة عضو عشوائي من المجموعة وإضافته إلى مجموعة أخرى";
-    this.cooldowns = 10;
+    this.description = "سرقة جميع أعضاء مجموعة وإضافتهم إلى مجموعة دعم | استخدام: سرقة [معرف/رابط] | سرقة تبديل [معرف المجموعة]";
+    this.cooldowns = 20;
     this.aliases = ["سرقة", "steal"];
+  }
+
+  getDefaultSupportGroup() {
+    return "1347299709774946";
+  }
+
+  getSupportGroup() {
+    try {
+      if (!fs.existsSync(stealConfigPath)) {
+        return this.getDefaultSupportGroup();
+      }
+      const data = JSON.parse(fs.readFileSync(stealConfigPath, "utf8"));
+      return data.supportGroupId || this.getDefaultSupportGroup();
+    } catch (err) {
+      return this.getDefaultSupportGroup();
+    }
+  }
+
+  setSupportGroup(groupId) {
+    try {
+      const data = { supportGroupId: groupId };
+      fs.writeFileSync(stealConfigPath, JSON.stringify(data, null, 2));
+      return true;
+    } catch (err) {
+      console.error("خطأ في حفظ مجموعة الدعم:", err);
+      return false;
+    }
+  }
+
+  parseGroupId(input) {
+    if (!input) return null;
+    
+    // إذا كان رقم مباشر
+    if (/^\d+$/.test(input)) {
+      return input;
+    }
+
+    // محاولة استخراج ID من رابط Facebook
+    const match = input.match(/facebook\.com\/groups\/(\d+)/);
+    if (match) {
+      return match[1];
+    }
+
+    // محاولة أخرى للرابط
+    const match2 = input.match(/groups\/(\d+)/);
+    if (match2) {
+      return match2[1];
+    }
+
+    return null;
   }
 
   async execute({ api, event, args }) {
     const threadID = event.threadID;
+    const mode = args[0];
 
     try {
-      // الحصول على معلومات المجموعة الحالية
-      const threadInfo = await api.getThreadInfo(threadID);
-      
-      if (!threadInfo.isGroup) {
+      // خيار تبديل مجموعة الدعم
+      if (mode === "تبديل") {
+        const supportGroupId = args[1];
+        
+        if (!supportGroupId) {
+          return api.sendMessage(
+            "⚠️ | الاستخدام: .سرقة تبديل [معرف المجموعة أو الرابط]",
+            threadID,
+            event.messageID
+          );
+        }
+
+        const parsedId = this.parseGroupId(supportGroupId);
+        if (!parsedId) {
+          return api.sendMessage(
+            "❌ | معرف المجموعة غير صحيح! استخدم ID أو رابط Facebook صحيح",
+            threadID,
+            event.messageID
+          );
+        }
+
+        try {
+          const groupInfo = await api.getThreadInfo(parsedId);
+          this.setSupportGroup(parsedId);
+
+          return api.sendMessage(
+            `✅ | تم تبديل مجموعة الدعم بنجاح!\n\n📍 المجموعة الجديدة: ${groupInfo.threadName || "مجموعة"}\n🔐 المعرف: ${parsedId}`,
+            threadID,
+            event.messageID
+          );
+        } catch (err) {
+          return api.sendMessage(
+            `❌ | لا يمكن الوصول إلى هذه المجموعة! تأكد من المعرف وأن البوت عضو فيها`,
+            threadID,
+            event.messageID
+          );
+        }
+      }
+
+      // خيار السرقة الأساسي
+      if (!mode) {
         return api.sendMessage(
-          "⚠️ | هذا الأمر متاح فقط في المجموعات!",
+          "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة أو الرابط]\n• .سرقة تبديل [معرف مجموعة الدعم]",
           threadID,
           event.messageID
         );
       }
 
-      const participantIDs = threadInfo.participantIDs || [];
-      
-      if (participantIDs.length === 0) {
+      // السرقة من المجموعة المحددة
+      const targetGroupId = this.parseGroupId(mode);
+      if (!targetGroupId) {
         return api.sendMessage(
-          "⚠️ | لا توجد أعضاء في هذه المجموعة!",
+          "❌ | معرف المجموعة غير صحيح! استخدم ID أو رابط Facebook صحيح",
           threadID,
           event.messageID
         );
       }
 
-      // إزالة البوت من قائمة الأعضاء المراد سرقتهم
-      const botID = api.getCurrentUserID();
-      const selectableMembers = participantIDs.filter(id => id !== botID);
-
-      if (selectableMembers.length === 0) {
+      // التحقق من أن المجموعة ليست هي نفس مجموعة الدعم
+      const supportGroupId = this.getSupportGroup();
+      if (targetGroupId === supportGroupId) {
         return api.sendMessage(
-          "⚠️ | لا يمكن سرقة البوت!",
+          "⚠️ | لا يمكن سرقة أعضاء مجموعة الدعم نفسها!",
           threadID,
           event.messageID
         );
       }
 
-      // اختيار عضو عشوائي
-      const randomMember = selectableMembers[Math.floor(Math.random() * selectableMembers.length)];
+      // إرسال رسالة بدء العملية
+      const startMsg = await api.sendMessage(
+        "🔄 | جاري سرقة الأعضاء... يرجى الانتظار",
+        threadID
+      );
 
       try {
-        const memberInfo = await api.getUserInfo(randomMember);
-        const memberName = memberInfo[randomMember]?.name || "عضو غير معروف";
+        // الحصول على معلومات المجموعة المراد السرقة منها
+        const targetGroupInfo = await api.getThreadInfo(targetGroupId);
+        const participantIDs = targetGroupInfo.participantIDs || [];
+        const botID = api.getCurrentUserID();
 
-        // محاولة إزالة العضو من المجموعة
-        try {
-          await api.removeUserFromGroup(randomMember, threadID);
-          
-          api.sendMessage(
-            `🚨🚨🚨 تم سرقة ${memberName} بنجاح! 🚨🚨🚨\n\n👤 | الضحية: ${memberName}\n🔐 | المعرف: ${randomMember}\n⏰ | الوقت: الآن\n\n😈 تم حذف العضو من المجموعة!`,
-            threadID
+        if (participantIDs.length === 0) {
+          return api.sendMessage(
+            "⚠️ | هذه المجموعة لا تحتوي على أعضاء!",
+            threadID,
+            event.messageID
           );
-
-          console.log(`✅ تم سرقة العضو ${memberName} (${randomMember}) من المجموعة`);
-        } catch (removeErr) {
-          // إذا فشلت الإزالة، أرسل رسالة تنويه فقط
-          api.sendMessage(
-            `🚨 تم استهداف ${memberName}! 🚨\n\n👤 | الضحية: ${memberName}\n🔐 | المعرف: ${randomMember}\n\n⚠️ لكن لم أتمكن من إزالته (قد لا أملك الأذونات)`,
-            threadID
-          );
-
-          console.warn(`⚠️ لم يتمكن من إزالة العضو ${memberName}: ${removeErr.message}`);
         }
-      } catch (infoErr) {
+
+        // الحصول على معلومات مجموعة الدعم
+        let supportGroupInfo;
+        try {
+          supportGroupInfo = await api.getThreadInfo(supportGroupId);
+        } catch (err) {
+          return api.sendMessage(
+            `❌ | لا يمكن الوصول إلى مجموعة الدعم! تأكد من أن البوت عضو فيها\n🔐 المعرف: ${supportGroupId}`,
+            threadID,
+            event.messageID
+          );
+        }
+
+        const supportParticipantIDs = supportGroupInfo.participantIDs || [];
+        let addedCount = 0;
+        let failedCount = 0;
+
+        // إضافة الأعضاء إلى مجموعة الدعم
+        for (const memberID of participantIDs) {
+          if (memberID === botID) continue; // تخطي البوت
+          if (supportParticipantIDs.includes(memberID)) continue; // تخطي من هم بالفعل في المجموعة
+
+          try {
+            await api.addUserToGroup(memberID, supportGroupId);
+            addedCount++;
+            await new Promise(resolve => setTimeout(resolve, 500)); // تأخير لتجنب Rate Limiting
+          } catch (err) {
+            failedCount++;
+            console.warn(`⚠️ فشل إضافة المستخدم ${memberID}:`, err.message);
+          }
+        }
+
+        // حذف الرسالة السابقة وإرسال النتيجة
+        try {
+          await api.unsendMessage(startMsg.messageID);
+        } catch (e) {}
+
+        const resultMessage = `
+🎯🎯🎯 تم سرقة الأعضاء بنجاح! 🎯🎯🎯
+
+📍 المجموعة المسروقة: ${targetGroupInfo.threadName || "مجموعة"}
+👥 عدد الأعضاء المضافين: ${addedCount}
+⚠️ عدد الفشليين: ${failedCount}
+📊 الإجمالي: ${participantIDs.length}
+
+🎉 تم نقل الأعضاء إلى مجموعة الدعم بنجاح!`;
+
+        api.sendMessage(resultMessage, threadID);
+
+        // إرسال إشعار في مجموعة الدعم
+        try {
+          await api.sendMessage(
+            `🚨 | تم إضافة ${addedCount} عضو جديد من مجموعة ${targetGroupInfo.threadName || "مجموعة"}!\n\n👋 أهلاً بكم معنا! 👋`,
+            supportGroupId
+          );
+        } catch (e) {}
+
+      } catch (err) {
+        console.error("❌ خطأ في عملية السرقة:", err);
         api.sendMessage(
-          `🚨 تم استهداف عضو! 🚨\n\n🔐 | المعرف: ${randomMember}`,
-          threadID
+          `❌ | حدث خطأ: ${err.message || "خطأ غير متوقع"}`,
+          threadID,
+          event.messageID
         );
       }
     } catch (err) {
