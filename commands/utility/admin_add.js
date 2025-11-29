@@ -2,11 +2,11 @@ class ادخلني {
   constructor() {
     this.name = "ادخلني";
     this.aliases = ["joinme", "ادخال"];
-    this.description = "يعرض المجموعات التي فيها البوت ويضيفك إليها حسب اختيارك.";
-    this.cooldowns = 5;
-    this.role = 2;
-    this.version = "2.4";
-    this.author = "Yamada KJ & Alastor";
+    this.description = "🎯 يعرض المجموعات التي فيها البوت ويضيفك إليها حسب اختيارك";
+    this.cooldowns = 3;
+    this.role = 0;
+    this.version = "2.5";
+    this.author = "Yamada KJ & Alastor - Enhanced";
   }
 
   async execute({ api, event }) {
@@ -18,32 +18,34 @@ class ادخلني {
       const groupThreads = allThreads.filter(t => t.isGroup && t.name);
 
       if (groupThreads.length === 0) {
-        return api.sendMessage("❌ | لا توجد مجموعات يمكن الانضمام إليها.", threadID);
+        return api.sendMessage("❌ | للأسف ما في مجموعات متاحة الآن.", threadID);
       }
 
-      const limitedGroups = groupThreads.slice(0, 20);
+      const limitedGroups = groupThreads.slice(0, 25);
 
-      let list = "📋 | اختر رقم المجموعة التي تريد الانضمام إليها:\n\n";
+      let list = "📋 اختر رقم المجموعة:\n" + "=".repeat(30) + "\n\n";
       limitedGroups.forEach((group, index) => {
-        list += `${index + 1}. ${group.name} (${group.threadID})\n`;
+        list += `${String(index + 1).padStart(2, "0")}. ${group.name}\n`;
       });
 
-      list += "\n📝 | رد على هذه الرسالة برقم المجموعة.";
+      list += "\n" + "=".repeat(30) + "\n📝 رد على الرسالة برقم المجموعة";
 
       api.sendMessage(list, threadID, (err, info) => {
-        if (err) return;
+        if (err) {
+          console.error("خطأ في إرسال القائمة:", err);
+          return;
+        }
 
         // ✅ سجل الرد
         global.client.handler.reply.set(info.messageID, {
           name: this.name,
           author: senderID,
-          groups: limitedGroups,
-          unsend: true // نحذف رسالة القائمة عند الرد
+          groups: limitedGroups
         });
       });
     } catch (err) {
       console.error("❌ خطأ في أمر ادخلني:", err);
-      api.sendMessage("⚠️ | حدث خطأ أثناء جلب المجموعات.", threadID);
+      api.sendMessage("⚠️ | حدث خطأ أثناء جلب المجموعات. حاول لاحقاً.", threadID);
     }
   }
 
@@ -54,12 +56,12 @@ class ادخلني {
 
     // ✅ الرد فقط لصاحب الأمر
     if (senderID !== author) {
-      return api.sendMessage("🚫 | هذا الرد مخصص لصاحب الأمر فقط.", threadID);
+      return api.sendMessage("🚫 | هذا الرد مخصص لصاحب الأمر فقط!", threadID);
     }
 
     const choice = parseInt(event.body);
     if (isNaN(choice) || choice < 1 || choice > groups.length) {
-      return api.sendMessage("❌ | رقم غير صالح. حاول مرة أخرى.", threadID);
+      return api.sendMessage(`❌ | رقم غير صحيح! تفضل أرقام من 1 إلى ${groups.length}`, threadID);
     }
 
     const selectedGroup = groups[choice - 1];
@@ -68,30 +70,59 @@ class ادخلني {
       const threadInfo = await api.getThreadInfo(selectedGroup.threadID);
       const botID = api.getCurrentUserID();
 
-      // ✅ حذف رسالة القائمة فور الرد
-      api.unsendMessage(event.messageReply.messageID);
-
+      // ✅ التحقق من وجود البوت بالفعل
       if (!threadInfo.participantIDs.includes(botID)) {
-        return api.sendMessage("❌ | لا أستطيع إضافتك، لأنني لست موجودًا في هذه المجموعة.", threadID);
+        return api.sendMessage(
+          `❌ | البوت ليس في هذه المجموعة:\n"${selectedGroup.name}"\n\nحاول مجموعة أخرى.`,
+          threadID
+        );
       }
 
+      // ✅ التحقق من وجود المستخدم بالفعل
       if (threadInfo.participantIDs.includes(senderID)) {
-        return api.sendMessage("⚠️ | أنت بالفعل موجود في هذه المجموعة.", threadID);
+        return api.sendMessage(
+          `ℹ️ | أنت موجود بالفعل في:\n"${selectedGroup.name}"`,
+          threadID
+        );
       }
 
-      const isBotAdmin = threadInfo.adminIDs.some(admin => admin.id === botID);
+      // ✅ التحقق من أن البوت أدمن
+      const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
       if (!isBotAdmin) {
-        return api.sendMessage("⚠️ | لم أستطع إضافتك، البوت ليس أدمن في هذه المجموعة.", threadID);
+        return api.sendMessage(
+          `⚠️ | البوت ليس أدمن في: "${selectedGroup.name}"\n\n👑 اطلب من المسؤول يعطيه صلاحيات!`,
+          threadID
+        );
       }
 
+      // ✅ محاولة الإضافة
       await api.addUserToGroup(senderID, selectedGroup.threadID);
-      api.sendMessage(`✅ | تم إضافتك إلى المجموعة: ${selectedGroup.name}`, threadID);
+      
+      // ✅ حذف رسالة القائمة بعد نجاح الإضافة
+      try {
+        api.unsendMessage(event.messageReply.messageID);
+      } catch (e) {}
+
+      api.sendMessage(
+        `✅ | تم إضافتك بنجاح إلى:\n"${selectedGroup.name}" 🎉\n\nأهلاً وسهلاً! 👋`,
+        threadID
+      );
 
       // ✅ حذف بيانات الرد بعد الاستخدام
       global.client.handler.reply.delete(event.messageReply.messageID);
     } catch (err) {
       console.error("❌ فشل في الإضافة:", err);
-      api.sendMessage("❌ | لم أستطع إضافتك. قد تكون الإضافة ممنوعة أو حدث خطأ.", threadID);
+      
+      const errorLower = (err.message || "").toLowerCase();
+      let errorMsg = "❌ | لم أستطع إضافتك";
+
+      if (errorLower.includes("block") || errorLower.includes("permission")) {
+        errorMsg = "🚫 | قد تكون محظور من المجموعة أو المجموعة رفضت الإضافة";
+      } else if (errorLower.includes("already")) {
+        errorMsg = "ℹ️ | أنت موجود بالفعل في هذه المجموعة";
+      }
+
+      api.sendMessage(`${errorMsg}\n\n🔄 حاول مجموعة أخرى.`, threadID);
     }
   }
 }
