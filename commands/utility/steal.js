@@ -171,7 +171,33 @@ class StealCommand {
 
       try {
         // الحصول على معلومات المجموعة المراد السرقة منها
-        const targetGroupInfo = await api.getThreadInfo(targetGroupId);
+        let targetGroupInfo;
+        try {
+          targetGroupInfo = await api.getThreadInfo(targetGroupId);
+        } catch (err) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          try {
+            await api.unsendMessage(startMsg.messageID);
+          } catch (e) {}
+          return api.sendMessage(
+            `❌ | لا يمكن الوصول إلى هذه المجموعة!\n🔐 تأكد من المعرف: ${targetGroupId}`,
+            threadID,
+            event.messageID
+          );
+        }
+
+        if (!targetGroupInfo) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          try {
+            await api.unsendMessage(startMsg.messageID);
+          } catch (e) {}
+          return api.sendMessage(
+            `❌ | معرف المجموعة غير صحيح أو غير موجود: ${targetGroupId}`,
+            threadID,
+            event.messageID
+          );
+        }
+
         let participantIDs = targetGroupInfo.participantIDs || [];
         const botID = api.getCurrentUserID();
 
