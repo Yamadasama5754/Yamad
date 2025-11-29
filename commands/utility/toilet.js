@@ -25,11 +25,32 @@ async function bal(one, two) {
 export default {
     name: "مرحاض",
     author: "kaguya project",
-    description: "يقوم بإنشاء صورة معالجة معينة",
+    description: "يقوم بإنشاء صورة معالجة معينة أو رسالة مرحاض",
     role: "member",
     cooldowns: 60,
     execute: async ({ api, event, args, Economy }) => {
         try {
+            const mention = Object.keys(event.mentions);
+            
+            // إذا لم يكن هناك منشن - رسالة طريفة فقط
+            if (mention.length == 0) {
+                api.setMessageReaction("💦", event.messageID, (err) => {}, true);
+                
+                const jokes = [
+                    "🚽 أنت الآن في مجلس الوزراء... مجلس وزرا الحمام! 😂",
+                    "🚽 مرحباً في أفخم الأماكن في البيت... المرحاض! 🤣",
+                    "🚽 أنت تجلس على كرسي العرش... عرش المرحاض! 😆",
+                    "🚽 هنا الجميع متساوون... فوق أو تحت! 🤪",
+                    "🚽 المرحاض: المكان الوحيد الذي تشعر فيه بأنك ملك! 👑",
+                    "🚽 أقلس في هنا أنت الزعيم! 🎖️",
+                    "🚽 مرحاض اليوم = راحة البال! 😌"
+                ];
+                
+                const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+                return api.sendMessage(randomJoke, event.threadID);
+            }
+            
+            // إذا كان هناك منشن - صورة مع الرسالة
             api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
             
             const cost = 250;
@@ -38,13 +59,6 @@ export default {
             if (userBalance < cost) {
                 api.setMessageReaction("❌", event.messageID, (err) => {}, true);
                 return api.sendMessage(`⚠️ | تحتاج إلى ${cost} دولار في محفظتك. رصيدك الحالي: ${userBalance}`, event.threadID, event.messageID);
-            }
-            
-            const mention = Object.keys(event.mentions);
-            
-            if (mention.length == 0) {
-                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-                return api.sendMessage("⚠️ | المرجو عمل منشن للشخص الذي تريد أن يكون وجهه مع وجهك في المرحاض", event.threadID, event.messageID);
             }
             
             await Economy.decrease(cost, event.senderID);
