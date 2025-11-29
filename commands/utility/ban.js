@@ -42,31 +42,33 @@ class BanCommand {
     const action = args[0]?.toLowerCase();
 
     // ===== أمر عرض قائمة الباند =====
-    if (action === "ثائمة" || action === "قائمة" || action === "list") {
+    if (action === "قائمة" || action === "list") {
       const bans = getBans(threadID);
       if (bans.length === 0) {
         return api.sendMessage(
-          "📋 قائمة الباند فارغة",
+          "📋 قائمة الحظر فارغة - لا يوجد أشخاص محظورين",
           threadID,
           event.messageID
         );
       }
 
-      let msg = "📋 قائمة الأشخاص المبانين:\n\n";
+      let msg = "📋 قائمة الأشخاص المحظورين:\n\n";
       for (let i = 0; i < bans.length; i++) {
-        msg += `${i + 1}. ${bans[i].userID}\n`;
+        const ban = bans[i];
+        const bannedDate = new Date(ban.bannedAt).toLocaleString('ar-EG');
+        msg += `${i + 1}. 👤 المعرف: ${ban.userID}\n   ⏰ التاريخ: ${bannedDate}\n   👮 تم بواسطة: ${ban.bannedBy}\n\n`;
       }
-      msg += `\n📊 المجموع: ${bans.length} شخص`;
+      msg += `📊 إجمالي المحظورين: ${bans.length} شخص`;
 
       return api.sendMessage(msg, threadID, event.messageID);
     }
 
     // ===== أمر إزالة من الباند =====
-    if (action === "ازالة" || action === "remove") {
+    if (action === "إزالة" || action === "remove" || action === "ازالة") {
       const targetID = args[1];
       if (!targetID) {
         return api.sendMessage(
-          "❌ يجب تحديد ايدي الشخص\n\n📝 الاستخدام: باند ازالة [ايدي]",
+          "❌ يجب تحديد معرف الشخص\n\n📝 الاستخدام: باند إزالة [المعرف]",
           threadID,
           event.messageID
         );
@@ -77,7 +79,7 @@ class BanCommand {
 
       if (index === -1) {
         return api.sendMessage(
-          "❌ هذا الشخص ليس مبان",
+          "❌ هذا الشخص ليس محظوراً من المجموعة",
           threadID,
           event.messageID
         );
@@ -87,69 +89,67 @@ class BanCommand {
       saveBans(threadID, bans);
 
       api.sendMessage(
-        `✅ تم إزالة ${targetID} من قائمة الباند`,
+        `✅ تم إزالة المعرف ${targetID} من قائمة الحظر`,
         threadID,
         event.messageID
       );
       return;
     }
 
-    // ===== أمر الباند (طرد وإضافة لقائمة الباند) =====
+    // ===== أمر الحظر (طرد وإضافة لقائمة الحظر) =====
     let targetID = null;
 
     // إذا رد على رسالة
     if (event.messageReply) {
       targetID = event.messageReply.senderID;
     }
-    // إذا تم تحديد ايدي
+    // إذا تم تحديد معرف
     else if (args[0]) {
       targetID = args[0];
     }
 
     if (!targetID) {
       return api.sendMessage(
-        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• باند (رد على رسالة)\n• باند [ايدي]\n• باند ثائمة\n• باند ازالة [ايدي]",
+        "❌ استخدام خاطئ!\n\n📝 الطرق الصحيحة:\n• باند (رد على رسالة)\n• باند [المعرف]\n• باند قائمة\n• باند إزالة [المعرف]",
         threadID,
         event.messageID
       );
     }
 
-    // منع بان النفس أو البوت أو المطور
+    // منع حظر النفس أو البوت أو المطور
     const botID = api.getCurrentUserID();
     
     if (targetID === senderID) {
       return api.sendMessage(
-        "❌ لا يمكن بان نفسك!",
+        "❌ لا يمكنك حظر نفسك!",
         threadID,
         event.messageID
       );
     }
 
-    // 🚫 منع بان البوت (فقط المطور)
+    // 🚫 منع حظر البوت
     if (targetID === botID) {
-      if (senderID !== developerID) {
-        return api.sendMessage(
-          "🔒 | لا يمكن بان البوت! فقط المطور يقدر يبانه.",
-          threadID,
-          event.messageID
-        );
-      }
+      return api.sendMessage(
+        "🔒 لا يمكن حظر البوت!",
+        threadID,
+        event.messageID
+      );
     }
 
-    // 🚫 منع بان المطور
+    // 🚫 منع حظر المطور
     if (targetID === developerID) {
       return api.sendMessage(
-        "🔒 | لا يمكن بان المطور!",
+        "🔒 لا يمكن حظر المطور!",
         threadID,
         event.messageID
       );
     }
 
-    // فحص ما إذا كان مبان بالفعل
+    // فحص ما إذا كان محظوراً بالفعل
     const bans = getBans(threadID);
     if (bans.find(b => b.userID === targetID)) {
       return api.sendMessage(
-        `❌ ${targetID} مبان بالفعل`,
+        `❌ المعرف ${targetID} محظور بالفعل من المجموعة`,
         threadID,
         event.messageID
       );
@@ -160,39 +160,44 @@ class BanCommand {
       bans.push({
         userID: targetID,
         bannedBy: senderID,
-        bannedAt: new Date().toISOString()
+        bannedAt: new Date().toISOString(),
+        reason: "تم حظره من المجموعة"
       });
       saveBans(threadID, bans);
 
-      // محاولة طرد الشخص
+      // محاولة طرد الشخص من المجموعة
       let kickSuccess = false;
-      let kickError = null;
+      let kickError = "";
       try {
         await api.removeUserFromGroup(targetID, threadID);
         kickSuccess = true;
       } catch (kickErr) {
-        console.error("❌ فشل الطرد من المجموعة:", kickErr.message);
         kickError = kickErr.message?.toLowerCase() || "";
+        console.error("❌ خطأ في طرد العضو:", kickErr.message);
       }
 
       // إرسال الرسالة بناءً على نتيجة الطرد
-      let msg = `✅ تم بان ${targetID}`;
+      let msg = `✅ تم حظر المعرف: ${targetID}`;
+      
       if (kickSuccess) {
-        msg += `\n🚫 تم طرده الآن من المجموعة`;
+        msg += `\n🚫 تم طرده من المجموعة الآن`;
       } else {
         // فحص سبب الفشل
-        if (kickError.includes("not admin") || kickError.includes("not authorized") || kickError.includes("permission")) {
-          msg += `\n⚠️ البوت يجب أن يصبح أدمن في المجموعة لطرد الأعضاء!`;
+        if (kickError.includes("admin") || kickError.includes("permission") || kickError.includes("authorized")) {
+          msg += `\n⚠️ البوت يجب أن يكون أدمن لطرد الأعضاء!`;
+        } else if (kickError.includes("not found") || kickError.includes("not in group")) {
+          msg += `\n⚠️ الشخص ليس في المجموعة أساساً`;
         } else {
-          msg += `\n⚠️ لم نتمكن من طرده الآن لكن سيتم طرده إذا عاد`;
+          msg += `\n⚠️ لم يتمكن البوت من طرده الآن`;
         }
       }
-      msg += `\n🔐 إذا تمت إعادته سيتم طرده تلقائياً`;
+      
+      msg += `\n🔐 سيتم طرده تلقائياً إذا حاول العودة`;
       
       api.sendMessage(msg, threadID, event.messageID);
     } catch (err) {
-      console.error("خطأ في تنفيذ الباند:", err);
-      api.sendMessage("❌ حدث خطأ", threadID);
+      console.error("❌ خطأ في تنفيذ الحظر:", err);
+      api.sendMessage("❌ حدث خطأ أثناء محاولة حظر الشخص", threadID);
     }
   }
 }
