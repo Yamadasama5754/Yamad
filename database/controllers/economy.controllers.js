@@ -15,11 +15,6 @@ export default function ({ api, event }) {
 
       if (!user.status || !sender.status) return { status: false, data: `Information not found in the database` };
 
-      // إذا كان المطور، لا تطبق المعاملة
-      if (isDeveloper(uid) || isDeveloper(event.senderID)) {
-        return { status: true, data: `Developer mode: Transaction skipped` };
-      }
-
       const isInvalidCoins = !coins || isNaN(coins) || coins <= 0;
       const notEnoughCoins = action === "pay" && sender.data.data.money < coins;
       const negativeTotal = (action === "increase" || action === "pay") && user.data.data.money + coins < 0;
