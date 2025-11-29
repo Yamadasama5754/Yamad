@@ -164,12 +164,11 @@ export const listen = async ({ api, event }) => {
         // تجاهل الرسائل الفارغة
         if (!body || body.trim().length === 0) return;
         
-        // تشغيل الأحداث العامة للرسائل
+        // تشغيل الأحداث العامة للرسائل - فقط أحداث الرسائل العادية
         if (global.client.eventFunctions && (!isBotDisabled || senderID === developerID)) {
-          // تشغيل الأحداث غير المتعلقة بـ log بشكل متوازي
-          const nonLogEvents = ["mirai", "greeting-azkar"];
+          const messageEvents = ["mirai", "ميراي"];
           Promise.all(Array.from(global.client.eventFunctions.entries())
-            .filter(([name]) => nonLogEvents.includes(name))
+            .filter(([name]) => messageEvents.includes(name))
             .map(([name, fn]) => {
               try {
                 return Promise.resolve(fn({ api, event, Users: User, Threads: Thread, Economy, Exp }));

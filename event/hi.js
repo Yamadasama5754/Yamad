@@ -6,6 +6,7 @@ import moment from 'moment-timezone';
 async function execute({ api, event, Users, Threads }) {
   switch (event.logMessageType) {
     case "log:subscribe": {
+      if (!event.logMessageData?.addedParticipants) return;
       const { addedParticipants } = event.logMessageData;
       const botUserID = api.getCurrentUserID();
 
