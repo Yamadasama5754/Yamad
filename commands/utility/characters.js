@@ -78,6 +78,8 @@ class CharacterGame {
 
       fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
 
+      await Economy.decrease(cost, event.senderID);
+
       const attachment = [fs.createReadStream(tempImageFilePath)];
       const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n💸 رسم اللعبة: ${cost} دولار\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
 
@@ -111,6 +113,7 @@ class CharacterGame {
         const userGuess = event.body.trim();
         const correctName = reply.correctName;
         const cost = reply.cost || 500;
+        const currentTime = Math.floor(Date.now() / 1000);
 
         let userData = null;
         try {
@@ -124,21 +127,18 @@ class CharacterGame {
 
         if (userGuess === correctName) {
           try {
-            // خصم الرسم من المحفظة
-            await Economy.decrease(cost, event.senderID);
-
             // إضافة الجائزة للبنك
             const reward = 2500;
             const bankData = JSON.parse(fs.readFileSync(bankFilePath, 'utf8'));
             if (!bankData[event.senderID]) {
-              bankData[event.senderID] = { balance: 0, lastInterestClaimed: Math.floor(Date.now() / 1000), transactions: [], loans: [], level: 1 };
+              bankData[event.senderID] = { balance: 0, lastInterestClaimed: currentTime, transactions: [], loans: [], level: 1 };
             }
             bankData[event.senderID].balance += reward;
             bankData[event.senderID].transactions = bankData[event.senderID].transactions || [];
             bankData[event.senderID].transactions.push({
               type: "game_win",
               amount: reward,
-              timestamp: Math.floor(Date.now() / 1000),
+              timestamp: currentTime,
               description: "جائزة من لعبة الشخصيات"
             });
             fs.writeFileSync(bankFilePath, JSON.stringify(bankData, null, 2));
@@ -165,10 +165,6 @@ class CharacterGame {
             console.error("[CHARACTERS] Error handling winning action:", e.message);
           }
         } else {
-          try {
-            await Economy.decrease(cost, event.senderID);
-          } catch (e) {}
-          
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           api.sendMessage(
             `❌ | آسفة يا ${userName}! 😅\nاسم الشخصية الصحيح هو: **${correctName}**\n💸 خسرت ${cost} دولار\nحاول مرة أخرى! 💪`,

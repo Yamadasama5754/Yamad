@@ -3,8 +3,19 @@ import fs from "fs";
 import path from "path";
 import moment from "moment-timezone";
 
-async function execute({ api, event }) {
+async function execute({ api, event, Economy }) {
   try {
+    const cost = 500;
+    const userBalance = (await Economy.getBalance(event.senderID)).data;
+    
+    if (userBalance < cost) {
+      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+      return api.sendMessage(
+        `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
+        event.threadID
+      );
+    }
+
     const choices = [
       "\n1 ≻ فيتنام",
       "\n2 ≻ المغرب",
@@ -16,7 +27,7 @@ async function execute({ api, event }) {
     ];
 
     const imageLink = "https://i.imgur.com/Jzv04vv.jpg";
-    const message = choices.join("") + `\n\n`;
+    const message = choices.join("") + `\n\n💸 رسم اللعبة: ${cost} دولار`;
 
     const imageResponse = await axios.get(imageLink, { responseType: "arraybuffer", timeout: 10000 });
     const cacheFolderPath = path.join(process.cwd(), "/cache");
@@ -33,6 +44,7 @@ async function execute({ api, event }) {
       attachment: fs.createReadStream(imagePath)
     }, event.threadID, async (err, info) => {
       if (!err) {
+        await Economy.decrease(cost, event.senderID);
         global.client.handler.reply.set(info.messageID, {
           author: event.senderID,
           type: "pick",
@@ -95,6 +107,27 @@ async function onReply({ api, event, reply, Economy, Users }) {
       const msg = `✅ | اشتغلت في كهوف ${choiceDescription} وحصلت على **${rewardAmount}** دولار 💵`;
 
       await Economy.increase(rewardAmount, event.senderID);
+      
+      // حفظ الجائزة في البنك
+      const bankFilePath = path.join(process.cwd(), 'bank.json');
+      try {
+        const bankData = JSON.parse(fs.readFileSync(bankFilePath, 'utf8'));
+        if (!bankData[event.senderID]) {
+          bankData[event.senderID] = { balance: 0, lastInterestClaimed: currentTime, transactions: [], loans: [], level: 1 };
+        }
+        bankData[event.senderID].balance += rewardAmount;
+        bankData[event.senderID].transactions = bankData[event.senderID].transactions || [];
+        bankData[event.senderID].transactions.push({
+          type: "cave_reward",
+          amount: rewardAmount,
+          timestamp: currentTime,
+          description: `جائزة من الكهف - ${choiceDescription}`
+        });
+        fs.writeFileSync(bankFilePath, JSON.stringify(bankData, null, 2));
+      } catch (e) {
+        console.error("[KAHF] Error saving to bank:", e.message);
+      }
+
       await Users.update(event.senderID, {
         other: {
           [cooldownKey]: currentTime,

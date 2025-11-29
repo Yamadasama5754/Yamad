@@ -1200,7 +1200,7 @@
   {
     "uid": "100092990751389",
     "data": {
-      "money": 0,
+      "money": 1581,
       "exp": 0,
       "level": 0,
       "banned": {
@@ -1217,7 +1217,9 @@
       "isFriend": true,
       "isBirthday": false,
       "gender": "Nam",
-      "other": {}
+      "other": {
+        "cooldowns_gift": 1764455755
+      }
     }
   },
   {
@@ -8094,6 +8096,75 @@
       "isFriend": false,
       "isBirthday": false,
       "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61568235928294",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "󰤆┊🕊 ➪ S-ATURO II ⌯⤹󱢏⤸",
+      "firstName": "󰤆┊🕊",
+      "vanity": "ghw.jw.711043",
+      "avatar": "https://graph.facebook.com/61568235928294/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/ghw.jw.711043",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61580716620435",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Adam Mohamed Ahmed",
+      "firstName": "Adam",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61580716620435/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61580716620435",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "100091671805659",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ဗီူဗီူ ဗီူဗီူ",
+      "firstName": "ဗီူဗီူ",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/100091671805659/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=100091671805659",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Không xác định",
       "other": {}
     }
   }
