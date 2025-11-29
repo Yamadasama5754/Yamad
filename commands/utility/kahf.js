@@ -16,6 +16,8 @@ async function execute({ api, event, Economy }) {
       );
     }
 
+    await Economy.decrease(cost, event.senderID);
+
     const choices = [
       "\n1 ≻ فيتنام",
       "\n2 ≻ المغرب",
@@ -26,25 +28,12 @@ async function execute({ api, event, Economy }) {
       "\n\n📌رد على الرسالة برقم حتى تشتغل باحدى الدول !"
     ];
 
-    const imageLink = "https://i.imgur.com/Jzv04vv.jpg";
     const message = choices.join("") + `\n\n💸 رسم اللعبة: ${cost} دولار`;
-
-    const imageResponse = await axios.get(imageLink, { responseType: "arraybuffer", timeout: 10000 });
-    const cacheFolderPath = path.join(process.cwd(), "/cache");
-    if (!fs.existsSync(cacheFolderPath)) {
-      fs.mkdirSync(cacheFolderPath);
-    }
-    const imagePath = path.join(cacheFolderPath, "kahf_image.jpg");
-    fs.writeFileSync(imagePath, Buffer.from(imageResponse.data, "binary"));
 
     api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
-    api.sendMessage({
-      body: message,
-      attachment: fs.createReadStream(imagePath)
-    }, event.threadID, async (err, info) => {
+    api.sendMessage(message, event.threadID, (err, info) => {
       if (!err) {
-        await Economy.decrease(cost, event.senderID);
         global.client.handler.reply.set(info.messageID, {
           author: event.senderID,
           type: "pick",

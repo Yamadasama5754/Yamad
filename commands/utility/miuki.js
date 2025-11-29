@@ -17,39 +17,30 @@ class Miuki {
 
       if (!customPrompt && !attachment) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage('⚠️ | يرجى توفير نص أو صورة لتحليلها باستخدام Gemini AI\n📝 مثال: .ميوكي ما هذا الشيء؟', event.threadID, event.messageID);
+        return api.sendMessage('⚠️ | يرجى توفير نص للاستفسار\n📝 مثال: .ميوكي ما هو الذكاء الاصطناعي؟', event.threadID, event.messageID);
+      }
+
+      if (!customPrompt) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage('⚠️ | يرجى توفير نص للاستفسار', event.threadID, event.messageID);
       }
 
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
-      let apiUrl = '';
-      let isImageRequest = false;
-      
-      if (attachment && attachment.type === 'photo') {
-        const prompt = customPrompt || 'صف هذه الصورة بالعربية بالتفصيل';
-        const imageUrl = attachment.url;
-        apiUrl = `https://api.sxzz.moe/gemini?prompt=${encodeURIComponent(prompt)}&image=${encodeURIComponent(imageUrl)}`;
-        isImageRequest = true;
-      } else {
-        if (!customPrompt) {
-          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-          return api.sendMessage('⚠️ | يرجى توفير نص للاستفسار', event.threadID, event.messageID);
-        }
-        apiUrl = `https://api.sxzz.moe/gemini?prompt=${encodeURIComponent(customPrompt)}`;
-      }
+      let apiUrl = `https://api.popcat.xyz/chatgpt?question=${encodeURIComponent(customPrompt)}`;
 
       const response = await axios.get(apiUrl, { timeout: 30000 });
-      let aiResponse = response.data.response || response.data.gemini || response.data.answer || response.data.text;
+      let aiResponse = response.data.message || response.data.response || response.data.answer;
 
       if (!aiResponse) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage('❌ | لم يتم الحصول على رد من Gemini AI', event.threadID, event.messageID);
+        return api.sendMessage('❌ | لم يتم الحصول على رد من الذكاء الاصطناعي', event.threadID, event.messageID);
       }
 
       const formattedResponse = `
-✨ رد Gemini AI
+✨ رد الذكاء الاصطناعي
 ━━━━━━━━━━━━━━━━
-${aiResponse.trim()}
+${aiResponse.toString().trim()}
 ━━━━━━━━━━━━━━━━
       `;
 
@@ -59,7 +50,7 @@ ${aiResponse.trim()}
     } catch (error) {
       console.error('[MIUKI] Error:', error.message);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      return api.sendMessage('❌ | حدث خطأ أثناء معالجة الطلب، يرجى المحاولة لاحقاً\n' + error.message, event.threadID, event.messageID);
+      return api.sendMessage('❌ | حدث خطأ أثناء معالجة الطلب، يرجى المحاولة لاحقاً', event.threadID, event.messageID);
     }
   }
 }
