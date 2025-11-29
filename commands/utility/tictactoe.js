@@ -153,6 +153,15 @@ class TicTacToe {
         // لعب مع شخص (رد على رسالة)
         opponentUID = event.messageReply.senderID;
         isMultiplayer = true;
+        console.log(`✅ لعبة متعددة اللاعبين: ${userID} vs ${opponentUID}`);
+      } else if (event.type === "message_reply" && event.messageReplyDetails && event.messageReplyDetails.senderID) {
+        // محاولة بديلة للرد على الرسائل
+        const repliedToID = event.messageReplyDetails.senderID;
+        if (repliedToID !== userID) {
+          opponentUID = repliedToID;
+          isMultiplayer = true;
+          console.log(`✅ لعبة متعددة اللاعبين (طريقة بديلة): ${userID} vs ${repliedToID}`);
+        }
       } else {
         // لعب مع البوت (الخيار الافتراضي)
         isMultiplayer = false;
@@ -202,7 +211,11 @@ class TicTacToe {
       startMsg += `⭕ ${gameData.opponentName}\n`;
       startMsg += `━━━━━━━━━━━\n\n`;
       startMsg += this.displayBoard(board);
-      startMsg += `\n\n${gameData.playerName} دورك! رد برقم (1-9) 🎯`;
+      startMsg += `\n\n${gameData.playerName} دورك! رد برقم (1-9) 🎯\n\n`;
+      startMsg += `📝 الخيارات:\n`;
+      startMsg += `• اكتب رقم (1-9) للعب\n`;
+      startMsg += `• اكتب "إيقاف" لإيقاف اللعبة\n`;
+      startMsg += `• رد على رسالة شخص + كتب "اكس او" للعب معه`;
 
       api.sendMessage(startMsg, event.threadID);
 
