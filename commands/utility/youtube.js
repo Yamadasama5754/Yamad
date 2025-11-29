@@ -1,6 +1,7 @@
 import axios from 'axios';
 import fs from 'fs-extra';
 import path from 'path';
+import yts from 'yt-search';
 
 class YouTube {
   constructor() {
@@ -17,22 +18,11 @@ class YouTube {
     const data = input.split(" ");
 
     if (data.length < 2) {
-      return api.sendMessage("⚠️ | أرجوك قم بإدخال اسم المقطع.\n\n📝 | الاستخدام:\n• يوتيوب فيديو [اسم المقطع] - لتحميل الفيديو\n• يوتيوب صوت [اسم المقطع] - لتحميل الصوت فقط", event.threadID);
+      return api.sendMessage("⚠️ | أرجوك قم بإدخال اسم المقطع.\n\n📝 | الاستخدام:\n• يوتيوب [اسم المقطع]", event.threadID);
     }
 
     data.shift();
-    let downloadType = data[0].toLowerCase();
-    let videoName;
-
-    // تحديد نوع التحميل
-    if (downloadType === "فيديو" || downloadType === "صوت") {
-      data.shift();
-      videoName = data.join(" ");
-    } else {
-      // إذا لم يتم تحديد النوع، افتراضي فيديو
-      downloadType = "فيديو";
-      videoName = data.join(" ");
-    }
+    let videoName = data.join(" ");
 
     if (!videoName) {
       return api.sendMessage("⚠️ | أرجوك قم بإدخال اسم المقطع.", event.threadID);
@@ -41,39 +31,28 @@ class YouTube {
     try {
       const sentMessage = await api.sendMessage(`✔ | جاري البحث عن المقطع المطلوب "${videoName}". المرجو الانتظار...`, event.threadID);
 
-      // ◈ ─ـ『 البحث عن الفيديو في YouTube باستخدام API الجديد 』── ◈
-      const youtubeApiKey = "AIzaSyC_CVzKGFtLAqxNdAZ_EyLbL0VRGJ-FaMU";
-      const encodedQuery = encodeURIComponent(videoName);
-      const searchApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodedQuery}&key=${youtubeApiKey}&type=video&maxResults=4`;
-      
+      // البحث عن الفيديوهات باستخدام yt-search
       console.log(`🔍 البحث عن الفيديو في YouTube: ${videoName}`);
 
-      // البحث عن الفيديوهات
-      const searchResponse = await axios.get(searchApiUrl, { timeout: 15000 });
+      const results = await yts(videoName);
+      const videos = results.videos.slice(0, 4);
       
-      if (!searchResponse.data.items || searchResponse.data.items.length === 0) {
+      if (!videos || videos.length === 0) {
+        api.unsendMessage(sentMessage.messageID);
         return api.sendMessage("⚠️ | لم يتم العثور على أي نتائج.", event.threadID);
       }
 
-      const searchResults = searchResponse.data.items;
-      let msg = `🎥 | تم العثور على المقاطع الأربعة التالية (${downloadType === "فيديو" ? "فيديو" : "صوت"}) :\n\n`;
+      let msg = `🎥 | تم العثور على المقاطع التالية:\n\n`;
 
-      // الرموز التي تم طلبها للأرقام: ⓵, ⓶, ⓷, ⓸
       const numberSymbols = ['⓵', '⓶', '⓷', '⓸'];
 
-      for (let i = 0; i < searchResults.length; i++) {
-        const video = searchResults[i];
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
         const videoIndex = numberSymbols[i];
-        const title = video.snippet.title;
-        const channel = video.snippet.channelTitle;
         
-        msg += `${videoIndex} ❀ العنوان: ${title}\n`;
-        msg += `   📺 القناة: ${channel}\n\n`;
-        
-        // إضافة بيانات إضافية للاستخدام لاحقاً
-        video.videoUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`;
-        video.thumbnail = video.snippet.thumbnails.default.url;
-        video.downloadType = downloadType; // حفظ نوع التحميل المطلوب
+        msg += `${videoIndex} ❀ العنوان: ${video.title}\n`;
+        msg += `   📺 القناة: ${video.author.name}\n`;
+        msg += `   ⏱️ المدة: ${video.duration.shortFormat}\n\n`;
       }
 
       msg += '📥 | الرجاء الرد برقم المقطع الذي تود تنزيله.';
@@ -87,22 +66,21 @@ class YouTube {
           author: event.senderID,
           type: "pick",
           name: "يوتيوب",
-          searchResults: searchResults,
-          downloadType: downloadType,
+          searchResults: videos,
           unsend: true
         });
       });
 
     } catch (error) {
       console.error('[ERROR]', error);
-      api.sendMessage('🥱 ❀ حدث خطأ أثناء معالجة الأمر.', event.threadID);
+      api.sendMessage('🥱 ❀ حدث خطأ أثناء معالجة الأمر.\nتأكد من اسم المقطع وحاول مجدداً.', event.threadID);
     }
   }
 
   async onReply({ api, event, reply }) {
     if (reply.type !== 'pick') return;
 
-    const { author, searchResults, downloadType } = reply;
+    const { author, searchResults } = reply;
 
     if (event.senderID !== author) {
       return api.sendMessage("⚠️ | هذا ليس لك.", event.threadID);
@@ -115,32 +93,41 @@ class YouTube {
     }
 
     const video = searchResults[selectedIndex];
-    const videoUrl = video.videoUrl;
 
     try {
-      api.sendMessage(`⬇️ | جاري تحميل ${downloadType === "فيديو" ? "الفيديو" : "الصوت"}، المرجو الانتظار...`, event.threadID);
+      api.sendMessage(`⬇️ | جاري تحميل الفيديو، المرجو الانتظار...\n⏱️ قد يستغرق عدة دقائق...`, event.threadID);
 
-      if (downloadType === "فيديو") {
-        await this.downloadYouTubeVideo(videoUrl, api, event, video);
-      } else {
-        await this.downloadYouTubeAudio(videoUrl, api, event, video);
-      }
+      await this.downloadYouTube(video.url, api, event, video);
 
     } catch (error) {
       console.error('[ERROR]', error);
-      api.sendMessage('🥱 ❀ حدث خطأ أثناء تحميل الملف.', event.threadID);
+      api.sendMessage('🥱 ❀ حدث خطأ أثناء تحميل الملف.\nقد يكون الفيديو محمياً أو غير متاح.', event.threadID);
     }
   }
 
-  async downloadYouTubeVideo(url, api, event, videoInfo) {
+  async downloadYouTube(url, api, event, videoInfo) {
     try {
-      const { data } = await axios.get(`https://shizuapi.onrender.com/api/ytmp3?url=${encodeURIComponent(url)}&format=mp4`);
-      if (!data.success || !data.directLink) throw new Error("فشل في الحصول على رابط تحميل الفيديو.");
+      // استخدام API محسّنة لتحميل الفيديو
+      const downloadUrl = `https://api.cobalt.tools/api/json`;
+      
+      const response = await axios.post(downloadUrl, {
+        url: url,
+        vQuality: "360",
+        aFormat: "mp3",
+        videoFormat: "mp4"
+      }, { timeout: 30000 });
+
+      if (!response.data || !response.data.url) {
+        // محاولة بديلة
+        return api.sendMessage(`🎥 رابط الفيديو:\n${url}\n\n⚠️ | لا يمكن تحميل الفيديو تلقائياً.\nانقر على الرابط أعلاه لفتحه في YouTube.`, event.threadID);
+      }
+
+      const directLink = response.data.url;
 
       const tempPath = path.join(process.cwd(), "cache", `yt_video_${event.senderID}_${Date.now()}.mp4`);
       const writer = fs.createWriteStream(tempPath);
 
-      const res = await axios({ url: data.directLink, responseType: "stream" });
+      const res = await axios({ url: directLink, responseType: "stream", timeout: 60000 });
       res.data.pipe(writer);
 
       await new Promise((resolve, reject) => {
@@ -156,57 +143,22 @@ class YouTube {
       }
 
       const message = {
-        body: `━━━━━━━◈✿◈━━━━━━━\n✅ | تـم تـحـمـيـل الـفـيـديو:\n❀ الـعـنـوان : ${videoInfo.snippet.title}\n📺 الـقـنـاة : ${videoInfo.snippet.channelTitle}\n━━━━━━━◈✿◈━━━━━━━`,
+        body: `━━━━━━━◈✿◈━━━━━━━\n✅ | تـم تـحـمـيـل الـفـيـديو:\n❀ الـعـنـوان : ${videoInfo.title}\n📺 الـقـنـاة : ${videoInfo.author.name}\n━━━━━━━◈✿◈━━━━━━━`,
         attachment: fs.createReadStream(tempPath)
       };
 
       await api.sendMessage(message, event.threadID);
       
       // حذف الملف المؤقت
-      fs.unlinkSync(tempPath);
+      setTimeout(() => {
+        try {
+          fs.unlinkSync(tempPath);
+        } catch (e) {}
+      }, 5000);
 
     } catch (error) {
-      console.error('[ERROR] في تحميل الفيديو:', error);
-      throw error;
-    }
-  }
-
-  async downloadYouTubeAudio(url, api, event, videoInfo) {
-    try {
-      const { data } = await axios.get(`https://shizuapi.onrender.com/api/ytmp3?url=${encodeURIComponent(url)}&format=mp3`);
-      if (!data.success || !data.directLink) throw new Error("فشل في الحصول على رابط تحميل الصوت.");
-
-      const tempPath = path.join(process.cwd(), "cache", `yt_audio_${event.senderID}_${Date.now()}.mp3`);
-      const writer = fs.createWriteStream(tempPath);
-
-      const res = await axios({ url: data.directLink, responseType: "stream" });
-      res.data.pipe(writer);
-
-      await new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", reject);
-      });
-
-      // التحقق من حجم الملف
-      const fileStats = fs.statSync(tempPath);
-      if (fileStats.size > 26214400) { // 25MB
-        fs.unlinkSync(tempPath);
-        return api.sendMessage('❌ | لا يمكن إرسال الملف لأن حجمه أكبر من 25 ميغابايت.', event.threadID);
-      }
-
-      const message = {
-        body: `━━━━━━━◈✿◈━━━━━━━\n✅ | تـم تـحـمـيـل الـصـوت:\n❀ الـعـنـوان : ${videoInfo.snippet.title}\n📺 الـقـنـاة : ${videoInfo.snippet.channelTitle}\n━━━━━━━◈✿◈━━━━━━━`,
-        attachment: fs.createReadStream(tempPath)
-      };
-
-      await api.sendMessage(message, event.threadID);
-      
-      // حذف الملف المؤقت
-      fs.unlinkSync(tempPath);
-
-    } catch (error) {
-      console.error('[ERROR] في تحميل الصوت:', error);
-      throw error;
+      console.error('[ERROR] في تحميل الفيديو:', error.message);
+      api.sendMessage(`🎥 رابط الفيديو:\n${videoInfo.url}\n\n⚠️ | لا يمكن تحميل الفيديو تلقائياً.\nانقر على الرابط أعلاه لفتحه في YouTube.`, event.threadID);
     }
   }
 }
