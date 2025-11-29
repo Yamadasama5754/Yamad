@@ -1,103 +1,164 @@
+import fs from "fs-extra";
+import path from "path";
+import jimp from "jimp";
+import axios from "axios";
+import { createCanvas, registerFont, loadImage } from "canvas";
+
 class RankCommand {
   constructor() {
-    this.name = "رانك";
-    this.author = "Yamada KJ";
-    this.cooldowns = 5;
-    this.description = "عرض مستواك أو مستوى الشخص المُشار إليه";
+    this.name = "مستواي";
+    this.author = "CataliCS";
+    this.cooldowns = 20;
+    this.description = "Lấy rank hiện tại của bạn trên hệ thống bot";
     this.role = 0;
-    this.aliases = ["rank", "مستوى", "رتبة"];
+    this.aliases = ["رانك", "rank"];
+    this.APIKEY = "571752207151901|AC-zG86sv6U6kpnT0_snIHBOHJc";
   }
 
-  async execute({ api, event, Users, Threads }) {
+  async makeRankCard(data) {
+    const { id, name, rank, level, expCurrent, expNextLevel } = data;
+    const PI = Math.PI;
+
+    // Create cache directory if it doesn't exist
+    const cacheDir = path.join(process.cwd(), "cache");
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+
+    const pathImg = path.join(cacheDir, `rank_${id}.png`);
+
     try {
-      api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+      // Load rank card image
+      let rankCardUrl = "https://i.imgur.com/neYz0Wy.png";
+      const rankCardResponse = await axios.get(rankCardUrl, { responseType: "arraybuffer" });
+      const rankCardBuffer = rankCardResponse.data;
+      
+      let rankCard = await loadImage(rankCardBuffer);
 
-      let targetUsers;
-      const arrayMentions = Object.keys(event.mentions || {});
+      var expWidth = (expCurrent * 615) / expNextLevel;
+      if (expWidth > 615 - 18.5) expWidth = 615 - 18.5;
 
-      if (arrayMentions.length === 0)
-        targetUsers = [event.senderID];
-      else
-        targetUsers = arrayMentions;
+      // Get avatar
+      let avatarUrl = `https://graph.facebook.com/${id}/picture?width=512&height=512&access_token=${this.APIKEY}`;
+      let avatarResponse = await axios.get(avatarUrl, { responseType: "arraybuffer" });
+      let avatar = await this.circleImage(avatarResponse.data);
 
-      const deltaNext = 5;
-      const expToLevel = (exp) => Math.floor((1 + Math.sqrt(1 + 8 * exp / deltaNext)) / 2);
-      const levelToExp = (level) => Math.floor(((Math.pow(level, 2) - level) * deltaNext) / 2);
+      const canvas = createCanvas(934, 282);
+      const ctx = canvas.getContext("2d");
 
-      let resultMessage = "";
+      ctx.drawImage(rankCard, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(await loadImage(avatar), 45, 50, 180, 180);
 
-      for (const userID of targetUsers) {
-        try {
-          const userData = await Users.get(userID);
-          const { exp = 0 } = userData;
-          const levelUser = expToLevel(exp);
+      ctx.font = `bold 36px Arial`;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "start";
+      ctx.fillText(name, 270, 164);
 
-          const expNextLevel = levelToExp(levelUser + 1) - levelToExp(levelUser);
-          const currentExp = expNextLevel - (levelToExp(levelUser + 1) - exp);
+      ctx.font = `bold 32px Arial`;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "end";
+      ctx.fillText(level, 934 - 55, 82);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText("Lv.", 934 - 55 - ctx.measureText(level).width - 10, 82);
 
-          const allUser = await Users.getAll();
-          allUser.sort((a, b) => b.exp - a.exp);
-          const rank = allUser.findIndex(user => user.userID == userID) + 1;
+      ctx.font = `bold 32px Arial`;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "end";
+      ctx.fillText(rank, 934 - 55 - ctx.measureText(level).width - 16 - ctx.measureText(`Lv.`).width - 25, 82);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText("#", 934 - 55 - ctx.measureText(level).width - 16 - ctx.measureText(`Lv.`).width - 16 - ctx.measureText(rank).width - 16, 82);
 
-          let userName = "Unknown";
-          try {
-            const userInfo = await api.getUserInfo(userID);
-            userName = userInfo[userID]?.name || "Unknown";
-          } catch (e) {
-            console.warn("[RANK] Could not get user info");
-          }
+      ctx.font = `bold 26px Arial`;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "start";
+      ctx.fillText("/ " + expNextLevel, 710 + ctx.measureText(expCurrent).width + 10, 164);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText(expCurrent, 710, 164);
 
-          const expBar = this.createExpBar(currentExp, expNextLevel);
+      ctx.beginPath();
+      ctx.fillStyle = "#4283FF";
+      ctx.arc(257 + 18.5, 147.5 + 18.5 + 36.25, 18.5, 1.5 * PI, 0.5 * PI, true);
+      ctx.fill();
+      ctx.fillRect(257 + 18.5, 147.5 + 36.25, expWidth, 37.5);
+      ctx.arc(257 + 18.5 + expWidth, 147.5 + 18.5 + 36.25, 18.75, 1.5 * PI, 0.5 * PI, false);
+      ctx.fill();
 
-          resultMessage += `
-━━━━━━━━━━━━━━━━
-👤 الاسم: ${userName}
-📊 المستوى: ${levelUser}
-🏆 المرتبة: #${rank}/${allUser.length}
-⭐ الخبرة: ${Math.floor(currentExp)}/${expNextLevel}
-${expBar}
-━━━━━━━━━━━━━━━━
-`;
-        } catch (e) {
-          console.error("[RANK] Error making card:", e.message);
-          resultMessage += `❌ خطأ في الحصول على بيانات المستخدم\n`;
-        }
-      }
-
-      if (!resultMessage) {
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage("❌ حدث خطأ في الأمر", event.threadID, event.messageID);
-      }
-
-      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-      return api.sendMessage(resultMessage, event.threadID);
-
-    } catch (err) {
-      console.error("[RANK] Error:", err);
-      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      api.sendMessage("❌ حدث خطأ في الأمر: " + err.message, event.threadID, event.messageID);
+      const imageBuffer = canvas.toBuffer();
+      fs.writeFileSync(pathImg, imageBuffer);
+      return pathImg;
+    } catch (error) {
+      console.error("Error making rank card:", error);
+      throw error;
     }
   }
 
-  createExpBar(current, max) {
-    const percentage = Math.floor((current / max) * 20);
-    const filled = "█".repeat(percentage);
-    const empty = "░".repeat(20 - percentage);
-    const percent = Math.floor((current / max) * 100);
-    return `[${filled}${empty}] ${percent}%`;
+  async circleImage(imageBuffer) {
+    try {
+      let image = await jimp.read(imageBuffer);
+      image.circle();
+      return await image.getBuffer("image/png");
+    } catch (error) {
+      console.error("Error creating circle image:", error);
+      throw error;
+    }
   }
 
-  async onReply({ api, event, Users }) {
+  expToLevel(point) {
+    if (point < 0) return 0;
+    return Math.floor((Math.sqrt(1 + (4 * point) / 3) + 1) / 2);
+  }
+
+  levelToExp(level) {
+    if (level <= 0) return 0;
+    return 3 * level * (level - 1);
+  }
+
+  async getInfo(uid, Currencies) {
+    let userData = await Currencies.getData(uid);
+    let point = userData?.exp || 0;
+    const level = this.expToLevel(point);
+    const expCurrent = point - this.levelToExp(level);
+    const expNextLevel = this.levelToExp(level + 1) - this.levelToExp(level);
+    return { level, expCurrent, expNextLevel };
+  }
+
+  async execute({ api, event, Currencies, Users }) {
     try {
-      let userData = await Users.get(event.senderID);
-      let { exp = 0 } = userData;
-      if (isNaN(exp) || typeof exp !== "number")
-        exp = 0;
-      await Users.set(event.senderID, {
-        exp: exp + 1
-      });
-    } catch (e) {
-      console.warn("[RANK] Warning: Could not update exp");
+      api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+
+      let dataAll = await Currencies.getAll(["userID", "exp"]);
+      dataAll.sort(function (a, b) { return b.exp - a.exp; });
+
+      const rank = dataAll.findIndex(item => parseInt(item.userID) == parseInt(event.senderID)) + 1;
+      
+      if (rank == 0) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage("لست في قاعدة البيانات بعد اعد المحاولة في وقت لاحق", event.threadID, event.messageID);
+      }
+
+      const name = await Users.getNameUser(event.senderID);
+      const point = await this.getInfo(event.senderID, Currencies);
+      const timeStart = Date.now();
+
+      let pathRankCard = await this.makeRankCard({ id: event.senderID, name, rank, ...point });
+
+      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+      return api.sendMessage(
+        {
+          body: `تم إنشاء الكارت في ${Date.now() - timeStart}ms`,
+          attachment: fs.createReadStream(pathRankCard, { highWaterMark: 128 * 1024 })
+        },
+        event.threadID,
+        () => {
+          if (fs.existsSync(pathRankCard)) fs.unlinkSync(pathRankCard);
+        },
+        event.messageID
+      );
+
+    } catch (error) {
+      console.error("[RANK] Error:", error);
+      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+      api.sendMessage("❌ حدث خطأ في الأمر: " + error.message, event.threadID, event.messageID);
     }
   }
 }
