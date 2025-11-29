@@ -6854,5 +6854,74 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "61553660578127",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "過心更已",
+      "firstName": "過心",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61553660578127/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61553660578127",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61581833074034",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "كـرٰمـيٰہٰل ﮩٰٰ٭۬",
+      "firstName": "كـرٰمـيٰہٰل",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61581833074034/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61581833074034",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61581161955458",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ヾꜝ 国.ꜝꜝටි.ɪʏᴏᴛᴀᴋᴀ",
+      "firstName": "国.ꜝꜝටි.ɪʏᴏᴛᴀᴋᴀ",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61581161955458/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61581161955458",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
   }
 ]

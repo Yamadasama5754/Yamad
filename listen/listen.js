@@ -194,17 +194,32 @@ export const listen = async ({ api, event }) => {
         let exists = false;
         let finalCommandName = commandName;
 
-        // البحث عن الأمر مع اعتبار جميع أسماء الأوامر
+        // البحث عن الأمر - محاولة متعددة المستويات
+        // 1️⃣ البحث الدقيق (حرف بحرف)
         if (global.client.commands.has(commandName)) {
           exists = true;
-        } else if (global.client.aliases.has(commandName)) {
+        }
+        // 2️⃣ البحث في الأسماء المستعارة (Aliases)
+        else if (global.client.aliases.has(commandName)) {
           finalCommandName = global.client.aliases.get(commandName);
           exists = true;
-        } else {
-          // محاولة مساعدة الأوامر العربية
+        }
+        // 3️⃣ البحث بدون تمييز أحرف صغيرة/كبيرة
+        else {
           for (const [key] of global.client.commands) {
             if (key.toLowerCase() === commandName.toLowerCase()) {
               finalCommandName = key;
+              exists = true;
+              break;
+            }
+          }
+        }
+        
+        // إذا لم نجد - جرب الأسماء المستعارة بدون تمييز أحرف
+        if (!exists) {
+          for (const [aliasKey, cmdName] of global.client.aliases) {
+            if (aliasKey.toLowerCase() === commandName.toLowerCase()) {
+              finalCommandName = cmdName;
               exists = true;
               break;
             }
