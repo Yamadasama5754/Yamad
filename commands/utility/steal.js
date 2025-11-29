@@ -102,7 +102,7 @@ class StealCommand {
       if (!mode) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
-          "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة] (سرقة جميع الأعضاء)\n• .سرقة [عدد] [معرف المجموعة] (سرقة عدد محدد عشوائي)\n• .سرقة تبديل [معرف مجموعة الدعم]",
+          "⚠️ | الاستخدام:\n• .سرقة (من المجموعة الحالية - جميع الأعضاء)\n• .سرقة [عدد] (من المجموعة الحالية - عدد محدد)\n• .سرقة [معرف] (من مجموعة محددة)\n• .سرقة [عدد] [معرف] (عدد من مجموعة محددة)\n• .سرقة تبديل [معرف] (تبديل مجموعة الدعم)",
           threadID,
           event.messageID
         );
@@ -115,7 +115,7 @@ class StealCommand {
       if (/^\d+$/.test(mode)) {
         const firstNum = parseInt(mode);
         
-        // إذا كان هناك args[1]، فهذا يعني أن firstNum هو العدد والـ args[1] هو المعرف
+        // إذا كان هناك args[1] (معرف ثاني)، فهذا يعني firstNum هو العدد والـ args[1] هو المعرف
         if (args[1]) {
           stealCount = firstNum;
           targetGroupId = args[1];
@@ -140,13 +140,30 @@ class StealCommand {
             );
           }
         } else {
-          // firstNum هو معرف المجموعة فقط
-          targetGroupId = mode;
+          // إذا كان الرقم قصير (أقل من 10 أرقام)، اعتبره عدد من المجموعة الحالية
+          // إذا كان طويل (10 أرقام أو أكثر)، اعتبره معرف مجموعة
+          if (mode.length < 10) {
+            // رقم قصير = عدد الأعضاء من المجموعة الحالية
+            stealCount = firstNum;
+            targetGroupId = threadID;
+
+            if (stealCount <= 0) {
+              api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+              return api.sendMessage(
+                "❌ | اختر رقم أكبر من 0!",
+                threadID,
+                event.messageID
+              );
+            }
+          } else {
+            // رقم طويل = معرف المجموعة
+            targetGroupId = mode;
+          }
         }
       } else {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
-          "❌ | استخدم معرف المجموعة الرقمي فقط (بدون رابط)",
+          "❌ | استخدم أرقام فقط للمعرف (بدون رابط)",
           threadID,
           event.messageID
         );
