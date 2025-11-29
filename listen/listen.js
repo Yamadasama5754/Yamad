@@ -9,7 +9,6 @@ import { checkDevOnly } from "../commands/utility/devonly.js";
 import { checkBadWords } from "../commands/utility/badwords.js";
 import { autoPreventsKickedUsers } from "./auto-prevent-kicked-user.js";
 
-const adminConfigPath = "KaguyaSetUp/adminOnlyMode.json";
 const prefixFile = path.join(process.cwd(), "KaguyaSetUp/prefixes.json");
 
 const developerIDs = Array.isArray(config.ADMIN_IDS) ? config.ADMIN_IDS : [];
@@ -134,12 +133,6 @@ export const listen = async ({ api, event }) => {
       }
     }
 
-    // ✅ قراءة إعدادات admin only ديناميكياً قبل جميع الحالات
-    let adminConfigData = {};
-    if (fs.existsSync(adminConfigPath)) {
-      adminConfigData = JSON.parse(fs.readFileSync(adminConfigPath, "utf8"));
-    }
-    const adminOnly = adminConfigData[threadID]?.adminOnly || false;
 
     // ✅ تشغيل الأحداث من eventFunctions بشكل متوازي (أسرع) - فقط إذا لم يكن البوت معطل أو الشخص مطور
     if (global.client.eventFunctions && type === "message") {
@@ -230,13 +223,6 @@ export const listen = async ({ api, event }) => {
           return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
         }
 
-        if (adminOnly && !isDeveloper && exists) {
-          const threadInfo = await api.getThreadInfo(threadID);
-          const isAdmin = threadInfo.adminIDs.some(admin => admin.id === senderID);
-          if (!isAdmin) {
-            return api.sendMessage("⚠️ | البوت حالياً في وضع الأدمن فقط.", threadID);
-          }
-        }
 
         if (exists) {
           event.commandName = finalCommandName;
@@ -315,13 +301,6 @@ export const listen = async ({ api, event }) => {
             return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
           }
 
-          if (adminOnly && !isDeveloper && exists) {
-            const threadInfo = await api.getThreadInfo(threadID);
-            const isAdmin = threadInfo.adminIDs.some(admin => admin.id === senderID);
-            if (!isAdmin) {
-              return api.sendMessage("⚠️ | البوت حالياً في وضع الأدمن فقط.", threadID);
-            }
-          }
 
           if (exists) {
             event.commandName = finalCommandName;
