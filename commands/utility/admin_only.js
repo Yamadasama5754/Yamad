@@ -26,39 +26,21 @@ class AdminOnly {
     }
 
     const mode = args[0];
-    const subMode = args[1];
 
-    // خيار الإشعارات
+    // خيار الإشعارات (تبديل)
     if (mode === "اشعار") {
-      if (!["تشغيل", "ايقاف"].includes(subMode)) {
-        return api.sendMessage(
-          "⚠️ | استخدم: الادمن_فقط اشعار تشغيل أو الادمن_فقط اشعار ايقاف",
-          event.threadID,
-          event.messageID
-        );
-      }
-
       let notificationsData = {};
       if (fs.existsSync(notificationsPath)) {
         notificationsData = JSON.parse(fs.readFileSync(notificationsPath, "utf8"));
       }
 
       const currentState = notificationsData[event.threadID]?.enabled !== false;
-      const isEnabling = subMode === "تشغيل";
+      const newState = !currentState; // تبديل الحالة
 
-      if (isEnabling === currentState) {
-        const status = currentState ? "مفعلة" : "معطلة";
-        return api.sendMessage(
-          `ℹ️ | الإشعارات ${status} بالفعل.`,
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      notificationsData[event.threadID] = { enabled: isEnabling };
+      notificationsData[event.threadID] = { enabled: newState };
       fs.writeFileSync(notificationsPath, JSON.stringify(notificationsData, null, 2));
 
-      const message = isEnabling
+      const message = newState
         ? `✅ | تم تفعيل الإشعارات!`
         : `❌ | تم إيقاف الإشعارات! (الأوامر ستعمل بهدوء)`;
 
@@ -68,7 +50,7 @@ class AdminOnly {
     // الخيارات الأصلية
     if (!["تشغيل", "ايقاف"].includes(mode)) {
       return api.sendMessage(
-        "⚠️ | استخدم:\n• الادمن_فقط تشغيل / ايقاف\n• الادمن_فقط اشعار تشغيل / ايقاف",
+        "⚠️ | استخدم:\n• الادمن_فقط تشغيل / ايقاف\n• الادمن_فقط اشعار",
         event.threadID,
         event.messageID
       );
