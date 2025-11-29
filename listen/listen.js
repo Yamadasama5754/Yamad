@@ -96,6 +96,20 @@ export const listen = async ({ api, event }) => {
   try {
     const { threadID, senderID, type, userID, from, isGroup, body } = event;
 
+    // 📊 تسجيل جميع الأحداث للتتبع
+    console.log(`📨 [EVENT RECEIVED] Type: ${type}, ThreadID: ${threadID}, SenderID: ${senderID}, LogMessageType: ${event.logMessageType}`);
+    
+    // إذا كان حدث log
+    if (type?.includes("log:")) {
+      console.log(`📋 [LOG EVENT FULL DATA]:`, JSON.stringify({
+        type,
+        logMessageType: event.logMessageType,
+        logMessageData: event.logMessageData,
+        author: event.author,
+        threadID,
+      }, null, 2));
+    }
+
     // تجاهل رسائل البوت نفسه
     if (senderID === api.getCurrentUserID()) return;
 
@@ -138,18 +152,24 @@ export const listen = async ({ api, event }) => {
       case "log:subscribe":
       case "log:unsubscribe": {
         // ✅ معالجة أحداث اللوغ (الترحيب والمغادرة)
+        console.log(`🔔 [LOG EVENT] Type: ${type}, logMessageType: ${event.logMessageType}`);
         
         // استدعاء جميع أحداث اللوغ
         const eventsToCall = ["subscribe", "ترحيب", "ترحيب_ومغادرة"];
         
         for (const eventName of eventsToCall) {
           const event_obj = global.client.events.get(eventName);
+          console.log(`👉 Attempting to call event: ${eventName}, Exists: ${!!event_obj}`);
           if (event_obj && event_obj.execute) {
             try {
+              console.log(`✅ Executing event: ${eventName}`);
               await event_obj.execute({ api, event, Users: User, Threads: Thread, Economy, Exp });
+              console.log(`✅ Event ${eventName} completed successfully`);
             } catch (err) {
               console.error(`❌ خطأ في حدث ${eventName}:`, err.message);
             }
+          } else {
+            console.log(`⚠️ Event ${eventName} not found or no execute function`);
           }
         }
         break;

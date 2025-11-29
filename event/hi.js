@@ -4,8 +4,10 @@ import path from 'path';
 import moment from 'moment-timezone';
 
 async function execute({ api, event, Users, Threads }) {
+  console.log(`🎯 [ترحيب EVENT] logMessageType: ${event.logMessageType}, Has addedParticipants: ${!!event.logMessageData?.addedParticipants}`);
   switch (event.logMessageType) {
     case "log:subscribe": {
+      console.log(`✅ [ترحيب] Processing log:subscribe event`);
       const { addedParticipants } = event.logMessageData;
       const botUserID = api.getCurrentUserID();
 
