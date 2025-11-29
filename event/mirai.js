@@ -1,16 +1,12 @@
 import fs from "fs-extra";
 
-class AkamiCommand {
+class MiraiEvent {
   constructor() {
-    this.name = "اكامي";
-    this.author = "S H A D O W";
-    this.cooldowns = 5;
-    this.description = "رد اكامي على الرسائل";
-    this.role = 0;
-    this.aliases = [];
+    this.name = "ميراي";
+    this.description = "حدث ميراي - ردود تفاعلية على الرسائل";
   }
 
-  async execute({ api, event, args, Users }) {
+  async execute({ api, event }) {
     const { threadID, messageID, senderID } = event;
     
     const tl = [
@@ -32,7 +28,7 @@ class AkamiCommand {
     }
 
     if (bodyLower === "احبك" || bodyLower === "بحبك") {
-      return api.sendMessage("شادو حبيبي الوحيد يولد 🤧", threadID, messageID);
+      return api.sendMessage("ميراي حبيبتك الوحيدة يولد 🤧", threadID, messageID);
     }
 
     if (bodyLower === "ملل" || bodyLower === "ملل يجيب شلل") {
@@ -44,7 +40,7 @@ class AkamiCommand {
     }
 
     if (bodyLower === "شسمك" || bodyLower === "ايش هو اسمك") {
-      return api.sendMessage("اكامي عمتك 💞😺", threadID, messageID);
+      return api.sendMessage("ميراي عمتك 💞😺", threadID, messageID);
     }
 
     if (bodyLower === "كيفكم" || bodyLower === "كيفك") {
@@ -72,7 +68,7 @@ class AkamiCommand {
     }
 
     if (bodyLower === "بوت" || bodyLower === "يا بوت") {
-      return api.sendMessage("يا روحها اسمي اكامي عمتك 💖", threadID, messageID);
+      return api.sendMessage("يا روحها اسمي ميراي عمتك 💖", threadID, messageID);
     }
 
     if (bodyLower === "جييتت" || bodyLower === "باااكك") {
@@ -83,7 +79,7 @@ class AkamiCommand {
       return api.sendMessage("شادو حبيبي وروحي وتاج راسكم 💞🙃", threadID);
     }
 
-    if (event.body.indexOf("كيوتتي") === 0 || event.body.indexOf("اكامي") === 0) {
+    if (event.body.indexOf("كيوتتي") === 0 || event.body.indexOf("ميراي") === 0) {
       const msg = {
         body: rand
       };
@@ -92,4 +88,10 @@ class AkamiCommand {
   }
 }
 
-export default new AkamiCommand();
+const miraiEvent = new MiraiEvent();
+
+export default {
+  name: "ميراي",
+  description: "حدث ميراي - ردود تفاعلية على الرسائل",
+  execute: miraiEvent.execute.bind(miraiEvent),
+};
