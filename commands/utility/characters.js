@@ -4,10 +4,16 @@ import path from "path";
 
 const tempImageFilePath = path.join(process.cwd(), "cache", "tempImage.jpg");
 const userDataFile = path.join(process.cwd(), 'charactersPoints.json');
+const bankFilePath = path.join(process.cwd(), 'bank.json');
 
 // تأكد من وجود ملف البيانات
 if (!fs.existsSync(userDataFile)) {
   fs.writeFileSync(userDataFile, '{}');
+}
+
+// تأكد من وجود ملف البنك
+if (!fs.existsSync(bankFilePath)) {
+  fs.writeFileSync(bankFilePath, '{}');
 }
 
 // تأكد من وجود مجلد cache
@@ -48,8 +54,19 @@ class CharacterGame {
     this.aliases = ["شخصيه", "احزر"];
   }
 
-  async execute({ api, event }) {
+  async execute({ api, event, Economy }) {
     try {
+      const cost = 500;
+      const userBalance = (await Economy.getBalance(event.senderID)).data;
+      
+      if (userBalance < cost) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
+          event.threadID
+        );
+      }
+
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
       const randomCharacter = characters[Math.floor(Math.random() * characters.length)];
@@ -62,7 +79,7 @@ class CharacterGame {
       fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
 
       const attachment = [fs.createReadStream(tempImageFilePath)];
-      const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
+      const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n💸 رسم اللعبة: ${cost} دولار\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
@@ -73,6 +90,7 @@ class CharacterGame {
             type: "reply",
             name: "شخصيات",
             correctName: randomCharacter.name,
+            cost: cost,
             unsend: true
           });
         } else {
@@ -87,11 +105,12 @@ class CharacterGame {
     }
   }
 
-  async onReply({ api, event, reply }) {
+  async onReply({ api, event, reply, Economy }) {
     try {
       if (reply && reply.type === "reply" && reply.name === "شخصيات") {
         const userGuess = event.body.trim();
         const correctName = reply.correctName;
+        const cost = reply.cost || 500;
 
         let userData = null;
         try {
@@ -105,6 +124,26 @@ class CharacterGame {
 
         if (userGuess === correctName) {
           try {
+            // خصم الرسم من المحفظة
+            await Economy.decrease(cost, event.senderID);
+
+            // إضافة الجائزة للبنك
+            const reward = 2500;
+            const bankData = JSON.parse(fs.readFileSync(bankFilePath, 'utf8'));
+            if (!bankData[event.senderID]) {
+              bankData[event.senderID] = { balance: 0, lastInterestClaimed: Math.floor(Date.now() / 1000), transactions: [], loans: [], level: 1 };
+            }
+            bankData[event.senderID].balance += reward;
+            bankData[event.senderID].transactions = bankData[event.senderID].transactions || [];
+            bankData[event.senderID].transactions.push({
+              type: "game_win",
+              amount: reward,
+              timestamp: Math.floor(Date.now() / 1000),
+              description: "جائزة من لعبة الشخصيات"
+            });
+            fs.writeFileSync(bankFilePath, JSON.stringify(bankData, null, 2));
+
+            // إضافة النقاط
             const pointsData = JSON.parse(fs.readFileSync(userDataFile, 'utf8'));
             const userPoints = pointsData[event.senderID] || { name: userName, points: 0 };
             userPoints.points += 50;
@@ -113,7 +152,7 @@ class CharacterGame {
 
             api.setMessageReaction("✅", event.messageID, (err) => {}, true);
             api.sendMessage(
-              `✅ | تهانينا يا ${userName}! 🥳\nلقد خمنت اسم الشخصية بشكل صحيح!\n🎁 حصلت على 50 نقطة!`,
+              `✅ | تهانينا يا ${userName}! 🥳\nلقد خمنت اسم الشخصية بشكل صحيح!\n💰 تم إضافة ${reward} دولار للبنك\n⭐ حصلت على 50 نقطة!`,
               event.threadID,
               event.messageID
             );
@@ -126,9 +165,13 @@ class CharacterGame {
             console.error("[CHARACTERS] Error handling winning action:", e.message);
           }
         } else {
+          try {
+            await Economy.decrease(cost, event.senderID);
+          } catch (e) {}
+          
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           api.sendMessage(
-            `❌ | آسفة يا ${userName}! 😅\nاسم الشخصية الصحيح هو: **${correctName}**\nحاول مرة أخرى! 💪`,
+            `❌ | آسفة يا ${userName}! 😅\nاسم الشخصية الصحيح هو: **${correctName}**\n💸 خسرت ${cost} دولار\nحاول مرة أخرى! 💪`,
             event.threadID,
             event.messageID
           );

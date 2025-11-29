@@ -93,8 +93,17 @@ class HugCommand {
     return await img.getBufferAsync("image/png");
   }
 
-  async execute({ api, event, args }) {
+  async execute({ api, event, args, Economy }) {
     const { threadID, messageID, senderID, messageReply, mentions } = event;
+    const cost = 250;
+    const userBalance = (await Economy.getBalance(senderID)).data;
+    
+    if (userBalance < cost) {
+      return api.sendMessage(
+        `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
+        threadID
+      );
+    }
 
     try {
       let targetID = null;
@@ -118,6 +127,8 @@ class HugCommand {
           messageID
         );
       }
+
+      await Economy.decrease(cost, senderID);
 
       // إنشاء الصورة
       const imagePath = await this.makeImage({

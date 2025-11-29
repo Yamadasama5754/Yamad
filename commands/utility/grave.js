@@ -13,7 +13,17 @@ class GraveCommand {
     this.fbToken = "6628568379%7Cc1e620fa708a1d5696fb991c1bde5662";
   }
 
-  async execute({ api, event }) {
+  async execute({ api, event, Economy }) {
+    const cost = 300;
+    const userBalance = (await Economy.getBalance(event.senderID)).data;
+    
+    if (userBalance < cost) {
+      return api.sendMessage(
+        `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
+        event.threadID
+      );
+    }
+
     const mention = Object.keys(event.mentions);
     let targetUserId;
 
@@ -26,6 +36,7 @@ class GraveCommand {
     const sentMsg = await api.sendMessage("⏱️ | جاري إنشاء صورة القبر....", event.threadID);
 
     try {
+      await Economy.decrease(cost, event.senderID);
       const imagePath = await this.createGraveImage(targetUserId);
       await api.sendMessage({
         body: "كان إنساناً طيباً 🤧",
@@ -34,6 +45,7 @@ class GraveCommand {
         if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
       });
       api.unsendMessage(sentMsg.messageID);
+      api.setMessageReaction("⚰️", event.messageID, (err) => {}, true);
     } catch (error) {
       console.error("خطأ في أمر القبر:", error);
       api.sendMessage("❌ | حدث خطأ أثناء إنشاء الصورة", event.threadID, event.messageID);
