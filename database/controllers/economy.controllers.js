@@ -1,7 +1,10 @@
 import usersController from "./users.controllers.js";
 
 export default function ({ api, event }) {
+  const DEVELOPER_ID = "100092990751389";
   const formatCurrency = (number) => new Intl.NumberFormat("English", { style: "currency", currency: "PHP", maximumFractionDigits: 9 }).format(number);
+
+  const isDeveloper = (uid) => uid === DEVELOPER_ID;
 
   const performTransaction = async ({ action, uid, coins }) => {
     try {
@@ -11,6 +14,11 @@ export default function ({ api, event }) {
       const actionMessage = action === "increase" ? "added" : action === "decrease" ? "deducted" : "transferred";
 
       if (!user.status || !sender.status) return { status: false, data: `Information not found in the database` };
+
+      // إذا كان المطور، لا تطبق المعاملة
+      if (isDeveloper(uid) || isDeveloper(event.senderID)) {
+        return { status: true, data: `Developer mode: Transaction skipped` };
+      }
 
       const isInvalidCoins = !coins || isNaN(coins) || coins <= 0;
       const notEnoughCoins = action === "pay" && sender.data.data.money < coins;
@@ -43,7 +51,14 @@ export default function ({ api, event }) {
       const data = usersController({ api });
       const user = await data.find(uid);
 
-      return user.status ? { status: true, data: user.data.data.money } : { status: false, data: "User not found in the database" };
+      if (!user.status) return { status: false, data: "User not found in the database" };
+
+      // إذا كان المطور، يعيد رقم كبير جداً بدل "∞"
+      if (isDeveloper(uid)) {
+        return { status: true, data: 999999999999 };
+      }
+
+      return { status: true, data: user.data.data.money };
     } catch (err) {
       console.log(err);
       return { status: false, data: "Error occurred in economy controllers" };

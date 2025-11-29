@@ -2,8 +2,6 @@ import axios from "axios";
 import fs from "fs";
 import path from "path";
 
-const DEVELOPER_ID = "100092990751389";
-
 class DailyGift {
   constructor() {
     this.name = "هدية";
@@ -21,21 +19,18 @@ class DailyGift {
     try {
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
-      // المطور لا يحتاج Cooldown
-      if (event.senderID !== DEVELOPER_ID) {
-        const lastCheckedTime = await Users.find(event.senderID);
-        const lastCooldown = lastCheckedTime?.data?.data?.other?.cooldowns_gift;
+      const lastCheckedTime = await Users.find(event.senderID);
+      const lastCooldown = lastCheckedTime?.data?.data?.other?.cooldowns_gift;
 
-        if (lastCooldown && currentTime - parseInt(lastCooldown) < timeStamps) {
-          const remainingTime = timeStamps - (currentTime - lastCooldown);
-          const minutes = Math.floor(remainingTime / 60);
-          const seconds = remainingTime % 60;
-          api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
-          return api.sendMessage(
-            `⚠️ | لقد حصلت على مكافأتك بالفعل\n⏱️ | قم بالعودة بعد: ${minutes}د ${seconds}ث`,
-            event.threadID
-          );
-        }
+      if (lastCooldown && currentTime - parseInt(lastCooldown) < timeStamps) {
+        const remainingTime = timeStamps - (currentTime - lastCooldown);
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = remainingTime % 60;
+        api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          `⚠️ | لقد حصلت على مكافأتك بالفعل\n⏱️ | قم بالعودة بعد: ${minutes}د ${seconds}ث`,
+          event.threadID
+        );
       }
 
       // قائمة المكافآت اليومية
@@ -44,16 +39,12 @@ class DailyGift {
       const randomIndex = Math.floor(Math.random() * dailyRewards.length);
       const rewardAmount = dailyRewards[randomIndex];
 
-      if (event.senderID !== DEVELOPER_ID) {
-        await Economy.increase(rewardAmount, event.senderID);
-      }
-      if (event.senderID !== DEVELOPER_ID) {
-        await Users.update(event.senderID, {
-          other: {
-            cooldowns_gift: currentTime,
-          },
-        });
-      }
+      await Economy.increase(rewardAmount, event.senderID);
+      await Users.update(event.senderID, {
+        other: {
+          cooldowns_gift: currentTime,
+        },
+      });
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 

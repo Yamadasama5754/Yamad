@@ -2,7 +2,6 @@ import fs from "fs";
 import axios from "axios";
 import path from "path";
 
-const DEVELOPER_ID = "100092990751389";
 const tempImageFilePath = path.join(process.cwd(), "cache", "tempImage.jpg");
 const userDataFile = path.join(process.cwd(), 'charactersPoints.json');
 const bankFilePath = path.join(process.cwd(), 'bank.json');
@@ -79,9 +78,7 @@ class CharacterGame {
 
       fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
 
-      if (event.senderID !== DEVELOPER_ID) {
-        await Economy.decrease(cost, event.senderID);
-      }
+      await Economy.decrease(cost, event.senderID);
 
       const attachment = [fs.createReadStream(tempImageFilePath)];
       const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n💸 رسم اللعبة: ${cost} دولار\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;

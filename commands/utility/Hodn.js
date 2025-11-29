@@ -3,7 +3,6 @@ import path from "path";
 import axios from "axios";
 import jimp from "jimp";
 
-const DEVELOPER_ID = "100092990751389";
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 class HugCommand {
@@ -129,9 +128,7 @@ class HugCommand {
         );
       }
 
-      if (senderID !== DEVELOPER_ID) {
-        await Economy.decrease(cost, senderID);
-      }
+      await Economy.decrease(cost, senderID);
 
       // إنشاء الصورة
       const imagePath = await this.makeImage({

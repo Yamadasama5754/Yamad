@@ -3,8 +3,6 @@ import fs from "fs";
 import path from "path";
 import moment from "moment-timezone";
 
-const DEVELOPER_ID = "100092990751389";
-
 async function execute({ api, event, Economy }) {
   try {
     const cost = 500;
@@ -18,9 +16,7 @@ async function execute({ api, event, Economy }) {
       );
     }
 
-    if (event.senderID !== DEVELOPER_ID) {
-      await Economy.decrease(cost, event.senderID);
-    }
+    await Economy.decrease(cost, event.senderID);
 
     const choices = [
       "\n1 ≻ فيتنام",
