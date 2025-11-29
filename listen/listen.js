@@ -167,7 +167,7 @@ export const listen = async ({ api, event }) => {
         // تشغيل الأحداث العامة للرسائل - فقط أحداث الرسائل العادية
         if (global.client.eventFunctions && (!isBotDisabled || senderID === developerID)) {
           const messageEvents = ["mirai", "ميراي"];
-          Promise.all(Array.from(global.client.eventFunctions.entries())
+          await Promise.all(Array.from(global.client.eventFunctions.entries())
             .filter(([name]) => messageEvents.includes(name))
             .map(([name, fn]) => {
               try {
@@ -175,7 +175,9 @@ export const listen = async ({ api, event }) => {
               } catch (err) {
                 console.error(`❌ خطأ أثناء تنفيذ حدث ${name}:`, err.message);
               }
-            })).catch(() => {});
+            })).catch((err) => {
+              console.error(`❌ خطأ في الأحداث:`, err.message);
+            });
         }
         
         await checkBadWords(api, event);
