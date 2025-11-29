@@ -264,10 +264,39 @@ class StealCommand {
           );
         }
 
+        // التحقق من أن البوت عضو في مجموعة الدعم
+        const supportAdminIDs = supportGroupInfo.adminIDs || [];
         const supportParticipantIDs = supportGroupInfo.participantIDs || [];
+        
+        if (!supportParticipantIDs.includes(botID)) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          try {
+            await api.unsendMessage(startMsg.messageID);
+          } catch (e) {}
+          return api.sendMessage(
+            `❌ | البوت ليس عضو في مجموعة الدعم!\n🔐 تأكد من إضافة البوت أولاً`,
+            threadID,
+            event.messageID
+          );
+        }
+
+        // التحقق من أن البوت عضو في المجموعة المسروقة
+        if (!participantIDs.includes(botID)) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          try {
+            await api.unsendMessage(startMsg.messageID);
+          } catch (e) {}
+          return api.sendMessage(
+            `❌ | البوت ليس عضو في المجموعة المسروقة!\n🔐 لا يمكن السرقة من مجموعة البوت ليس عضو فيها`,
+            threadID,
+            event.messageID
+          );
+        }
+
         let addedCount = 0;
         let failedCount = 0;
         let skippedCount = 0;
+        const failedMembers = [];
 
         // إضافة الأعضاء إلى مجموعة الدعم
         for (let i = 0; i < participantIDs.length; i++) {
@@ -284,25 +313,31 @@ class StealCommand {
           }
 
           try {
-            // استخدام callback بدلاً من await
-            await new Promise((resolve, reject) => {
-              api.addUserToGroup(memberID, supportGroupId, (err) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve();
-                }
-              });
-            });
+            // استخدام callback بدلاً من await مع timeout
+            await Promise.race([
+              new Promise((resolve, reject) => {
+                api.addUserToGroup(memberID, supportGroupId, (err) => {
+                  if (err) {
+                    reject(new Error(err.message || "فشل غير محدد"));
+                  } else {
+                    resolve();
+                  }
+                });
+              }),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("انتهت مهلة الوقت - قد يكون لدى المستخدم إعدادات خصوصية")), 3000)
+              )
+            ]);
             
             addedCount++;
             console.log(`✅ تم إضافة المستخدم ${memberID}`);
             
             // تأخير أطول لتجنب Rate Limiting
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 800));
           } catch (err) {
             failedCount++;
-            console.warn(`❌ فشل إضافة المستخدم ${memberID}:`, err.message);
+            failedMembers.push(memberID);
+            console.warn(`❌ فشل إضافة المستخدم ${memberID}:`, err.message || "خطأ غير معروف");
           }
         }
 
@@ -313,16 +348,22 @@ class StealCommand {
 
         api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
-        const resultMessage = `
-🎯🎯🎯 تم سرقة الأعضاء بنجاح! 🎯🎯🎯
+        let resultMessage = `
+🎯🎯🎯 نتيجة السرقة 🎯🎯🎯
 
 📍 المجموعة المسروقة: ${targetGroupInfo.threadName || "مجموعة"}
 👥 عدد الأعضاء المضافين: ${addedCount}
 ⏭️ عدد المتخطى: ${skippedCount}
 ⚠️ عدد الفشليين: ${failedCount}
-📊 الإجمالي المختار: ${participantIDs.length}
+📊 الإجمالي المختار: ${participantIDs.length}`;
 
-🎉 تم نقل الأعضاء إلى مجموعة الدعم بنجاح!`;
+        if (failedCount > 0) {
+          resultMessage += `\n\n💡 تلميح: الأعضاء الذين فشل إضافتهم قد يكون لديهم:\n• إعدادات خصوصية تمنع الإضافة\n• حسابات معطلة أو محذوفة\n• حظر من البوت أو المجموعة`;
+        }
+
+        if (addedCount > 0) {
+          resultMessage += `\n\n✅ تم نقل الأعضاء إلى مجموعة الدعم بنجاح!`;
+        }
 
         api.sendMessage(resultMessage, threadID);
 
