@@ -4,33 +4,32 @@ import path from 'path';
 import moment from 'moment-timezone';
 
 async function execute({ api, event, Users, Threads }) {
-  console.log(`🎯 [ترحيب EVENT] logMessageType: ${event.logMessageType}, Has addedParticipants: ${!!event.logMessageData?.addedParticipants}`);
   switch (event.logMessageType) {
     case "log:subscribe": {
-      console.log(`✅ [ترحيب] Processing log:subscribe event`);
       const { addedParticipants } = event.logMessageData;
       const botUserID = api.getCurrentUserID();
 
-      // جمع معلومات الأعضاء المضافين
       for (const participant of addedParticipants) {
         if (participant.userFbId === botUserID) {
-          // إذا تم إضافة البوت
-          return;
+          continue;
         }
 
-        const userInfo = await api.getUserInfo(participant.userFbId);
-        const profileName = userInfo[participant.userFbId]?.name || "Unknown";
-        const profilePictureUrl = `https://graph.facebook.com/${participant.userFbId}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;  // صورة البروفايل
-        const membersCount = await api.getThreadInfo(event.threadID).then(info => info.participantIDs.length).catch(() => "Unknown");
-        const threadInfo = await api.getThreadInfo(event.threadID);
-        const threadName = threadInfo.threadName || "Unknown";
-        const currentTime = moment().tz("Africa/Casablanca").format("hh:mm A");
-        const formattedTime = currentTime.replace('AM', 'صباحًا').replace('PM', 'مساءً');
+        try {
+          const userInfo = await api.getUserInfo(participant.userFbId);
+          const profileName = userInfo[participant.userFbId]?.name || "Unknown";
+          const profilePictureUrl = `https://graph.facebook.com/${participant.userFbId}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
+          const membersCount = await api.getThreadInfo(event.threadID).then(info => info.participantIDs.length).catch(() => "Unknown");
+          const threadInfo = await api.getThreadInfo(event.threadID);
+          const threadName = threadInfo.threadName || "Unknown";
+          const currentTime = moment().tz("Africa/Casablanca").format("hh:mm A");
+          const formattedTime = currentTime.replace('AM', 'صباحًا').replace('PM', 'مساءً');
 
-        // صياغة رسالة الترحيب
-        const welcomeMessage = `◆❯━━━━━▣✦▣━━━━━━❮◆\n≪⚠️ إشــعــار بــالإنــضــمــام ⚠️≫\n👥 | الأسـمـاء : 『${profileName}』\n الـتـرتـيـب 🔢 : 『${membersCount}』\n🧭 | إسـم الـمـجـموعـة :『${threadName}』\n📅 | بـ تـاريـخ : ${moment().tz("Africa/Casablanca").format("YYYY-MM-DD")}\n⏰ | عـلـى الـوقـت : ${formattedTime}\n『🔖لا تـسـئ الـلـفـظ وإن ضـاق بـك الـرد🔖』\n◆❯━━━━━▣✦▣━━━━━━❮◆`;
+          const welcomeMessage = `◆❯━━━━━▣✦▣━━━━━━❮◆\n≪⚠️ إشــعــار بــالإنــضــمــام ⚠️≫\n👥 | الأسـمـاء : 『${profileName}』\n الـتـرتـيـب 🔢 : 『${membersCount}』\n🧭 | إسـم الـمـجـموعـة :『${threadName}』\n📅 | بـ تـاريـخ : ${moment().tz("Africa/Casablanca").format("YYYY-MM-DD")}\n⏰ | عـلـى الـوقـت : ${formattedTime}\n『🔖لا تـسـئ الـلـفـظ وإن ضـاق بـك الـرد🔖』\n◆❯━━━━━▣✦▣━━━━━━❮◆`;
 
-        await sendWelcomeMessage(api, event.threadID, welcomeMessage, profilePictureUrl, membersCount, profileName, threadName);
+          await sendWelcomeMessage(api, event.threadID, welcomeMessage, profilePictureUrl, membersCount, profileName, threadName);
+        } catch (err) {
+          console.error(`❌ خطأ في إرسال رسالة ترحيب:`, err.message);
+        }
       }
       break;
     }

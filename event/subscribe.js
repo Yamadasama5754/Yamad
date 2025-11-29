@@ -38,8 +38,6 @@ const getBans = (threadID) => {
 export default {
   name: "subscribe",
   execute: async ({ api, event, Threads, Users }) => {
-    console.log(`🎯 [subscribe EVENT] logMessageType: ${event.logMessageType}`);
-    
     // جلب بيانات المجموعة
     var threads = (await Threads.find(event.threadID))?.data?.data;
 

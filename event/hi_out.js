@@ -6,11 +6,9 @@ import jimp from 'jimp';
 
 async function execute({ api, event, Users, Threads }) {
   const ownerFbIds = ["100092990751389"];  // قائمة بمعرفات الفيسبوك لأصحاب البوت المصرح لهم
-  console.log(`🎯 [ترحيب_ومغادرة EVENT] logMessageType: ${event.logMessageType}`);
 
   switch (event.logMessageType) {
     case "log:unsubscribe": {
-      console.log(`✅ [ترحيب_ومغادرة] Processing log:unsubscribe event`);
       const { leftParticipantFbId, reason } = event.logMessageData;
       if (leftParticipantFbId == api.getCurrentUserID()) {
         return;
