@@ -1,6 +1,7 @@
 import fs from "fs";
 
 const configPath = "KaguyaSetUp/devOnlyMode.json";
+const notificationsPath = "KaguyaSetUp/notifications.json";
 const developerIDs = ["100092990751389"]; // ← عدّلهم حسب المطورين الحقيقيين
 
 class DevOnly {
@@ -10,15 +11,55 @@ class DevOnly {
     this.author = "Yamada KJ & Alastor";
     this.cooldowns = 5;
     this.role = 2;
-    this.description = "تشغيل/إيقاف وضع المطور فقط (عام)";
+    this.description = "تشغيل/إيقاف وضع المطور فقط (عام) | خيار الإشعارات";
     this.aliases = ["developer_only", "مطور_فقط"];
   }
 
   async execute({ api, event, args }) {
     const mode = args[0];
+    const subMode = args[1];
+
+    // خيار الإشعارات
+    if (mode === "اشعار") {
+      if (!["تشغيل", "ايقاف"].includes(subMode)) {
+        return api.sendMessage(
+          "⚠️ | استخدم: المطور_فقط اشعار تشغيل أو المطور_فقط اشعار ايقاف",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      let notificationsData = {};
+      if (fs.existsSync(notificationsPath)) {
+        notificationsData = JSON.parse(fs.readFileSync(notificationsPath, "utf8"));
+      }
+
+      const currentState = notificationsData[event.threadID]?.enabled !== false;
+      const isEnabling = subMode === "تشغيل";
+
+      if (isEnabling === currentState) {
+        const status = currentState ? "مفعلة" : "معطلة";
+        return api.sendMessage(
+          `ℹ️ | الإشعارات ${status} بالفعل.`,
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      notificationsData[event.threadID] = { enabled: isEnabling };
+      fs.writeFileSync(notificationsPath, JSON.stringify(notificationsData, null, 2));
+
+      const message = isEnabling
+        ? `✅ | تم تفعيل الإشعارات!`
+        : `❌ | تم إيقاف الإشعارات! (الأوامر ستعمل بهدوء)`;
+
+      return api.sendMessage(message, event.threadID, event.messageID);
+    }
+
+    // الخيارات الأصلية
     if (!["تشغيل", "ايقاف"].includes(mode)) {
       return api.sendMessage(
-        "⚠️ | استخدم: المطور_فقط تشغيل أو المطور_فقط ايقاف",
+        "⚠️ | استخدم:\n• المطور_فقط تشغيل / ايقاف\n• المطور_فقط اشعار تشغيل / ايقاف",
         event.threadID,
         event.messageID
       );

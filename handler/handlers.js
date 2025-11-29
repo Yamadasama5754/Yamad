@@ -15,17 +15,6 @@ export class CommandHandler {
     this.eventFunctions = this.client?.eventFunctions || new Map();
   }
 
-  isNotificationsEnabled(threadID) {
-    try {
-      const notificationsPath = "KaguyaSetUp/notifications.json";
-      if (!fs.existsSync(notificationsPath)) return true; // افتراضياً مفعلة
-      
-      const data = JSON.parse(fs.readFileSync(notificationsPath, "utf8"));
-      return data[threadID]?.enabled !== false; // true بشكل افتراضي
-    } catch (err) {
-      return true; // في حالة الخطأ، افترض أنها مفعلة
-    }
-  }
 
   async handleCommand() {
     try {
@@ -138,9 +127,6 @@ export class CommandHandler {
         return api.sendMessage("🚫 | هذا الأمر للأدمن فقط!", threadID, messageID);
       }
 
-      // ✅ فحص نظام الإشعارات
-      const notificationsEnabled = this.isNotificationsEnabled(threadID);
-
       // ✅ التحقق من الرد على رسالة
       if (event.messageReply && command.onReply) {
         return await command.onReply({ ...this.arguments, args, reply: event.messageReply });
@@ -151,9 +137,7 @@ export class CommandHandler {
         return await command.execute({ ...this.arguments, args });
       } catch (err) {
         console.error(`❌ خطأ في تنفيذ أمر "${commandName}":`, err);
-        if (notificationsEnabled) {
-          return api.sendMessage(`❌ حدث خطأ: ${err?.message || "خطأ غير معروف"}`, threadID);
-        }
+        return api.sendMessage(`❌ حدث خطأ: ${err?.message || "خطأ غير معروف"}`, threadID);
       }
     } catch (error) {
       console.error("❌ خطأ عام في معالج الأوامر:", error);
