@@ -28,9 +28,17 @@ export default {
     description: "يقوم بإنشاء صورة معالجة معينة",
     role: "member",
     cooldowns: 60,
-    execute: async ({ api, event, args }) => {
+    execute: async ({ api, event, args, Economy }) => {
         try {
             api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+            
+            const cost = 250;
+            const userBalance = (await Economy.getBalance(event.senderID)).data;
+            
+            if (userBalance < cost) {
+                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+                return api.sendMessage(`⚠️ | تحتاج إلى ${cost} دولار في محفظتك. رصيدك الحالي: ${userBalance}`, event.threadID, event.messageID);
+            }
             
             const senderID = event.messageReply?.senderID || event.senderID;
             const mention = Object.keys(event.mentions);
@@ -38,12 +46,16 @@ export default {
             if (mention.length == 0) {
                 api.setMessageReaction("❌", event.messageID, (err) => {}, true);
                 return api.sendMessage("⚠️ | المرجو عمل منشن للشخص الذي تريد أن يكون وجهه في المرحاض", event.threadID, event.messageID);
-            } else if (mention.length == 1) {
+            }
+            
+            await Economy.decrease(cost, event.senderID);
+            
+            if (mention.length == 1) {
                 const one = senderID, two = mention[0];
                 const ptth = await bal(one, two);
                 api.setMessageReaction("✅", event.messageID, (err) => {}, true);
                 api.sendMessage({ 
-                    body: "أنت تستحق هذا المكان يا وجه المرحاض 🤣", 
+                    body: `أنت تستحق هذا المكان يا وجه المرحاض 🤣\n💸 تم خصم 250 دولار`, 
                     attachment: fs.createReadStream(ptth) 
                 }, event.threadID, () => {
                     if (fs.existsSync(ptth)) fs.unlinkSync(ptth);
@@ -53,7 +65,7 @@ export default {
                 const ptth = await bal(one, two);
                 api.setMessageReaction("✅", event.messageID, (err) => {}, true);
                 api.sendMessage({ 
-                    body: "أنت تستحق هذا المكان يا وجه المرحاض 🤣", 
+                    body: `أنت تستحق هذا المكان يا وجه المرحاض 🤣\n💸 تم خصم 250 دولار`, 
                     attachment: fs.createReadStream(ptth) 
                 }, event.threadID, () => {
                     if (fs.existsSync(ptth)) fs.unlinkSync(ptth);

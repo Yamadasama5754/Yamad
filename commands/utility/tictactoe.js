@@ -2,7 +2,7 @@ export default {
   name: "اكس_او",
   author: "kaguya project",
   role: "member",
-  description: "لعبة اكس او باستخدام الرد",
+  description: "لعبة اكس او - لعب مع البوت أو مع صديق",
 
   async execute({ event, api, args }) {
     const mention = Object.keys(event.mentions);
@@ -40,8 +40,35 @@ export default {
           api.sendMessage("ليس لديك أي لعبة قيد التشغيل في هذه المجموعة", event.threadID);
         }
       }
+    } else if (mention.length == 0 && args[0] !== "إغلاق") {
+      // لعب مع البوت
+      if (!global.game) {
+        global.game = {};
+      }
+
+      const userInfo = await api.getUserInfo(event.senderID);
+      const userName = userInfo[event.senderID]?.name || "Unknown";
+
+      global.game[event.threadID] = {
+        on: true,
+        board: "🔲🔲🔲\n🔲🔲🔲\n🔲🔲🔲",
+        bid: "",
+        board2: "123456789",
+        avcell: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        turn: event.senderID,
+        player1: { id: event.senderID, name: userName, isBot: false },
+        player2: { id: "BOT", name: "🤖 البوت", isBot: true },
+        bidd: "❌",
+        bid: "",
+        ttrns: [],
+        counting: 0
+      };
+
+      api.sendMessage("🎮 لعبة اكس او ضد البوت!\nأنت: ❌ | البوت: ⭕\n\n" + global.game[event.threadID].board, event.threadID, (err, info) => {
+        global.game[event.threadID].bid = info.messageID;
+      });
     } else {
-      if (mention.length == 0) return api.sendMessage("يرجى عمل منشن لشخص ما أو قول إغلاق اللعبة لإغلاق أي لعبة موجودة", event.threadID);
+      if (mention.length == 0) return api.sendMessage("يرجى عمل منشن لشخص ما أو اكتب .اكس_او للعب مع البوت", event.threadID);
 
       if (!global.game || !global.game.hasOwnProperty(event.threadID) || !global.game[event.threadID] || global.game[event.threadID].on === false) {
         if (!global.game) {
@@ -58,8 +85,8 @@ export default {
           board2: "123456789",
           avcell: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
           turn: mention[0],
-          player1: { id: mention[0], name: player1Info[mention[0]].name },
-          player2: { id: event.senderID, name: player2Info[event.senderID].name },
+          player1: { id: mention[0], name: player1Info[mention[0]].name, isBot: false },
+          player2: { id: event.senderID, name: player2Info[event.senderID].name, isBot: false },
           bidd: "❌",
           bid: "",
           ttrns: [],
