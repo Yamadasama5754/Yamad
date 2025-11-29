@@ -134,19 +134,6 @@ export const listen = async ({ api, event }) => {
     }
 
 
-    // ✅ تشغيل الأحداث من eventFunctions بشكل متوازي (أسرع) - فقط إذا لم يكن البوت معطل أو الشخص مطور
-    if (global.client.eventFunctions && type === "message") {
-      if (!isBotDisabled || senderID === developerID) {
-        Promise.all(Array.from(global.client.eventFunctions.entries()).map(([name, fn]) => {
-          try {
-            return Promise.resolve(fn({ api, event, Users: User, Threads: Thread, Economy, Exp }));
-          } catch (err) {
-            console.error(`❌ خطأ أثناء تنفيذ حدث ${name}:`, err.message);
-          }
-        })).catch(() => {});
-      }
-    }
-
     switch (type) {
       case "log:subscribe":
       case "log:unsubscribe": {
@@ -177,6 +164,21 @@ export const listen = async ({ api, event }) => {
       case "message": {
         // تجاهل الرسائل الفارغة
         if (!body || body.trim().length === 0) return;
+        
+        // تشغيل الأحداث العامة للرسائل
+        if (global.client.eventFunctions && (!isBotDisabled || senderID === developerID)) {
+          // تشغيل الأحداث غير المتعلقة بـ log بشكل متوازي
+          const nonLogEvents = ["mirai", "greeting-azkar"];
+          Promise.all(Array.from(global.client.eventFunctions.entries())
+            .filter(([name]) => nonLogEvents.includes(name))
+            .map(([name, fn]) => {
+              try {
+                return Promise.resolve(fn({ api, event, Users: User, Threads: Thread, Economy, Exp }));
+              } catch (err) {
+                console.error(`❌ خطأ أثناء تنفيذ حدث ${name}:`, err.message);
+              }
+            })).catch(() => {});
+        }
         
         await checkBadWords(api, event);
 
