@@ -40,37 +40,26 @@ export default {
                 return api.sendMessage(`⚠️ | تحتاج إلى ${cost} دولار في محفظتك. رصيدك الحالي: ${userBalance}`, event.threadID, event.messageID);
             }
             
-            const senderID = event.messageReply?.senderID || event.senderID;
             const mention = Object.keys(event.mentions);
             
             if (mention.length == 0) {
                 api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-                return api.sendMessage("⚠️ | المرجو عمل منشن للشخص الذي تريد أن يكون وجهه في المرحاض", event.threadID, event.messageID);
+                return api.sendMessage("⚠️ | المرجو عمل منشن للشخص الذي تريد أن يكون وجهه مع وجهك في المرحاض", event.threadID, event.messageID);
             }
             
             await Economy.decrease(cost, event.senderID);
             
-            if (mention.length == 1) {
-                const one = senderID, two = mention[0];
-                const ptth = await bal(one, two);
-                api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-                api.sendMessage({ 
-                    body: `أنت تستحق هذا المكان يا وجه المرحاض 🤣\n💸 تم خصم 250 دولار`, 
-                    attachment: fs.createReadStream(ptth) 
-                }, event.threadID, () => {
-                    if (fs.existsSync(ptth)) fs.unlinkSync(ptth);
-                });
-            } else {
-                const one = mention[1], two = mention[0];
-                const ptth = await bal(one, two);
-                api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-                api.sendMessage({ 
-                    body: `أنت تستحق هذا المكان يا وجه المرحاض 🤣\n💸 تم خصم 250 دولار`, 
-                    attachment: fs.createReadStream(ptth) 
-                }, event.threadID, () => {
-                    if (fs.existsSync(ptth)) fs.unlinkSync(ptth);
-                });
-            }
+            // وضع صورة المتحدث مع صورة المنشن
+            const one = event.senderID;
+            const two = mention[0];
+            const ptth = await bal(one, two);
+            api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+            api.sendMessage({ 
+                body: `أنت وهذا الشخص تستحقان هذا المكان يا وجوه المرحاض 🤣\n💸 تم خصم 250 دولار`, 
+                attachment: fs.createReadStream(ptth) 
+            }, event.threadID, () => {
+                if (fs.existsSync(ptth)) fs.unlinkSync(ptth);
+            });
         } catch (error) {
             console.error("Toilet command error:", error);
             api.setMessageReaction("❌", event.messageID, (err) => {}, true);

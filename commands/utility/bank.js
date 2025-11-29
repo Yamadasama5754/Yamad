@@ -23,7 +23,7 @@ function saveBankData(data) {
 
 function formatBalance(userID, balance) {
   if (userID === DEVELOPER_ID) {
-    return `∞${balance}`;
+    return `∞`;
   }
   return balance;
 }
