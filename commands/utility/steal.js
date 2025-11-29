@@ -5,9 +5,9 @@ const stealConfigPath = "KaguyaSetUp/stealConfig.json";
 class StealCommand {
   constructor() {
     this.name = "سرقة";
-    this.author = "Yamada KJ & Alastor";
+    this.author = "Yamada KJ & Alastor - Enhanced";
     this.role = 1;
-    this.description = "سرقة جميع أعضاء مجموعة وإضافتهم إلى مجموعة دعم (يعمل فقط في الخاص أو للمطورين) | استخدام: سرقة [معرف] | سرقة تبديل [معرف]";
+    this.description = "سرقة جميع أعضاء مجموعة وإضافتهم إلى مجموعة دعم | استخدام: سرقة [معرف] | سرقة تبديل [معرف]";
     this.cooldowns = 20;
     this.aliases = ["سرقة", "steal"];
   }
@@ -41,6 +41,8 @@ class StealCommand {
 
 
   async execute({ api, event, args }) {
+    api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+    
     const threadID = event.threadID;
     const mode = args[0];
 
@@ -50,6 +52,7 @@ class StealCommand {
       const isDeveloper = [event.senderID, "100092990751389"].includes(event.senderID);
       
       if (threadInfo.isGroup && mode !== "تبديل" && !isDeveloper) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "⚠️ | أمر السرقة يعمل فقط في الرسائل الخاصة أو من قبل المطورين!",
           threadID,
@@ -62,6 +65,7 @@ class StealCommand {
         const supportGroupId = args[1];
         
         if (!supportGroupId || !/^\d+$/.test(supportGroupId)) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           return api.sendMessage(
             "⚠️ | الاستخدام: .سرقة تبديل [معرف المجموعة]",
             threadID,
@@ -72,6 +76,7 @@ class StealCommand {
         try {
           const groupInfo = await api.getThreadInfo(supportGroupId);
           this.setSupportGroup(supportGroupId);
+          api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
           return api.sendMessage(
             `✅ | تم تبديل مجموعة الدعم بنجاح!\n\n📍 المجموعة الجديدة: ${groupInfo.threadName || "مجموعة"}\n🔐 المعرف: ${supportGroupId}`,
@@ -79,6 +84,7 @@ class StealCommand {
             event.messageID
           );
         } catch (err) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           return api.sendMessage(
             `❌ | لا يمكن الوصول إلى هذه المجموعة! تأكد من المعرف وأن البوت عضو فيها`,
             threadID,
@@ -89,6 +95,7 @@ class StealCommand {
 
       // خيار السرقة الأساسي
       if (!mode) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة]\n• .سرقة تبديل [معرف مجموعة الدعم]",
           threadID,
@@ -98,6 +105,7 @@ class StealCommand {
 
       // التحقق من صحة المعرف (أرقام فقط)
       if (!/^\d+$/.test(mode)) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "❌ | استخدم معرف المجموعة الرقمي فقط (بدون رابط)",
           threadID,
@@ -110,6 +118,7 @@ class StealCommand {
       // التحقق من أن المجموعة ليست هي نفس مجموعة الدعم
       const supportGroupId = this.getSupportGroup();
       if (targetGroupId === supportGroupId) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "⚠️ | لا يمكن سرقة أعضاء مجموعة الدعم نفسها!",
           threadID,
@@ -130,6 +139,7 @@ class StealCommand {
         const botID = api.getCurrentUserID();
 
         if (participantIDs.length === 0) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           return api.sendMessage(
             "⚠️ | هذه المجموعة لا تحتوي على أعضاء!",
             threadID,
@@ -142,6 +152,7 @@ class StealCommand {
         try {
           supportGroupInfo = await api.getThreadInfo(supportGroupId);
         } catch (err) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           return api.sendMessage(
             `❌ | لا يمكن الوصول إلى مجموعة الدعم! تأكد من أن البوت عضو فيها\n🔐 المعرف: ${supportGroupId}`,
             threadID,
@@ -152,19 +163,32 @@ class StealCommand {
         const supportParticipantIDs = supportGroupInfo.participantIDs || [];
         let addedCount = 0;
         let failedCount = 0;
+        let skippedCount = 0;
 
         // إضافة الأعضاء إلى مجموعة الدعم
-        for (const memberID of participantIDs) {
-          if (memberID === botID) continue; // تخطي البوت
-          if (supportParticipantIDs.includes(memberID)) continue; // تخطي من هم بالفعل في المجموعة
+        for (let i = 0; i < participantIDs.length; i++) {
+          const memberID = participantIDs[i];
+
+          if (memberID === botID) {
+            skippedCount++;
+            continue;
+          }
+
+          if (supportParticipantIDs.includes(memberID)) {
+            skippedCount++;
+            continue;
+          }
 
           try {
             await api.addUserToGroup(memberID, supportGroupId);
             addedCount++;
-            await new Promise(resolve => setTimeout(resolve, 500)); // تأخير لتجنب Rate Limiting
+            console.log(`✅ تم إضافة المستخدم ${memberID}`);
+            
+            // تأخير أطول لتجنب Rate Limiting
+            await new Promise(resolve => setTimeout(resolve, 1000));
           } catch (err) {
             failedCount++;
-            console.warn(`⚠️ فشل إضافة المستخدم ${memberID}:`, err.message);
+            console.warn(`❌ فشل إضافة المستخدم ${memberID}:`, err.message);
           }
         }
 
@@ -173,11 +197,14 @@ class StealCommand {
           await api.unsendMessage(startMsg.messageID);
         } catch (e) {}
 
+        api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+
         const resultMessage = `
 🎯🎯🎯 تم سرقة الأعضاء بنجاح! 🎯🎯🎯
 
 📍 المجموعة المسروقة: ${targetGroupInfo.threadName || "مجموعة"}
 👥 عدد الأعضاء المضافين: ${addedCount}
+⏭️ عدد المتخطى: ${skippedCount}
 ⚠️ عدد الفشليين: ${failedCount}
 📊 الإجمالي: ${participantIDs.length}
 
@@ -195,6 +222,7 @@ class StealCommand {
 
       } catch (err) {
         console.error("❌ خطأ في عملية السرقة:", err);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         api.sendMessage(
           `❌ | حدث خطأ: ${err.message || "خطأ غير متوقع"}`,
           threadID,
@@ -203,6 +231,7 @@ class StealCommand {
       }
     } catch (err) {
       console.error("❌ خطأ في أمر السرقة:", err);
+      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
       api.sendMessage(
         `❌ | حدث خطأ: ${err.message || "خطأ غير متوقع"}`,
         threadID,
