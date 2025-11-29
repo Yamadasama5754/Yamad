@@ -5,32 +5,60 @@ import moment from 'moment-timezone';
 import jimp from 'jimp';
 
 async function execute({ api, event, Users, Threads }) {
-  const ownerFbIds = ["100092990751389"];  // قائمة بمعرفات الفيسبوك لأصحاب البوت المصرح لهم
+  const ownerFbIds = ["100092990751389"];
 
-  switch (event.logMessageType) {
-    case "log:unsubscribe": {
+  try {
+    if (event.logMessageType === "log:unsubscribe") {
       const { leftParticipantFbId, reason } = event.logMessageData;
+      
+      // تجاهل إذا خرج البوت نفسه
       if (leftParticipantFbId == api.getCurrentUserID()) {
         return;
       }
-      const userInfo = await api.getUserInfo(leftParticipantFbId);
-      const profileName = userInfo[leftParticipantFbId]?.name || "Unknown";
-      const type = event.author == leftParticipantFbId ? "غادر لوحده" : "طرده الآدمن";
-      const farewellReason = getFarewellReason(reason);
-      const membersCount = await api.getThreadInfo(event.threadID).then(info => info.participantIDs.length).catch(error => {
-        console.error('Error getting members count:', error);
-        return "Unknown";
-      });
-      const farewellMessage = `❏ الإســم 👤 : 『${profileName}』 \n❏ الـسـبـب 📝 : \n『${type}』 \n 『${farewellReason}』\n❏ المـتـبـقـيـيـن : ${membersCount} عـضـو`;
-      const profilePicturePath = await getProfilePicture(leftParticipantFbId);
-      await sendWelcomeOrFarewellMessage(api, event.threadID, farewellMessage, profilePicturePath);
-      break;
+
+      try {
+        const userInfo = await api.getUserInfo(leftParticipantFbId);
+        const profileName = userInfo[leftParticipantFbId]?.name || "Unknown";
+        const type = event.author == leftParticipantFbId ? "🚶 غادر لوحده" : "🔨 طرده الآدمن";
+        const farewellReason = getFarewellReason(reason);
+        
+        let membersCount = "Unknown";
+        try {
+          const threadInfo = await api.getThreadInfo(event.threadID);
+          membersCount = threadInfo.participantIDs?.length || "Unknown";
+        } catch (e) {
+          console.warn('⚠️ خطأ في الحصول على عدد الأعضاء:', e.message);
+        }
+
+        const farewellMessage = [
+          "◆❯━━━━━▣✦▣━━━━━━❮◆",
+          "≪👋 إشــعــار بــالـمـغـادرة 👋≫",
+          `👤 | الإسـم : 『${profileName}』`,
+          `📝 | النـوع : 『${type}』`,
+          `💬 | الـسـبـب : 『${farewellReason}』`,
+          `👥 | المـتـبـقـيـيـن : 『${membersCount} عـضـو』`,
+          "『🔖 نتمنى لك حياة جميلة! 🔖』",
+          "◆❯━━━━━▣✦▣━━━━━━❮◆"
+        ].join("\n");
+
+        try {
+          const profilePicturePath = await getProfilePicture(leftParticipantFbId);
+          await sendWelcomeOrFarewellMessage(api, event.threadID, farewellMessage, profilePicturePath);
+        } catch (picError) {
+          console.warn('⚠️ خطأ في الحصول على صورة الملف الشخصي، سيتم إرسال النص فقط:', picError.message);
+          await api.sendMessage(farewellMessage, event.threadID);
+        }
+      } catch (error) {
+        console.error('❌ خطأ في معالجة المغادرة:', error.message);
+        await api.sendMessage("👋 | غادر عضو من المجموعة", event.threadID);
+      }
+    } 
+    else if (event.logMessageType === "log:subscribe") {
+      // معالجة في hi.js فقط لتجنب الرسائل المزدوجة
+      return;
     }
-    case "log:subscribe": {
-      // تم تعطيل معالجة إضافة البوت هنا
-      // ستتم المعالجة فقط في event/ترحيب.js لتجنب الرسائل المزدوجة
-      break;
-    }
+  } catch (error) {
+    console.error('❌ [OUT_HI] خطأ عام:', error.message);
   }
 }
 
@@ -79,21 +107,53 @@ async function handleBotAddition(api, event, ownerFbIds) {
 
 async function sendWelcomeOrFarewellMessage(api, threadID, message, attachmentPath) {
   try {
-    await api.sendMessage({
-      body: message,
-      attachment: fs.createReadStream(attachmentPath),
-    }, threadID);
+    if (attachmentPath && fs.existsSync(attachmentPath)) {
+      await api.sendMessage({
+        body: message,
+        attachment: fs.createReadStream(attachmentPath),
+      }, threadID);
+      
+      // حذف الملف بعد الإرسال
+      setTimeout(() => {
+        try {
+          if (fs.existsSync(attachmentPath)) {
+            fs.unlinkSync(attachmentPath);
+          }
+        } catch (e) {}
+      }, 1000);
+    } else {
+      // إرسال النص فقط
+      await api.sendMessage(message, threadID);
+    }
   } catch (error) {
-    console.error('Error sending welcome or farewell message:', error);
+    console.error('❌ خطأ في إرسال رسالة المغادرة:', error.message);
+    // إرسال النص كبديل
+    try {
+      await api.sendMessage(message, threadID);
+    } catch (e) {
+      console.error('❌ فشل إرسال رسالة المغادرة البديلة:', e.message);
+    }
   }
 }
 
 async function getProfilePicture(userID) {
-  const url = `https://graph.facebook.com/${userID}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
-  const img = await jimp.read(url);
-  const profilePath = path.join(process.cwd(), 'cache', `profile_${userID}.png`);
-  await img.writeAsync(profilePath);
-  return profilePath;
+  try {
+    const url = `https://graph.facebook.com/${userID}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
+    
+    // تأكد من وجود مجلد cache
+    const cacheDir = path.join(process.cwd(), 'cache');
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+
+    const img = await jimp.read(url);
+    const profilePath = path.join(cacheDir, `profile_${userID}_${Date.now()}.png`);
+    await img.writeAsync(profilePath);
+    return profilePath;
+  } catch (error) {
+    console.warn('⚠️ خطأ في تحميل الصورة:', error.message);
+    throw error;
+  }
 }
 
 function getFarewellReason(reason) {

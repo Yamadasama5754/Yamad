@@ -6463,5 +6463,28 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "61566410642432",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ڒٍعيَمةّ آلُمآفَيَآ",
+      "firstName": "ڒٍعيَمةّ",
+      "vanity": "sydt.albhar.alsb.t",
+      "avatar": "https://graph.facebook.com/61566410642432/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/sydt.albhar.alsb.t",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
   }
 ]

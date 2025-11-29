@@ -12,6 +12,8 @@ async function execute({ api, event }) {
   const botUserID = api.getCurrentUserID();
   const { addedParticipants, actor } = event.logMessageData;
 
+  if (!addedParticipants || addedParticipants.length === 0) return;
+
   // التحقق من انضمام البوت للمجموعة
   for (const participant of addedParticipants) {
     if (participant.userFbId === botUserID) {
@@ -37,20 +39,24 @@ async function execute({ api, event }) {
 
       const message = [
         "◆❯━━━━━▣✦▣━━━━━━❮◆",
-        "≪⚠️ إشــعــار بــالإنــضــمــام ⚠️≫",
+        "≪👋 إشــعــار بــالإنــضــمــام 👋≫",
         `👥 | الأسـمـاء : 『${profileName}』`,
         `🔢 | الـترتـيـب : 『${membersCount}』`,
         `🧭 | إسـم الـمـجـموعـة :『${threadName}』`,
         `📅 | بـتـاريـخ : ${date}`,
         `⏰ | عـلـى الـوقـت : ${time}`,
-        "『🔖 لا تـسـئ الـلـفـظ وإن ضـاق بـك الـرد 🔖』",
+        "『🔖 أهلاً بك معنا! 🔖』",
         "◆❯━━━━━▣✦▣━━━━━━❮◆"
       ].join("\n");
 
       await sendWelcomeCard(api, event.threadID, message, avatarUrl, profileName, threadName, membersCount);
     } catch (error) {
-      console.error(`[WELCOME] Failed for user ${participant.userFbId}:`, error.message);
-      await api.sendMessage("⚠️ حدث خطأ أثناء إرسال رسالة الترحيب.", event.threadID);
+      console.error(`❌ [WELCOME] Failed for user ${participant.userFbId}:`, error.message);
+      try {
+        await api.sendMessage(`👋 أهلاً وسهلاً! تم إضافة عضو جديد للمجموعة`, event.threadID);
+      } catch (e) {
+        console.error("❌ خطأ في إرسال رسالة الترحيب البديلة:", e);
+      }
     }
   }
 }
