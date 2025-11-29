@@ -3,6 +3,8 @@ import path from 'path';
 import axios from 'axios';
 import jimp from 'jimp';
 
+const DEVELOPER_ID = "100092990751389";
+
 class Jail {
   constructor() {
     this.name = "سجن";
@@ -40,7 +42,9 @@ class Jail {
     }
 
     try {
-      await Economy.decrease(cost, senderID);
+      if (senderID !== DEVELOPER_ID) {
+        await Economy.decrease(cost, senderID);
+      }
       api.setMessageReaction("⏳", messageID, () => {}, true);
 
       // ✅ استخدام API بجودة أعلى

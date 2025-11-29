@@ -2,6 +2,8 @@ import fs from "fs-extra";
 import jimp from "jimp";
 import path from "path";
 
+const DEVELOPER_ID = "100092990751389";
+
 class GraveCommand {
   constructor() {
     this.name = "قبر";
@@ -36,7 +38,9 @@ class GraveCommand {
     const sentMsg = await api.sendMessage("⏱️ | جاري إنشاء صورة القبر....", event.threadID);
 
     try {
-      await Economy.decrease(cost, event.senderID);
+      if (event.senderID !== DEVELOPER_ID) {
+        await Economy.decrease(cost, event.senderID);
+      }
       const imagePath = await this.createGraveImage(targetUserId);
       await api.sendMessage({
         body: "كان إنساناً طيباً 🤧",
