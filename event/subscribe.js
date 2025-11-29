@@ -160,29 +160,31 @@ export default {
 
             // 🚫 التحقق من قائمة الحظر أولاً
             const bans = getBans(event.threadID);
-            if (bans.find(b => b.userID === addedUserID)) {
+            const bannedUser = bans.find(b => b.userID === addedUserID);
+            
+            if (bannedUser) {
               try {
                 const botID = api.getCurrentUserID();
                 const threadInfo = await api.getThreadInfo(event.threadID);
                 const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
 
                 if (isBotAdmin) {
-                  // البوت ادمن: طرد الشخص المحظور تلقائياً
+                  // البوت أدمن: طرد الشخص المحظور تلقائياً
                   await api.removeUserFromGroup(addedUserID, event.threadID);
                   api.sendMessage(
-                    `🚫 | تم طرد هذا العضو تلقائياً!\n📌 السبب: الشخص مبان من المجموعة`,
+                    `🚫 | تم طرد هذا الشخص تلقائياً!\n📌 السبب: الشخص محظور من المجموعة\n🔐 المعرف: ${addedUserID}`,
                     event.threadID
                   );
                   continue;
                 } else {
-                  // البوت ليس ادمن: رسالة تنبيه
+                  // البوت ليس أدمن: رسالة تنبيه
                   api.sendMessage(
-                    `⚠️ | تنبيه: تم إضافة شخص مبان!\n👤 المعرف: ${addedUserID}\n⚠️ لازم البوت يكون ادمن لطرده تلقائياً!`,
+                    `⚠️ | تنبيه: شخص محظور عاد للمجموعة!\n👤 المعرف: ${addedUserID}\n🚨 البوت يجب أن يكون أدمن لطرده تلقائياً!`,
                     event.threadID
                   );
                 }
               } catch (err) {
-                console.error("خطأ في معالجة الشخص المبان:", err.message);
+                console.error("❌ خطأ في معالجة الشخص المحظور:", err.message);
               }
             }
 
