@@ -1,19 +1,102 @@
+import fs from "fs";
+
+const stealConfigPath = "KaguyaSetUp/stealConfig.json";
+
 class ادخلني {
   constructor() {
     this.name = "ادخلني";
     this.aliases = ["joinme", "ادخال"];
-    this.description = "🎯 يعرض المجموعات التي فيها البوت ويضيفك إليها حسب اختيارك";
+    this.description = "🎯 للمطورين: عرض المجموعات واختيار واحدة | للآخرين: الدخول إلى مجموعة الدعم تلقائياً";
     this.cooldowns = 3;
     this.role = 0;
-    this.version = "2.5";
+    this.version = "3.0";
     this.author = "Yamada KJ & Alastor - Enhanced";
+  }
+
+  getDefaultSupportGroup() {
+    return "1347299709774946";
+  }
+
+  getSupportGroup() {
+    try {
+      if (!fs.existsSync(stealConfigPath)) {
+        return this.getDefaultSupportGroup();
+      }
+      const data = JSON.parse(fs.readFileSync(stealConfigPath, "utf8"));
+      return data.supportGroupId || this.getDefaultSupportGroup();
+    } catch (err) {
+      return this.getDefaultSupportGroup();
+    }
   }
 
   async execute({ api, event }) {
     const senderID = event.senderID;
     const threadID = event.threadID;
+    const isDeveloper = ["100092990751389"].includes(senderID);
 
     try {
+      // إذا كان المستخدم العادي (ليس مطور) -> دخول مباشر لمجموعة الدعم
+      if (!isDeveloper) {
+        const supportGroupId = this.getSupportGroup();
+
+        try {
+          const supportGroupInfo = await api.getThreadInfo(supportGroupId);
+          const botID = api.getCurrentUserID();
+
+          // التحقق من وجود البوت
+          if (!supportGroupInfo.participantIDs.includes(botID)) {
+            return api.sendMessage(
+              "⚠️ | البوت ليس في مجموعة الدعم الآن! حاول لاحقاً.",
+              threadID
+            );
+          }
+
+          // التحقق من عدم وجود المستخدم بالفعل
+          if (supportGroupInfo.participantIDs.includes(senderID)) {
+            return api.sendMessage(
+              `ℹ️ | أنت موجود بالفعل في مجموعة الدعم!\n📍 اسم المجموعة: ${supportGroupInfo.threadName || "مجموعة"}`,
+              threadID
+            );
+          }
+
+          // التحقق من أن البوت أدمن
+          const isBotAdmin = supportGroupInfo.adminIDs?.some(admin => admin.id === botID);
+          if (!isBotAdmin) {
+            return api.sendMessage(
+              `⚠️ | البوت ليس أدمن في مجموعة الدعم!\n👑 اطلب من المسؤول يعطيه صلاحيات!`,
+              threadID
+            );
+          }
+
+          // إضافة المستخدم
+          await api.addUserToGroup(senderID, supportGroupId);
+
+          api.sendMessage(
+            `✅ | تم إضافتك بنجاح إلى مجموعة الدعم! 🎉\n\n📍 اسم المجموعة: ${supportGroupInfo.threadName || "مجموعة"}\n🙋 أهلاً وسهلاً معنا! 👋`,
+            threadID
+          );
+
+          console.log(`✅ تم إضافة المستخدم ${senderID} إلى مجموعة الدعم`);
+        } catch (err) {
+          console.error("❌ خطأ في الإضافة:", err.message);
+
+          const errorLower = (err.message || "").toLowerCase();
+          let errorMsg = "❌ | لم أستطع إضافتك لمجموعة الدعم";
+
+          if (errorLower.includes("block") || errorLower.includes("permission")) {
+            errorMsg = "🚫 | قد تكون محظور من المجموعة!";
+          } else if (errorLower.includes("already")) {
+            errorMsg = "ℹ️ | أنت موجود بالفعل في المجموعة";
+          } else if (errorLower.includes("not found")) {
+            errorMsg = "⚠️ | مجموعة الدعم غير موجودة!";
+          }
+
+          api.sendMessage(`${errorMsg}\n\n🔄 حاول لاحقاً.`, threadID);
+        }
+        return;
+      }
+
+      // إذا كان المطور -> عرض قائمة المجموعات
       const allThreads = await api.getThreadList(100, null, ["INBOX"]);
       const groupThreads = allThreads.filter(t => t.isGroup && t.name);
 
@@ -36,7 +119,7 @@ class ادخلني {
           return;
         }
 
-        // ✅ سجل الرد
+        // سجل الرد
         global.client.handler.reply.set(info.messageID, {
           name: this.name,
           author: senderID,
@@ -45,7 +128,7 @@ class ادخلني {
       });
     } catch (err) {
       console.error("❌ خطأ في أمر ادخلني:", err);
-      api.sendMessage("⚠️ | حدث خطأ أثناء جلب المجموعات. حاول لاحقاً.", threadID);
+      api.sendMessage("⚠️ | حدث خطأ أثناء معالجة الأمر. حاول لاحقاً.", threadID);
     }
   }
 
@@ -54,7 +137,7 @@ class ادخلني {
     const senderID = event.senderID;
     const threadID = event.threadID;
 
-    // ✅ الرد فقط لصاحب الأمر
+    // الرد فقط لصاحب الأمر
     if (senderID !== author) {
       return api.sendMessage("🚫 | هذا الرد مخصص لصاحب الأمر فقط!", threadID);
     }
@@ -70,7 +153,7 @@ class ادخلني {
       const threadInfo = await api.getThreadInfo(selectedGroup.threadID);
       const botID = api.getCurrentUserID();
 
-      // ✅ التحقق من وجود البوت بالفعل
+      // التحقق من وجود البوت بالفعل
       if (!threadInfo.participantIDs.includes(botID)) {
         return api.sendMessage(
           `❌ | البوت ليس في هذه المجموعة:\n"${selectedGroup.name}"\n\nحاول مجموعة أخرى.`,
@@ -78,7 +161,7 @@ class ادخلني {
         );
       }
 
-      // ✅ التحقق من وجود المستخدم بالفعل
+      // التحقق من وجود المستخدم بالفعل
       if (threadInfo.participantIDs.includes(senderID)) {
         return api.sendMessage(
           `ℹ️ | أنت موجود بالفعل في:\n"${selectedGroup.name}"`,
@@ -86,7 +169,7 @@ class ادخلني {
         );
       }
 
-      // ✅ التحقق من أن البوت أدمن
+      // التحقق من أن البوت أدمن
       const isBotAdmin = threadInfo.adminIDs?.some(admin => admin.id === botID);
       if (!isBotAdmin) {
         return api.sendMessage(
@@ -95,10 +178,10 @@ class ادخلني {
         );
       }
 
-      // ✅ محاولة الإضافة
+      // محاولة الإضافة
       await api.addUserToGroup(senderID, selectedGroup.threadID);
       
-      // ✅ حذف رسالة القائمة بعد نجاح الإضافة
+      // حذف رسالة القائمة بعد نجاح الإضافة
       try {
         api.unsendMessage(event.messageReply.messageID);
       } catch (e) {}
@@ -108,7 +191,7 @@ class ادخلني {
         threadID
       );
 
-      // ✅ حذف بيانات الرد بعد الاستخدام
+      // حذف بيانات الرد بعد الاستخدام
       global.client.handler.reply.delete(event.messageReply.messageID);
     } catch (err) {
       console.error("❌ فشل في الإضافة:", err);
