@@ -7889,5 +7889,74 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "61584482128839",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Kim Houng",
+      "firstName": "Kim",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61584482128839/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61584482128839",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61574937360201",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "زاك ستون",
+      "firstName": "زاك",
+      "vanity": "zak.stwn",
+      "avatar": "https://graph.facebook.com/61574937360201/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/zak.stwn",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61581075901434",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Sweet Choco",
+      "firstName": "Sweet",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61581075901434/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61581075901434",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
   }
 ]
