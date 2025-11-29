@@ -58,11 +58,36 @@ class MarkCommand {
 
       const pathImg = path.join(tempDir, `mark_${Date.now()}.png`);
 
-      // Get the Mark Zuckerberg post template image
-      const getPorn = (await axios.get(`https://imgur.com/undefined.png`, { responseType: 'arraybuffer' })).data;
-      fs.writeFileSync(pathImg, Buffer.from(getPorn, 'utf-8'));
+      // استخدام صورة خلفية بيضاء موثوقة من imgur
+      const markCardUrl = "https://imgur.com/neYz0Wy.png";
+      let rankCard;
+      
+      try {
+        const response = await axios.get(markCardUrl, { 
+          responseType: 'arraybuffer',
+          timeout: 10000 
+        });
+        rankCard = response.data;
+      } catch (err) {
+        // إذا فشلت الصورة، نستخدم صورة بيضاء بسيطة
+        rankCard = null;
+      }
 
-      const baseImage = await loadImage(pathImg);
+      let baseImage;
+      if (rankCard) {
+        fs.writeFileSync(pathImg, Buffer.from(rankCard, 'binary'));
+        baseImage = await loadImage(pathImg);
+      } else {
+        // إنشاء صورة بيضاء بسيطة إذا فشل التحميل
+        const canvas = createCanvas(934, 282);
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, 934, 282);
+        const buffer = canvas.toBuffer('image/png');
+        fs.writeFileSync(pathImg, buffer);
+        baseImage = await loadImage(pathImg);
+      }
+
       const canvas = createCanvas(baseImage.width, baseImage.height);
       const ctx = canvas.getContext("2d");
 
@@ -78,7 +103,7 @@ class MarkCommand {
       }
 
       const lines = await this.wrapText(ctx, text, 1160);
-      ctx.fillText(lines.join('\n'), 60, 668);
+      ctx.fillText(lines.join('\n'), 60, 100);
 
       const imageBuffer = canvas.toBuffer();
       fs.writeFileSync(pathImg, imageBuffer);
@@ -91,7 +116,7 @@ class MarkCommand {
 
     } catch (error) {
       console.error("❌ خطأ في أمر مارك:", error);
-      api.sendMessage("❌ | حدث خطأ أثناء إنشاء الصورة.", threadID, messageID);
+      api.sendMessage("❌ | حدث خطأ أثناء إنشاء الصورة: " + error.message, threadID, messageID);
     }
   }
 }

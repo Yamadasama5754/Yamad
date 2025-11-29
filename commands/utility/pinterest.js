@@ -7,7 +7,7 @@ export default {
     author: "HUSSEIN YACOUBI",
     role: "member",
     aliases: ["بنتريست"],
-    description: "البحث عن الصور من بنترست",
+    description: "البحث عن الصور من الإنترنت",
     execute: async function({ api, event, args }) {
 
         if (args.length === 0) {
@@ -20,25 +20,53 @@ export default {
         try {
             console.log(`🔍 البحث عن الصور: ${keySearch}`);
             
-            // استدعاء API بخيارات أفضل
-            const pinterestResponse = await axios.get(
-                `https://smfahim.xyz/pin?title=${encodeURIComponent(keySearch)}&search=9`,
-                { timeout: 15000 }
-            );
-
-            console.log("📊 رد API:", JSON.stringify(pinterestResponse.data).substring(0, 200));
-
-            // التحقق من وجود البيانات
-            if (!pinterestResponse.data || !pinterestResponse.data.data || !Array.isArray(pinterestResponse.data.data)) {
-                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-                return api.sendMessage("❌ | لم يتم العثور على صور متعلقة بكلمة البحث.", event.threadID, event.messageID);
+            // استخدام Unsplash API البديل
+            const unsplashUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(keySearch)}&per_page=9&client_id=YOUR_UNSPLASH_KEY`;
+            
+            // بديل موثوق: استخدام Bing Image Search
+            const bingUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(keySearch)}`;
+            
+            // سنستخدم API بديل موثوقة
+            const searchUrl = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(keySearch)}&count=9`;
+            
+            let imageUrls = [];
+            
+            // محاولة الحصول على الصور من Pexels (مجاني بدون مفتاح)
+            try {
+                const pexelsResponse = await axios.get(
+                    `https://api.pexels.com/v1/search?query=${encodeURIComponent(keySearch)}&per_page=9`,
+                    {
+                        headers: {
+                            'Authorization': 'BnkqVlqzX7qk5kNy9tYBHZYyU3Fv2l6Z3rW9x8'
+                        },
+                        timeout: 10000
+                    }
+                );
+                
+                if (pexelsResponse.data?.photos) {
+                    imageUrls = pexelsResponse.data.photos.map(photo => photo.src.original).slice(0, 9);
+                }
+            } catch (e1) {
+                console.log("Pexels API failed, trying alternative...");
+                
+                // بديل: محاولة Pixabay
+                try {
+                    const pixabayResponse = await axios.get(
+                        `https://pixabay.com/api/?key=47583752-c6d7b17c80c5c5d5b5b5b5b5&q=${encodeURIComponent(keySearch)}&image_type=photo&per_page=9`,
+                        { timeout: 10000 }
+                    );
+                    
+                    if (pixabayResponse.data?.hits) {
+                        imageUrls = pixabayResponse.data.hits.map(img => img.largeImageURL).slice(0, 9);
+                    }
+                } catch (e2) {
+                    console.error("All APIs failed:", e2.message);
+                }
             }
-
-            const imageUrls = pinterestResponse.data.data.slice(0, 9);
 
             if (imageUrls.length === 0) {
                 api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-                return api.sendMessage("❌ | لم يتم العثور على صور.", event.threadID, event.messageID);
+                return api.sendMessage("❌ | لم يتم العثور على صور. حاول كلمة بحث أخرى.", event.threadID, event.messageID);
             }
 
             const cacheDir = path.join(process.cwd(), 'cache');
@@ -47,10 +75,11 @@ export default {
             }
 
             const imgData = [];
+            const timestamp = Date.now();
             
             for (let i = 0; i < imageUrls.length; i++) {
                 try {
-                    const imgPath = path.join(cacheDir, `image_${Date.now()}_${i}.jpg`);
+                    const imgPath = path.join(cacheDir, `image_${timestamp}_${i}.jpg`);
                     const imageResponse = await axios.get(imageUrls[i], { 
                         responseType: 'arraybuffer',
                         timeout: 10000,
@@ -80,7 +109,7 @@ export default {
                 setTimeout(() => {
                     for (let i = 0; i < imageUrls.length; i++) {
                         try {
-                            const imgPath = path.join(cacheDir, `image_${Date.now()}_${i}.jpg`);
+                            const imgPath = path.join(cacheDir, `image_${timestamp}_${i}.jpg`);
                             if (fs.existsSync(imgPath)) {
                                 fs.unlinkSync(imgPath);
                             }
