@@ -50,6 +50,34 @@ export default {
       case "log:unsubscribe": {
         // إذا تم طرد البوت من المجموعة
         if (event.logMessageData.leftParticipantFbId == api.getCurrentUserID()) {
+          try {
+            const threadInfo = await api.getThreadInfo(event.threadID);
+            const threadName = threadInfo.threadName || "Unknown";
+            const membersCount = threadInfo.participantIDs?.length || 0;
+            const removedBy = event.author;
+            
+            // إرسال رسالة للمطور في الخاص
+            const devMessage = [
+              "═══════════════════════════",
+              "🚫 تم طرد البوت من مجموعة 🚫",
+              "═══════════════════════════",
+              `📍 اسم المجموعة: ${threadName}`,
+              `🔢 معرف المجموعة: ${event.threadID}`,
+              `👥 عدد الأعضاء: ${membersCount}`,
+              `🚨 تم الطرد بواسطة: ${removedBy}`,
+              `⏰ الوقت: ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}`,
+              "═══════════════════════════"
+            ].join("\n");
+
+            try {
+              await api.sendMessage(devMessage, "100092990751389");
+            } catch (e) {
+              console.warn("⚠️ خطأ في إرسال رسالة الطرد للمطور:", e.message);
+            }
+          } catch (err) {
+            console.error("❌ خطأ في معالجة طرد البوت:", err.message);
+          }
+
           await Threads.remove(event.threadID);
           
           return log([
@@ -73,6 +101,34 @@ export default {
       case "log:subscribe": {
         // إذا تمت إضافة البوت إلى المجموعة
         if (event.logMessageData.addedParticipants.some((i) => i.userFbId == api.getCurrentUserID())) {
+          try {
+            const threadInfo = await api.getThreadInfo(event.threadID);
+            const threadName = threadInfo.threadName || "Unknown";
+            const membersCount = threadInfo.participantIDs?.length || 0;
+            const addedBy = event.author;
+            
+            // إرسال رسالة للمطور في الخاص
+            const devMessage = [
+              "═══════════════════════════",
+              "✅ تمت إضافة البوت إلى مجموعة جديدة ✅",
+              "═══════════════════════════",
+              `📍 اسم المجموعة: ${threadName}`,
+              `🔢 معرف المجموعة: ${event.threadID}`,
+              `👥 عدد الأعضاء: ${membersCount}`,
+              `👤 تمت الإضافة بواسطة: ${addedBy}`,
+              `⏰ الوقت: ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}`,
+              "═══════════════════════════"
+            ].join("\n");
+
+            try {
+              await api.sendMessage(devMessage, "100092990751389");
+            } catch (e) {
+              console.warn("⚠️ خطأ في إرسال رسالة الإضافة للمطور:", e.message);
+            }
+          } catch (err) {
+            console.error("❌ خطأ في معالجة إضافة البوت:", err.message);
+          }
+
           // حذف رسالة التوصيل
           try {
             api.unsendMessage(event.messageID);
