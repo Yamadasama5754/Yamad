@@ -9,7 +9,7 @@ class RankCommand {
     this.name = "مستواي";
     this.author = "CataliCS";
     this.cooldowns = 20;
-    this.description = "Lấy rank hiện tại của bạn trên hệ thống bot";
+    this.description = "عرض كارت مستواك";
     this.role = 0;
     this.aliases = ["رانك", "rank"];
     this.APIKEY = "571752207151901|AC-zG86sv6U6kpnT0_snIHBOHJc";
@@ -19,7 +19,6 @@ class RankCommand {
     const { id, name, rank, level, expCurrent, expNextLevel } = data;
     const PI = Math.PI;
 
-    // Create cache directory if it doesn't exist
     const cacheDir = path.join(process.cwd(), "cache");
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true });
@@ -28,7 +27,6 @@ class RankCommand {
     const pathImg = path.join(cacheDir, `rank_${id}.png`);
 
     try {
-      // Load rank card image
       let rankCardUrl = "https://i.imgur.com/neYz0Wy.png";
       const rankCardResponse = await axios.get(rankCardUrl, { responseType: "arraybuffer" });
       const rankCardBuffer = rankCardResponse.data;
@@ -38,7 +36,6 @@ class RankCommand {
       var expWidth = (expCurrent * 615) / expNextLevel;
       if (expWidth > 615 - 18.5) expWidth = 615 - 18.5;
 
-      // Get avatar
       let avatarUrl = `https://graph.facebook.com/${id}/picture?width=512&height=512&access_token=${this.APIKEY}`;
       let avatarResponse = await axios.get(avatarUrl, { responseType: "arraybuffer" });
       let avatar = await this.circleImage(avatarResponse.data);
@@ -114,38 +111,59 @@ class RankCommand {
   }
 
   async getInfo(uid, Currencies) {
-    let userData = await Currencies.getData(uid);
-    let point = userData?.exp || 0;
-    const level = this.expToLevel(point);
-    const expCurrent = point - this.levelToExp(level);
-    const expNextLevel = this.levelToExp(level + 1) - this.levelToExp(level);
-    return { level, expCurrent, expNextLevel };
+    try {
+      let userData = await Currencies.getData(uid);
+      let point = userData?.exp || 0;
+      const level = this.expToLevel(point);
+      const expCurrent = point - this.levelToExp(level);
+      const expNextLevel = this.levelToExp(level + 1) - this.levelToExp(level);
+      return { level, expCurrent, expNextLevel };
+    } catch (e) {
+      return { level: 1, expCurrent: 0, expNextLevel: 100 };
+    }
   }
 
   async execute({ api, event, Currencies, Users }) {
     try {
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
+      if (!Currencies || typeof Currencies.getAll !== 'function') {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage("❌ | نظام الترتيب غير متاح حالياً", event.threadID, event.messageID);
+      }
+
       let dataAll = await Currencies.getAll(["userID", "exp"]);
+      if (!dataAll || !Array.isArray(dataAll)) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage("❌ | خطأ في جلب البيانات", event.threadID, event.messageID);
+      }
+
       dataAll.sort(function (a, b) { return b.exp - a.exp; });
 
       const rank = dataAll.findIndex(item => parseInt(item.userID) == parseInt(event.senderID)) + 1;
       
       if (rank == 0) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage("لست في قاعدة البيانات بعد اعد المحاولة في وقت لاحق", event.threadID, event.messageID);
+        return api.sendMessage("❌ | لست في قاعدة البيانات بعد اعد المحاولة في وقت لاحق", event.threadID, event.messageID);
       }
 
-      const name = await Users.getNameUser(event.senderID);
+      let userName = "Unknown";
+      try {
+        const userInfo = await api.getUserInfo(event.senderID);
+        userName = userInfo[event.senderID]?.name || "Unknown";
+      } catch (e) {
+        console.warn("Could not get user name");
+      }
+
       const point = await this.getInfo(event.senderID, Currencies);
       const timeStart = Date.now();
 
-      let pathRankCard = await this.makeRankCard({ id: event.senderID, name, rank, ...point });
+      let pathRankCard = await this.makeRankCard({ id: event.senderID, name: userName, rank, ...point });
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
       return api.sendMessage(
         {
-          body: `تم إنشاء الكارت في ${Date.now() - timeStart}ms`,
+          body: `✅ تم إنشاء الكارت في ${Date.now() - timeStart}ms`,
           attachment: fs.createReadStream(pathRankCard, { highWaterMark: 128 * 1024 })
         },
         event.threadID,
