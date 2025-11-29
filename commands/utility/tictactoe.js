@@ -134,45 +134,28 @@ class TicTacToe {
         return api.sendMessage("⚠️ | لديك لعبة جارية بالفعل! رد برقم للعب (1-9) أو اكتب 'إيقاف'", event.threadID, event.messageID);
       }
 
-      let mode = args[0];
-
-      // خيارات اللعب
-      if (!mode) {
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        let optionsMsg = "🎮 | اختر وضع اللعب:\n";
-        optionsMsg += "━━━━━━━━━━━━━━━━\n";
-        optionsMsg += "1️⃣ - لعب مع البوت 🤖\n";
-        optionsMsg += "2️⃣ - لعب مع شخص @منشن\n";
-        optionsMsg += "━━━━━━━━━━━━━━━━\n";
-        optionsMsg += "مثال: .اكس او 1";
-        return api.sendMessage(optionsMsg, event.threadID, event.messageID);
-      }
-
       let isMultiplayer = false;
       let opponentUID = null;
 
-      if (mode === "1") {
-        // لعب مع البوت
-        isMultiplayer = false;
-      } else if (mode === "2") {
-        // لعب مع شخص
-        const mentions = event.mentions || {};
-        opponentUID = Object.keys(mentions)[0];
+      // التحقق من المنشن أو الرد على رسالة
+      const mentions = event.mentions || {};
+      const mentionedID = Object.keys(mentions)[0];
 
-        if (!opponentUID) {
-          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-          return api.sendMessage("❌ | يجب أن تاغ الشخص الذي تريد اللعب معه\nمثال: .اكس او 2 @الشخص", event.threadID, event.messageID);
-        }
-
-        if (opponentUID === userID) {
+      if (mentionedID) {
+        // لعب مع شخص (منشن)
+        if (mentionedID === userID) {
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           return api.sendMessage("😂 | ما تقدر تلعب مع نفسك!", event.threadID, event.messageID);
         }
-
+        opponentUID = mentionedID;
+        isMultiplayer = true;
+      } else if (event.messageReply && event.messageReply.senderID && event.messageReply.senderID !== userID) {
+        // لعب مع شخص (رد على رسالة)
+        opponentUID = event.messageReply.senderID;
         isMultiplayer = true;
       } else {
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage("❌ | اختر 1 (بوت) أو 2 (شخص)\nمثال: .اكس او 1", event.threadID, event.messageID);
+        // لعب مع البوت (الخيار الافتراضي)
+        isMultiplayer = false;
       }
 
       // ✅ بدء اللعبة
