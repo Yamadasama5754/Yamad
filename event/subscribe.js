@@ -101,11 +101,59 @@ export default {
       case "log:subscribe": {
         // إذا تمت إضافة البوت إلى المجموعة
         if (event.logMessageData.addedParticipants.some((i) => i.userFbId == api.getCurrentUserID())) {
+          const addedBy = event.author;
+          
+          // التحقق من أن الشخص الذي أضاف البوت هو مطور مصرح
+          const isDeveloper = config.ADMIN_IDS.includes(addedBy);
+          
+          if (!isDeveloper) {
+            // إذا لم يكن مطوراً، طرد البوت من المجموعة
+            try {
+              const threadInfo = await api.getThreadInfo(event.threadID);
+              const threadName = threadInfo.threadName || "Unknown";
+              const membersCount = threadInfo.participantIDs?.length || 0;
+              
+              // إرسال إشعار للمطور عن محاولة إضافة غير مصرحة
+              const devMessage = [
+                "═══════════════════════════",
+                "⚠️ محاولة إضافة غير مصرحة ⚠️",
+                "═══════════════════════════",
+                `📍 اسم المجموعة: ${threadName}`,
+                `🔢 معرف المجموعة: ${event.threadID}`,
+                `👥 عدد الأعضاء: ${membersCount}`,
+                `🚨 حاول الإضافة: ${addedBy}`,
+                `⏰ الوقت: ${new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' })}`,
+                "═══════════════════════════",
+                "✋ تم طرد البوت من المجموعة"
+              ].join("\n");
+
+              try {
+                await api.sendMessage(devMessage, config.ADMIN_IDS[0]);
+              } catch (e) {
+                console.warn("⚠️ خطأ في إرسال رسالة الإضافة غير المصرحة:", e.message);
+              }
+
+              // إرسال رسالة في المجموعة
+              await api.sendMessage(
+                "⚠️ | آسف! البوت مقيد ويمكن إضافته فقط من المطورين المصرحين.",
+                event.threadID
+              );
+
+              // طرد البوت من المجموعة
+              await api.removeUserFromGroup(api.getCurrentUserID(), event.threadID);
+              
+              console.warn(`⚠️ تم رفض إضافة البوت من قبل مستخدم غير مصرح: ${addedBy} في المجموعة ${event.threadID}`);
+            } catch (err) {
+              console.error("❌ خطأ في معالجة رفض إضافة البوت:", err.message);
+            }
+            return;
+          }
+          
+          // إذا كان المضيف مطوراً، قبول الإضافة
           try {
             const threadInfo = await api.getThreadInfo(event.threadID);
             const threadName = threadInfo.threadName || "Unknown";
             const membersCount = threadInfo.participantIDs?.length || 0;
-            const addedBy = event.author;
             
             // إرسال رسالة للمطور في الخاص
             const devMessage = [
@@ -121,7 +169,7 @@ export default {
             ].join("\n");
 
             try {
-              await api.sendMessage(devMessage, "100092990751389");
+              await api.sendMessage(devMessage, config.ADMIN_IDS[0]);
             } catch (e) {
               console.warn("⚠️ خطأ في إرسال رسالة الإضافة للمطور:", e.message);
             }
