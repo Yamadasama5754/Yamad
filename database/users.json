@@ -1200,7 +1200,7 @@
   {
     "uid": "100092990751389",
     "data": {
-      "money": 5381,
+      "money": 5981,
       "exp": 0,
       "level": 0,
       "banned": {
@@ -1218,7 +1218,7 @@
       "isBirthday": false,
       "gender": "Nam",
       "other": {
-        "cooldowns_kahf_100092990751389": 1764458540
+        "cooldowns_gift": 1764460219
       }
     }
   },

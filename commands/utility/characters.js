@@ -4,19 +4,11 @@ import path from "path";
 
 const tempImageFilePath = path.join(process.cwd(), "cache", "tempImage.jpg");
 const userDataFile = path.join(process.cwd(), 'charactersPoints.json');
-const bankFilePath = path.join(process.cwd(), 'bank.json');
 
-// تأكد من وجود ملف البيانات
 if (!fs.existsSync(userDataFile)) {
   fs.writeFileSync(userDataFile, '{}');
 }
 
-// تأكد من وجود ملف البنك
-if (!fs.existsSync(bankFilePath)) {
-  fs.writeFileSync(bankFilePath, '{}');
-}
-
-// تأكد من وجود مجلد cache
 if (!fs.existsSync(path.join(process.cwd(), 'cache'))) {
   fs.mkdirSync(path.join(process.cwd(), 'cache'), { recursive: true });
 }
@@ -54,19 +46,8 @@ class CharacterGame {
     this.aliases = ["شخصيه", "احزر"];
   }
 
-  async execute({ api, event, Economy }) {
+  async execute({ api, event }) {
     try {
-      const cost = 500;
-      const userBalance = (await Economy.getBalance(event.senderID)).data;
-      
-      if (userBalance < cost) {
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage(
-          `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
-          event.threadID
-        );
-      }
-
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
       const randomCharacter = characters[Math.floor(Math.random() * characters.length)];
@@ -78,10 +59,8 @@ class CharacterGame {
 
       fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
 
-      await Economy.decrease(cost, event.senderID);
-
       const attachment = [fs.createReadStream(tempImageFilePath)];
-      const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n💸 رسم اللعبة: ${cost} دولار\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
+      const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
@@ -92,7 +71,6 @@ class CharacterGame {
             type: "reply",
             name: "شخصيات",
             correctName: randomCharacter.name,
-            cost: cost,
             unsend: true
           });
         } else {
@@ -107,13 +85,11 @@ class CharacterGame {
     }
   }
 
-  async onReply({ api, event, reply, Economy }) {
+  async onReply({ api, event, reply }) {
     try {
       if (reply && reply.type === "reply" && reply.name === "شخصيات") {
         const userGuess = event.body.trim();
         const correctName = reply.correctName;
-        const cost = reply.cost || 500;
-        const currentTime = Math.floor(Date.now() / 1000);
 
         let userData = null;
         try {
@@ -126,59 +102,20 @@ class CharacterGame {
         const userName = userData?.name || "اللاعب";
 
         if (userGuess === correctName) {
-          try {
-            // إضافة الجائزة للبنك
-            const reward = 2500;
-            const bankData = JSON.parse(fs.readFileSync(bankFilePath, 'utf8'));
-            if (!bankData[event.senderID]) {
-              bankData[event.senderID] = { balance: 0, lastInterestClaimed: currentTime, transactions: [], loans: [], level: 1 };
-            }
-            bankData[event.senderID].balance += reward;
-            bankData[event.senderID].transactions = bankData[event.senderID].transactions || [];
-            bankData[event.senderID].transactions.push({
-              type: "game_win",
-              amount: reward,
-              timestamp: currentTime,
-              description: "جائزة من لعبة الشخصيات"
-            });
-            fs.writeFileSync(bankFilePath, JSON.stringify(bankData, null, 2));
-
-            // إضافة النقاط
-            const pointsData = JSON.parse(fs.readFileSync(userDataFile, 'utf8'));
-            const userPoints = pointsData[event.senderID] || { name: userName, points: 0 };
-            userPoints.points += 50;
-            pointsData[event.senderID] = userPoints;
-            fs.writeFileSync(userDataFile, JSON.stringify(pointsData, null, 2));
-
-            api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-            api.sendMessage(
-              `✅ | تهانينا يا ${userName}! 🥳\nلقد خمنت اسم الشخصية بشكل صحيح!\n💰 تم إضافة ${reward} دولار للبنك\n⭐ حصلت على 50 نقطة!`,
-              event.threadID,
-              event.messageID
-            );
-
-            try {
-              api.unsendMessage(reply.messageID);
-            } catch (e) {}
-
-          } catch (e) {
-            console.error("[CHARACTERS] Error handling winning action:", e.message);
-          }
-        } else {
-          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           api.sendMessage(
-            `❌ | آسفة يا ${userName}! 😅\nاسم الشخصية الصحيح هو: **${correctName}**\n💸 خسرت ${cost} دولار\nحاول مرة أخرى! 💪`,
+            `✅ | تهانينا يا ${userName}! 🥳\nلقد خمنت اسم الشخصية بشكل صحيح!`,
             event.threadID,
             event.messageID
           );
+          api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+        } else {
+          api.sendMessage(
+            `❌ | آسفة يا ${userName}! 😅\nاسم الشخصية الصحيح هو: **${correctName}**\nحاول مرة أخرى! 💪`,
+            event.threadID,
+            event.messageID
+          );
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         }
-
-        // حذف الصورة المؤقتة
-        try {
-          if (fs.existsSync(tempImageFilePath)) {
-            fs.unlinkSync(tempImageFilePath);
-          }
-        } catch (e) {}
       }
     } catch (error) {
       console.error("[CHARACTERS] Error in onReply:", error.message);

@@ -13,17 +13,8 @@ class Jail {
     this.aliases = ["سجن", "jail"];
   }
 
-  async execute({ api, event, args, Economy }) {
+  async execute({ api, event, args }) {
     const { threadID, messageID, senderID } = event;
-    const cost = 400;
-    const userBalance = (await Economy.getBalance(senderID)).data;
-    
-    if (userBalance < cost) {
-      return api.sendMessage(
-        `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
-        threadID
-      );
-    }
 
     let id;
 
@@ -40,7 +31,6 @@ class Jail {
     }
 
     try {
-      await Economy.decrease(cost, senderID);
       api.setMessageReaction("⏳", messageID, () => {}, true);
 
       // ✅ استخدام API بجودة أعلى

@@ -8,20 +8,10 @@ export default {
   role: "member",
   description: "تحويل صورة الملف الشخصي إلى صورة ضبابية.",
 
-  execute: async ({ api, event, args, Economy }) => {
+  execute: async ({ api, event, args }) => {
     const { threadID, messageID, senderID } = event;
-    const cost = 250;
 
     try {
-      // التحقق من الرصيد
-      const userBalance = (await Economy.getBalance(senderID)).data;
-      if (userBalance < cost) {
-        return api.sendMessage(
-          `⚠️ | تحتاج إلى ${cost} دولار في محفظتك. رصيدك الحالي: ${userBalance}`,
-          threadID
-        );
-      }
-
       let id;
       // التحقق من وجود إشارة إلى مستخدم في الرسالة
       if (args.join().indexOf('@') !== -1) {
@@ -53,9 +43,8 @@ export default {
       response.data.pipe(writer);
 
       writer.on('finish', async () => {
-        await Economy.decrease(cost, senderID);
         const attachment = fs.createReadStream(tempFilePath);
-        api.sendMessage({ body: "ضبابية 🌫️ (تم خصم 250 دولار)", attachment: attachment }, threadID, () => {
+        api.sendMessage({ body: "ضبابية 🌫️", attachment: attachment }, threadID, () => {
           if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
         }, messageID);
         api.setMessageReaction("✅", event.messageID, (err) => {}, true);
