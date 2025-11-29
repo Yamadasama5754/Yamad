@@ -66,11 +66,13 @@ class Profile {
       const cachePath = path.join(cacheDir, `profile_${uid}.png`);
 
       // ✅ تحسين الصورة باستخدام Jimp
+      let imageData;
       try {
         const response = await axios.get(avatarURL, { responseType: "arraybuffer" });
+        imageData = response.data;
         
         // قراءة الصورة باستخدام Jimp لتحسين الجودة
-        let image = await jimp.read(Buffer.from(response.data));
+        let image = await jimp.read(Buffer.from(imageData));
         
         // تحسينات على الصورة:
         // 1. زيادة التشبع قليلاً لجودة أفضل
@@ -81,7 +83,9 @@ class Profile {
         ]);
 
         // 2. شحذ الصورة للوضوح الأفضل
-        image = image.sharpen();
+        if (image.sharpen) {
+          image = image.sharpen();
+        }
 
         // 3. حفظ بجودة عالية
         await image.write(cachePath);
@@ -95,7 +99,13 @@ class Profile {
       } catch (jimpErr) {
         // إذا فشل Jimp، أرسل الصورة الأصلية
         console.warn("Jimp processing failed, sending original image:", jimpErr.message);
-        await fs.writeFile(cachePath, Buffer.from(response.data));
+        
+        if (imageData) {
+          await fs.writeFile(cachePath, Buffer.from(imageData));
+        } else {
+          const response = await axios.get(avatarURL, { responseType: "arraybuffer" });
+          await fs.writeFile(cachePath, Buffer.from(response.data));
+        }
         
         api.sendMessage({
           attachment: fs.createReadStream(cachePath)
