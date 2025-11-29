@@ -6210,5 +6210,74 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "61580824304300",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "༉ぞ.Nαrgιs ꕥ.",
+      "firstName": "༉ぞ.Nαrgιs ꕥ.",
+      "vanity": "otaku.girl.769696",
+      "avatar": "https://graph.facebook.com/61580824304300/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/otaku.girl.769696",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61580824304300",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "༉ぞ.Nαrgιs ꕥ.",
+      "firstName": "༉ぞ.Nαrgιs ꕥ.",
+      "vanity": "otaku.girl.769696",
+      "avatar": "https://graph.facebook.com/61580824304300/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/otaku.girl.769696",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61576251573311",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ᏚᏋᏁᏠᏬ ᏦᎪᎳᎪᎡᎪᎶᎥ",
+      "firstName": "ᏚᏋᏁᏠᏬ",
+      "vanity": "5u4fvwj0ck",
+      "avatar": "https://graph.facebook.com/61576251573311/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/5u4fvwj0ck",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
   }
 ]
