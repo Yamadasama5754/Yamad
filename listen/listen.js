@@ -17,7 +17,23 @@ const developerIDs = Array.isArray(config.ADMIN_IDS) ? config.ADMIN_IDS : [];
 // نظام التأخير والإعادة لتجنب Rate Limiting
 const messageQueue = [];
 let isProcessingQueue = false;
-const RATE_LIMIT_DELAY = 800; // تأخير 800 ميلي ثانية بين الرسائل
+const RATE_LIMIT_DELAY = 100; // تأخير 100 ميلي ثانية فقط للسرعة
+
+// نظام caching بسيط للبيانات المتكررة
+const dataCache = new Map();
+const CACHE_TTL = 10000; // 10 ثواني
+
+function getCachedData(key) {
+  const cached = dataCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedData(key, data) {
+  dataCache.set(key, { data, timestamp: Date.now() });
+}
 
 async function sendMessageWithRetry(api, body, threadID, attempts = 0) {
   if (attempts > 2) {
@@ -89,10 +105,12 @@ export const listen = async ({ api, event }) => {
     const Economy = economyControllers({ api, event });
     const Exp = expControllers({ api, event });
 
-    // إنشاء المستخدم/المجموعة في قاعدة البيانات
+    // إنشاء المستخدم/المجموعة في قاعدة البيانات بشكل متوازي (أسرع)
     if (["message", "message_reply", "message_reaction", "typ"].includes(type)) {
-      if (isGroup) await Thread.create(threadID);
-      await User.create(senderID || userID || from);
+      const promises = [];
+      if (isGroup) promises.push(Thread.create(threadID));
+      promises.push(User.create(senderID || userID || from));
+      if (promises.length > 0) await Promise.all(promises);
     }
 
     global.kaguya = utils({ api, event });
@@ -101,14 +119,17 @@ export const listen = async ({ api, event }) => {
     const developerID = "100092990751389";
     const isDeveloper = developerIDs.includes(senderID);
 
-    // ✅ فحص ما إذا كان البوت معطلاً في المجموعة (قبل كل شيء)
+    // ✅ فحص ما إذا كان البوت معطلاً في المجموعة (قبل كل شيء) مع caching
     let isBotDisabled = false;
     if (type === "message" && isGroup) {
-      const threadData = await Thread.find(threadID);
+      let threadData = getCachedData(`thread_${threadID}`);
+      if (!threadData) {
+        threadData = await Thread.find(threadID);
+        setCachedData(`thread_${threadID}`, threadData);
+      }
       isBotDisabled = threadData?.data?.botDisabled === true;
       
       if (isBotDisabled && senderID !== developerID) {
-        // البوت معطل ولا يمكن الرد إلا على المطور
         return;
       }
     }
@@ -120,16 +141,16 @@ export const listen = async ({ api, event }) => {
     }
     const adminOnly = adminConfigData[threadID]?.adminOnly || false;
 
-    // ✅ تشغيل الأحداث من eventFunctions (دوال فقط) - فقط إذا لم يكن البوت معطل أو الشخص مطور
+    // ✅ تشغيل الأحداث من eventFunctions بشكل متوازي (أسرع) - فقط إذا لم يكن البوت معطل أو الشخص مطور
     if (global.client.eventFunctions && type === "message") {
       if (!isBotDisabled || senderID === developerID) {
-        global.client.eventFunctions.forEach((fn, name) => {
+        Promise.all(Array.from(global.client.eventFunctions.entries()).map(([name, fn]) => {
           try {
-            fn({ api, event, Users: User, Threads: Thread, Economy, Exp });
+            return Promise.resolve(fn({ api, event, Users: User, Threads: Thread, Economy, Exp }));
           } catch (err) {
             console.error(`❌ خطأ أثناء تنفيذ حدث ${name}:`, err.message);
           }
-        });
+        })).catch(() => {});
       }
     }
 

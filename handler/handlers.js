@@ -101,12 +101,17 @@ export class CommandHandler {
         setTimeout(() => timeStamps.delete(senderID), cooldownAmount);
       }
 
-      // تحقق من صلاحيات الأمر (Role)
+      // تحقق من صلاحيات الأمر (Role) مع تخطي الاستدعاء إذا لم يكن ضرورياً
       // role = 0: للجميع | role = 1: للأدمن | role = 2: للمطور فقط
-      const threadInfo = await api.getThreadInfo(threadID);
-      const threadAdminIDs = threadInfo.adminIDs.map(a => a.id);
       const isDeveloper = this.config.ADMIN_IDS.includes(senderID);
-      const isAdmin = threadAdminIDs.includes(senderID);
+      let isAdmin = false;
+      
+      // اطلب threadInfo فقط إذا كان الأمر يتطلب صلاحيات أدمن
+      if (command.role === 1 || command.role > 0) {
+        const threadInfo = await api.getThreadInfo(threadID);
+        const threadAdminIDs = threadInfo.adminIDs.map(a => a.id);
+        isAdmin = threadAdminIDs.includes(senderID);
+      }
 
       if (command.role === 2 && !isDeveloper) {
         // أمر المطور فقط
