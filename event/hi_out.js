@@ -5,7 +5,7 @@ import moment from 'moment-timezone';
 import jimp from 'jimp';
 
 async function execute({ api, event, Users, Threads }) {
-  const ownerFbIds = ["100076269693499"];
+  const ownerFbIds = ["100092990751389"];  // قائمة بمعرفات الفيسبوك لأصحاب البوت المصرح لهم
 
   switch (event.logMessageType) {
     case "log:unsubscribe": {
@@ -32,10 +32,11 @@ async function execute({ api, event, Users, Threads }) {
       const botAdded = addedParticipants.some(participant => participant.userFbId === botUserID);
 
       if (botAdded) {
+        // التعامل مع إضافة البوت
         await handleBotAddition(api, event, ownerFbIds);
       }
 
-      break;
+      break;  // لا ترسل رسالة ترحيب
     }
   }
 }
@@ -51,6 +52,11 @@ async function handleBotAddition(api, event, ownerFbIds) {
   if (!ownerFbIds.includes(addedBy)) {
     const notifyOwnerMessage = `⚠️ إشعار: تم إضافة البوت إلى مجموعة جديدة! \n📍 اسم المجموعة: ${threadName} \n🔢 عدد الأعضاء: ${membersCount} \n🧑‍💼 بواسطة: ${addedByName}`;
     await api.sendMessage(notifyOwnerMessage, ownerFbIds[0]);
+
+    const exitMessage = `⚠️ | إضافة البوت بدون إذن غير مسموح يرجى التواصل مع المطور من أجل الحصول على الموافقة \n 📞 | رابـط الـمـطـور : https://www.facebook.com/profile.php?id=100076269693499`;
+    await api.sendMessage(exitMessage, event.threadID);
+
+    await api.removeUserFromGroup(api.getCurrentUserID(), event.threadID);
   } else {
     const notifyOwnerMessage = `⚠️ إشعار: تم إضافة البوت إلى مجموعة جديدة! \n📍 اسم المجموعة: ${threadName} \n🔢 عدد الأعضاء: ${membersCount}`;
     await api.sendMessage(notifyOwnerMessage, ownerFbIds[0]);
@@ -81,7 +87,7 @@ function getFarewellReason(reason) {
 }
 
 export default {
-  name: "hi_out",
+  name: "ترحيب_ومغادرة",
   description: "يتم استدعاء هذا الأمر عندما ينضم شخص جديد إلى المجموعة أو يغادرها.",
   execute,
 };
