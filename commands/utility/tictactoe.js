@@ -160,16 +160,7 @@ class TicTacToe {
 
       // ✅ بدء اللعبة
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-      const startMsg = await this.startGame(api, event, userID, opponentUID, isMultiplayer);
-      
-      // ✅ تسجيل reply handler للعبة
-      if (startMsg && startMsg.messageID && global.client?.handler?.reply) {
-        global.client.handler.reply.set(startMsg.messageID, {
-          name: this.name,
-          args: { gameKey, threadID: event.threadID, userID }
-        });
-        console.log(`✅ تم تسجيل reply handler للعبة: ${startMsg.messageID}`);
-      }
+      this.startGame(api, event, userID, opponentUID, isMultiplayer);
 
     } catch (err) {
       console.error('❌ TicTacToe Error:', err);
@@ -213,13 +204,11 @@ class TicTacToe {
       startMsg += this.displayBoard(board);
       startMsg += `\n\n${gameData.playerName} دورك! رد برقم (1-9) 🎯`;
 
-      const sentMsg = await api.sendMessage(startMsg, event.threadID);
-      return sentMsg;
+      api.sendMessage(startMsg, event.threadID);
 
     } catch (err) {
       console.error('❌ خطأ في بدء اللعبة:', err);
       api.sendMessage("❌ | فشل في بدء اللعبة", event.threadID);
-      return null;
     }
   }
 
