@@ -9,7 +9,7 @@ message = "We see that you are using require(...) inside your code. We currently
 
 [nix]
 channel = "stable-24_05"
-packages = ["libuuid"]
+packages = ["libuuid", "cairo", "pango", "giflib", "librsvg", "pixman", "libpng"]
 
 [env]
 XDG_CONFIG_HOME = "$REPL_HOME/.config"
