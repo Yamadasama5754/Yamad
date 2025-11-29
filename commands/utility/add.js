@@ -15,12 +15,12 @@ const getBans = (threadID) => {
 
 class AddUser {
   constructor() {
-    this.name = "ادخلني";
+    this.name = "ادخل";
     this.author = "Yamada KJ & Alastor - Enhanced";
     this.cooldowns = 3;
-    this.description = "إضافة عضو إلى المجموعة مع فحوصات ذكية | الاستخدام: ادخلني @منشن أو ادخلني [ID] أو رد على رسالة وقل ادخلني";
+    this.description = "إضافة أي عضو إلى المجموعة | الاستخدام: ادخل @منشن أو ادخل [ID] أو رد على رسالة وقل ادخل";
     this.role = 0; // ✅ متاح للجميع
-    this.aliases = ["add", "join", "ادخل", "ادخلني"];
+    this.aliases = ["add", "join"];
   }
 
   async execute({ api, event, args }) {

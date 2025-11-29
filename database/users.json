@@ -6486,5 +6486,97 @@
       "gender": "Nữ",
       "other": {}
     }
+  },
+  {
+    "uid": "61569877233394",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "وَصِــيَّـةُ آلــرَّسُــول",
+      "firstName": "وَصِــيَّـةُ",
+      "vanity": "ifeflore",
+      "avatar": "https://graph.facebook.com/61569877233394/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/ifeflore",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61577516663342",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "وُهِمِــــــــ آلَأمِــــــــآنـــــــٌ",
+      "firstName": "وُهِمِــــــــ",
+      "vanity": "TheSalutan2025",
+      "avatar": "https://graph.facebook.com/61577516663342/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/TheSalutan2025",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61578037755225",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ヽꜝꜝ MISAKI ꜛゞ",
+      "firstName": "ヽꜝꜝ MISAKI",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61578037755225/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61578037755225",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61579598161569",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ᎷᎾᎻᎯᎷᎬᎠ ᏚᏌᏁ",
+      "firstName": "ᎷᎾᎻᎯᎷᎬᎠ",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61579598161569/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61579598161569",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
   }
 ]
