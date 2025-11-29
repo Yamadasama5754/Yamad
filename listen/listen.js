@@ -265,6 +265,14 @@ export const listen = async ({ api, event }) => {
               Exp
             });
 
+            // حذف البيانات المرتبطة بـ TicTacToe بعد كل رد (اختياري)
+            if (global.client.commands.get("اكس_او")) {
+              const xoCmd = global.client.commands.get("اكس_او");
+              if (xoCmd.gamesByMessage) {
+                xoCmd.gamesByMessage.delete(event.messageReply.messageID);
+              }
+            }
+
             global.client.handler.reply.delete(event.messageReply.messageID);
             console.log(`[Reply] ${replyData.name} triggered by ${event.senderID}`);
           } catch (err) {
