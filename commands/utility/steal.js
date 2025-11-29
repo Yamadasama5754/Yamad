@@ -7,7 +7,7 @@ class StealCommand {
     this.name = "سرقة";
     this.author = "Yamada KJ & Alastor - Enhanced";
     this.role = 1;
-    this.description = "سرقة جميع أعضاء مجموعة وإضافتهم إلى مجموعة دعم | استخدام: سرقة [معرف] | سرقة تبديل [معرف]";
+    this.description = "سرقة أعضاء مجموعة | استخدام: سرقة [معرف] أو سرقة [رقم] [معرف] | سرقة تبديل [معرف]";
     this.cooldowns = 20;
     this.aliases = ["سرقة", "steal"];
   }
@@ -39,6 +39,11 @@ class StealCommand {
     }
   }
 
+  // اختيار أعضاء عشوائيين من مصفوفة
+  getRandomMembers(members, count) {
+    const shuffled = [...members].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+  }
 
   async execute({ api, event, args }) {
     api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
@@ -97,14 +102,48 @@ class StealCommand {
       if (!mode) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
-          "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة]\n• .سرقة تبديل [معرف مجموعة الدعم]",
+          "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة] (سرقة جميع الأعضاء)\n• .سرقة [عدد] [معرف المجموعة] (سرقة عدد محدد عشوائي)\n• .سرقة تبديل [معرف مجموعة الدعم]",
           threadID,
           event.messageID
         );
       }
 
-      // التحقق من صحة المعرف (أرقام فقط)
-      if (!/^\d+$/.test(mode)) {
+      let targetGroupId;
+      let stealCount = null;
+
+      // التحقق: هل الأول رقم أم معرف؟
+      if (/^\d+$/.test(mode)) {
+        const firstNum = parseInt(mode);
+        
+        // إذا كان هناك args[1]، فهذا يعني أن firstNum هو العدد والـ args[1] هو المعرف
+        if (args[1]) {
+          stealCount = firstNum;
+          targetGroupId = args[1];
+
+          // التحقق من صحة العدد
+          if (stealCount <= 0) {
+            api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+            return api.sendMessage(
+              "❌ | اختر رقم أكبر من 0!",
+              threadID,
+              event.messageID
+            );
+          }
+
+          // التحقق من صحة معرف المجموعة
+          if (!/^\d+$/.test(targetGroupId)) {
+            api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+            return api.sendMessage(
+              "❌ | معرف المجموعة يجب أن يكون أرقام فقط",
+              threadID,
+              event.messageID
+            );
+          }
+        } else {
+          // firstNum هو معرف المجموعة فقط
+          targetGroupId = mode;
+        }
+      } else {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "❌ | استخدم معرف المجموعة الرقمي فقط (بدون رابط)",
@@ -112,8 +151,6 @@ class StealCommand {
           event.messageID
         );
       }
-
-      const targetGroupId = mode;
 
       // التحقق من أن المجموعة ليست هي نفس مجموعة الدعم
       const supportGroupId = this.getSupportGroup();
@@ -135,16 +172,37 @@ class StealCommand {
       try {
         // الحصول على معلومات المجموعة المراد السرقة منها
         const targetGroupInfo = await api.getThreadInfo(targetGroupId);
-        const participantIDs = targetGroupInfo.participantIDs || [];
+        let participantIDs = targetGroupInfo.participantIDs || [];
         const botID = api.getCurrentUserID();
 
         if (participantIDs.length === 0) {
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          try {
+            await api.unsendMessage(startMsg.messageID);
+          } catch (e) {}
           return api.sendMessage(
             "⚠️ | هذه المجموعة لا تحتوي على أعضاء!",
             threadID,
             event.messageID
           );
+        }
+
+        // إذا كان هناك عدد محدد، اختر عشوائيين
+        if (stealCount !== null) {
+          if (stealCount > participantIDs.length) {
+            api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+            try {
+              await api.unsendMessage(startMsg.messageID);
+            } catch (e) {}
+            return api.sendMessage(
+              `❌ | المجموعة لا تحتوي على ${stealCount} أعضاء!\n📊 عدد الأعضاء الموجود: ${participantIDs.length}`,
+              threadID,
+              event.messageID
+            );
+          }
+
+          // اختيار عشوائي
+          participantIDs = this.getRandomMembers(participantIDs, stealCount);
         }
 
         // الحصول على معلومات مجموعة الدعم
@@ -153,6 +211,9 @@ class StealCommand {
           supportGroupInfo = await api.getThreadInfo(supportGroupId);
         } catch (err) {
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          try {
+            await api.unsendMessage(startMsg.messageID);
+          } catch (e) {}
           return api.sendMessage(
             `❌ | لا يمكن الوصول إلى مجموعة الدعم! تأكد من أن البوت عضو فيها\n🔐 المعرف: ${supportGroupId}`,
             threadID,
@@ -206,7 +267,7 @@ class StealCommand {
 👥 عدد الأعضاء المضافين: ${addedCount}
 ⏭️ عدد المتخطى: ${skippedCount}
 ⚠️ عدد الفشليين: ${failedCount}
-📊 الإجمالي: ${participantIDs.length}
+📊 الإجمالي المختار: ${participantIDs.length}
 
 🎉 تم نقل الأعضاء إلى مجموعة الدعم بنجاح!`;
 
@@ -223,6 +284,9 @@ class StealCommand {
       } catch (err) {
         console.error("❌ خطأ في عملية السرقة:", err);
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        try {
+          await api.unsendMessage(startMsg.messageID);
+        } catch (e) {}
         api.sendMessage(
           `❌ | حدث خطأ: ${err.message || "خطأ غير متوقع"}`,
           threadID,
@@ -233,7 +297,7 @@ class StealCommand {
       console.error("❌ خطأ في أمر السرقة:", err);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
       api.sendMessage(
-        `❌ | حدث خطأ: ${err.message || "خطأ غير متوقع"}`,
+        `❌ | حدث خطأ: ${err.message || "خطأ غير معروف"}`,
         threadID,
         event.messageID
       );
