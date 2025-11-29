@@ -9,7 +9,7 @@ class StealCommand {
   }
 
   async execute({ api, event }) {
-    const supportGroupId = "1163781788715848";
+    const supportGroupId = "1347299709774946";
     const threadID = event.threadID;
 
     try {
