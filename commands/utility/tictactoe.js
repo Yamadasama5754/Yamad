@@ -3,7 +3,7 @@ class TicTacToe {
     this.name = "اكس_او";
     this.author = "Yamada KJ & Alastor - Enhanced";
     this.cooldowns = 3;
-    this.description = "🎮 لعبة اكس او | الاستخدام: اكس او (اختر الوضع) أو اكس او @شخص";
+    this.description = "🎮 لعبة اكس او | الاستخدام: اكس او 1 (مع البوت) أو اكس او 2 (مع شخص)";
     this.role = 0;
     this.aliases = ["xo", "tic", "tictactoe"];
   }
@@ -117,58 +117,72 @@ class TicTacToe {
     return availableMoves[Math.floor(Math.random() * availableMoves.length)];
   }
 
-  async execute({ api, event, args, Users }) {
+  async execute({ api, event, args }) {
+    api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+    
     const gameKey = `${event.threadID}_${event.senderID}`;
     const userID = event.senderID;
 
     try {
       // ✅ التحقق من وجود لعبة جارية
+      if (!global.tictactoeGames) {
+        global.tictactoeGames = new Map();
+      }
+      
       if (global.tictactoeGames.has(gameKey)) {
-        return api.sendMessage("⚠️ | لديك لعبة جارية بالفعل! رد برقم للعب أو اكتب 'إيقاف'", event.threadID);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage("⚠️ | لديك لعبة جارية بالفعل! رد برقم للعب (1-9) أو اكتب 'إيقاف'", event.threadID, event.messageID);
       }
 
-      let opponentUID = null;
+      let mode = args[0];
+
+      // خيارات اللعب
+      if (!mode) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        let optionsMsg = "🎮 | اختر وضع اللعب:\n";
+        optionsMsg += "━━━━━━━━━━━━━━━━\n";
+        optionsMsg += "1️⃣ - لعب مع البوت 🤖\n";
+        optionsMsg += "2️⃣ - لعب مع شخص @منشن\n";
+        optionsMsg += "━━━━━━━━━━━━━━━━\n";
+        optionsMsg += "مثال: .اكس او 1";
+        return api.sendMessage(optionsMsg, event.threadID, event.messageID);
+      }
+
       let isMultiplayer = false;
+      let opponentUID = null;
 
-      // التحقق من @mention
-      const mentions = event.mentions || {};
-      const mentionedID = Object.keys(mentions)[0];
+      if (mode === "1") {
+        // لعب مع البوت
+        isMultiplayer = false;
+      } else if (mode === "2") {
+        // لعب مع شخص
+        const mentions = event.mentions || {};
+        opponentUID = Object.keys(mentions)[0];
 
-      if (mentionedID) {
-        // لعبة مع شخص مباشرة
-        opponentUID = mentionedID;
-        isMultiplayer = true;
-      } else if (event.messageReply && event.messageReply.senderID && event.messageReply.senderID !== userID) {
-        // الرد على رسالة شخص آخر
-        opponentUID = event.messageReply.senderID;
+        if (!opponentUID) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          return api.sendMessage("❌ | يجب أن تاغ الشخص الذي تريد اللعب معه\nمثال: .اكس او 2 @الشخص", event.threadID, event.messageID);
+        }
+
+        if (opponentUID === userID) {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          return api.sendMessage("😂 | ما تقدر تلعب مع نفسك!", event.threadID, event.messageID);
+        }
+
         isMultiplayer = true;
       } else {
-        // خيارات اللعب
-        let optionsMsg = "🎮 اختر وضع اللعب:\n";
-        optionsMsg += "━━━━━━━━━━━━━━━━\n";
-        optionsMsg += "📝 رد برقم:\n";
-        optionsMsg += "1️⃣ - لعب مع البوت 🤖\n";
-        optionsMsg += "2️⃣ - لعب مع شخص (سأطلب منك تاغ الشخص)\n";
-        optionsMsg += "━━━━━━━━━━━━━━━━";
-
-        api.sendMessage(optionsMsg, event.threadID, (err, info) => {
-          if (!err && info) {
-            global.client.handler.reply.set(info.messageID, {
-              name: this.name,
-              commandType: "selectMode",
-              author: userID
-            });
-          }
-        });
-        return;
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage("❌ | اختر 1 (بوت) أو 2 (شخص)\nمثال: .اكس او 1", event.threadID, event.messageID);
       }
 
       // ✅ بدء اللعبة
+      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
       this.startGame(api, event, userID, opponentUID, isMultiplayer);
 
     } catch (err) {
       console.error('❌ TicTacToe Error:', err);
-      api.sendMessage("❌ | حدث خطأ في اللعبة: " + (err.message || "خطأ غير معروف"), event.threadID);
+      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+      api.sendMessage("❌ | حدث خطأ في اللعبة: " + (err.message || "خطأ غير معروف"), event.threadID, event.messageID);
     }
   }
 
@@ -207,16 +221,7 @@ class TicTacToe {
       startMsg += this.displayBoard(board);
       startMsg += `\n\n${gameData.playerName} دورك! رد برقم (1-9) 🎯`;
 
-      api.sendMessage(startMsg, event.threadID, (err, info) => {
-        if (!err && info) {
-          global.client.handler.reply.set(info.messageID, {
-            name: this.name,
-            commandType: "game",
-            author: this.author,
-            gameKey: gameKey
-          });
-        }
-      });
+      api.sendMessage(startMsg, event.threadID);
 
     } catch (err) {
       console.error('❌ خطأ في بدء اللعبة:', err);
@@ -224,126 +229,98 @@ class TicTacToe {
     }
   }
 
-  async onReply({ api, event, reply, Users }) {
+  async onReply({ api, event, Users }) {
     const userID = event.senderID;
     const threadID = event.threadID;
+    
+    if (!global.tictactoeGames) {
+      global.tictactoeGames = new Map();
+    }
     
     try {
       const bodyText = event.body?.trim();
 
-      // ✅ معالجة اختيار وضع اللعب
-      if (reply?.commandType === "selectMode") {
-        if (userID !== reply.author) {
-          return api.sendMessage("🚫 | هذا الخيار مخصص لصاحب الطلب فقط!", threadID);
-        }
+      // ابحث عن لعبة للاعب الحالي في هذه المجموعة
+      let gameData = null;
+      let gameKey = null;
 
-        if (bodyText === "1") {
-          // لعب مع البوت
-          this.startGame(api, event, userID, null, false);
-          return;
-        } else if (bodyText === "2") {
-          // طلب تاغ الشخص
-          let msg = "👤 | اكتب اسم أو أيدي الشخص الذي تريد اللعب معه:";
-          api.sendMessage(msg, threadID, (err, info) => {
-            if (!err && info) {
-              global.client.handler.reply.set(info.messageID, {
-                name: this.name,
-                commandType: "selectPlayer",
-                author: userID
-              });
-            }
-          });
-          return;
-        } else {
-          return api.sendMessage("❌ | اختر 1 أو 2 فقط", threadID);
+      for (let [key, game] of global.tictactoeGames) {
+        if (key.includes(threadID) && (game.playerUID === userID || game.opponentUID === userID)) {
+          gameData = game;
+          gameKey = key;
+          break;
         }
       }
 
-      // ✅ معالجة اختيار اللاعب
-      if (reply?.commandType === "selectPlayer") {
-        if (userID !== reply.author) {
-          return api.sendMessage("🚫 | هذا الخيار مخصص لصاحب الطلب فقط!", threadID);
-        }
-
-        const mentions = event.mentions || {};
-        let opponentUID = Object.keys(mentions)[0];
-
-        if (!opponentUID) {
-          // حاول البحث في الأيدي
-          if (bodyText.match(/^\d+$/)) {
-            opponentUID = bodyText;
-          } else {
-            return api.sendMessage("❌ | يجب أن تاغ الشخص أو تكتب أيدي صحيح", threadID);
-          }
-        }
-
-        if (opponentUID === userID) {
-          return api.sendMessage("😂 | ما تقدر تلعب مع نفسك! اختر شخص ثاني", threadID);
-        }
-
-        this.startGame(api, event, userID, opponentUID, true);
+      if (!gameData) {
         return;
       }
 
-      // ✅ معالجة اللعبة
-      if (reply?.commandType === "game" || reply?.name === "اكس_او") {
-        const gameKey = reply?.gameKey || `${threadID}_${userID}`;
-        let gameData = global.tictactoeGames.get(gameKey);
-
-        // ابحث عن لعبة للاعب الحالي
-        if (!gameData) {
-          for (let [key, game] of global.tictactoeGames) {
-            if (key.includes(threadID) && (game.playerUID === userID || game.opponentUID === userID)) {
-              gameData = game;
-              gameKey = key;
-              break;
-            }
-          }
+      // ✅ معالجة أمر إيقاف اللعبة
+      if (bodyText.toLowerCase() === "إيقاف" || bodyText.toLowerCase() === "stop") {
+        if (userID !== gameData.playerUID && userID !== gameData.opponentUID) {
+          return api.sendMessage("🚫 | أنت لست في هذه اللعبة!", threadID);
         }
+        global.tictactoeGames.delete(gameKey);
+        return api.sendMessage("⏹️ | تم إيقاف اللعبة", threadID);
+      }
 
-        if (!gameData) {
-          return api.sendMessage("❌ | لا توجد لعبة جارية! اكتب 'اكس او' لبدء لعبة جديدة", threadID);
-        }
+      // ✅ التحقق من أن اللاعب الحالي هو من يرسل الحركة
+      if (gameData.currentPlayer === 'X' && userID !== gameData.playerUID) {
+        return api.sendMessage(`⚠️ | ليس دورك الآن!\n▶️ دور ${gameData.playerName}`, threadID);
+      }
 
-        // ✅ معالجة أمر إيقاف اللعبة
-        if (bodyText.toLowerCase() === "إيقاف" || bodyText.toLowerCase() === "stop") {
-          if (userID !== gameData.playerUID && userID !== gameData.opponentUID) {
-            return api.sendMessage("🚫 | أنت لست في هذه اللعبة!", threadID);
-          }
-          global.tictactoeGames.delete(gameKey);
-          return api.sendMessage("⏹️ | تم إيقاف اللعبة", threadID);
-        }
+      if (gameData.currentPlayer === 'O' && gameData.isMultiplayer && userID !== gameData.opponentUID) {
+        return api.sendMessage(`⚠️ | ليس دورك الآن!\n▶️ دور ${gameData.opponentName}`, threadID);
+      }
 
-        // ✅ التحقق من أن اللاعب الحالي هو من يرسل الحركة
-        if (gameData.currentPlayer === 'X' && userID !== gameData.playerUID) {
-          return api.sendMessage(`⚠️ | ليس دورك الآن!\n▶️ دور ${gameData.playerName}`, threadID);
-        }
+      // ✅ معالجة الحركة
+      const move = parseInt(bodyText);
 
-        if (gameData.currentPlayer === 'O' && gameData.isMultiplayer && userID !== gameData.opponentUID) {
-          return api.sendMessage(`⚠️ | ليس دورك الآن!\n▶️ دور ${gameData.opponentName}`, threadID);
-        }
+      if (isNaN(move) || move < 1 || move > 9) {
+        return api.sendMessage("❌ | أدخل رقم صحيح من 1 إلى 9", threadID);
+      }
 
-        // ✅ معالجة الحركة
-        const move = parseInt(bodyText);
+      if (!this.makeMove(gameData.board, move, gameData.currentPlayer)) {
+        return api.sendMessage("❌ | الخانة مشغولة بالفعل! اختر خانة أخرى", threadID);
+      }
 
-        if (isNaN(move) || move < 1 || move > 9) {
-          return api.sendMessage("❌ | أدخل رقم صحيح من 1 إلى 9", threadID);
-        }
+      // ✅ التحقق من الفوز
+      if (this.checkWinner(gameData.board, gameData.currentPlayer)) {
+        let winMsg = `🎉 ${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} فاز! 🏆\n\n`;
+        winMsg += this.displayBoard(gameData.board);
+        api.sendMessage(winMsg, threadID);
+        global.tictactoeGames.delete(gameKey);
+        return;
+      }
 
-        if (!this.makeMove(gameData.board, move, gameData.currentPlayer)) {
-          return api.sendMessage("❌ | الخانة مشغولة بالفعل! اختر خانة أخرى", threadID);
-        }
+      // ✅ التحقق من التعادل
+      if (this.isBoardFull(gameData.board)) {
+        let tieMsg = `🤝 تعادل! 🤝\n\n`;
+        tieMsg += this.displayBoard(gameData.board);
+        api.sendMessage(tieMsg, threadID);
+        global.tictactoeGames.delete(gameKey);
+        return;
+      }
 
-        // ✅ التحقق من الفوز
-        if (this.checkWinner(gameData.board, gameData.currentPlayer)) {
-          let winMsg = `🎉 ${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} فاز! 🏆\n\n`;
-          winMsg += this.displayBoard(gameData.board);
-          api.sendMessage(winMsg, threadID);
+      // ✅ تبديل اللاعب
+      gameData.currentPlayer = gameData.currentPlayer === 'X' ? 'O' : 'X';
+
+      // ✅ إذا كان اللاعب الآخر هو البوت
+      if (!gameData.isMultiplayer && gameData.currentPlayer === 'O') {
+        const botMove = this.getBotMove(gameData.board);
+        this.makeMove(gameData.board, botMove, 'O');
+
+        // التحقق من فوز البوت
+        if (this.checkWinner(gameData.board, 'O')) {
+          let botWinMsg = `🤖 البوت فاز! 🏆\n\n`;
+          botWinMsg += this.displayBoard(gameData.board);
+          api.sendMessage(botWinMsg, threadID);
           global.tictactoeGames.delete(gameKey);
           return;
         }
 
-        // ✅ التحقق من التعادل
+        // التحقق من التعادل
         if (this.isBoardFull(gameData.board)) {
           let tieMsg = `🤝 تعادل! 🤝\n\n`;
           tieMsg += this.displayBoard(gameData.board);
@@ -352,52 +329,15 @@ class TicTacToe {
           return;
         }
 
-        // ✅ تبديل اللاعب
-        gameData.currentPlayer = gameData.currentPlayer === 'X' ? 'O' : 'X';
-
-        // ✅ إذا كان اللاعب الآخر هو البوت
-        if (!gameData.isMultiplayer && gameData.currentPlayer === 'O') {
-          const botMove = this.getBotMove(gameData.board);
-          this.makeMove(gameData.board, botMove, 'O');
-
-          // التحقق من فوز البوت
-          if (this.checkWinner(gameData.board, 'O')) {
-            let botWinMsg = `🤖 البوت فاز! 🏆\n\n`;
-            botWinMsg += this.displayBoard(gameData.board);
-            api.sendMessage(botWinMsg, threadID);
-            global.tictactoeGames.delete(gameKey);
-            return;
-          }
-
-          // التحقق من التعادل
-          if (this.isBoardFull(gameData.board)) {
-            let tieMsg = `🤝 تعادل! 🤝\n\n`;
-            tieMsg += this.displayBoard(gameData.board);
-            api.sendMessage(tieMsg, threadID);
-            global.tictactoeGames.delete(gameKey);
-            return;
-          }
-
-          gameData.currentPlayer = 'X';
-        }
-
-        // ✅ إرسال حالة اللعبة
-        let msg = `🎮 اللعبة جارية...\n\n`;
-        msg += this.displayBoard(gameData.board);
-        msg += `\n\n▶️ ${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} دورك! 🎯`;
-
-        api.sendMessage(msg, threadID, (err, info) => {
-          if (!err && info) {
-            global.client.handler.reply.set(info.messageID, {
-              name: this.name,
-              commandType: "game",
-              author: this.author,
-              gameKey: gameKey
-            });
-          }
-        });
-
+        gameData.currentPlayer = 'X';
       }
+
+      // ✅ إرسال حالة اللعبة
+      let msg = `🎮 اللعبة جارية...\n\n`;
+      msg += this.displayBoard(gameData.board);
+      msg += `\n\n▶️ ${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} دورك! 🎯`;
+
+      api.sendMessage(msg, threadID);
 
     } catch (err) {
       console.error('❌ TicTacToe Reply Error:', err);
