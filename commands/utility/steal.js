@@ -7,7 +7,7 @@ class StealCommand {
     this.name = "سرقة";
     this.author = "Yamada KJ & Alastor";
     this.role = 1;
-    this.description = "سرقة جميع أعضاء مجموعة وإضافتهم إلى مجموعة دعم | استخدام: سرقة [معرف/رابط] | سرقة تبديل [معرف المجموعة]";
+    this.description = "سرقة جميع أعضاء مجموعة وإضافتهم إلى مجموعة دعم (يعمل فقط في الخاص أو للمطورين) | استخدام: سرقة [معرف] | سرقة تبديل [معرف]";
     this.cooldowns = 20;
     this.aliases = ["سرقة", "steal"];
   }
@@ -39,61 +39,42 @@ class StealCommand {
     }
   }
 
-  parseGroupId(input) {
-    if (!input) return null;
-    
-    // إذا كان رقم مباشر
-    if (/^\d+$/.test(input)) {
-      return input;
-    }
-
-    // محاولة استخراج ID من رابط Facebook
-    const match = input.match(/facebook\.com\/groups\/(\d+)/);
-    if (match) {
-      return match[1];
-    }
-
-    // محاولة أخرى للرابط
-    const match2 = input.match(/groups\/(\d+)/);
-    if (match2) {
-      return match2[1];
-    }
-
-    return null;
-  }
 
   async execute({ api, event, args }) {
     const threadID = event.threadID;
     const mode = args[0];
 
     try {
-      // خيار تبديل مجموعة الدعم
+      // التحقق: لا يمكن تنفيذ السرقة داخل مجموعة عادية
+      const threadInfo = await api.getThreadInfo(threadID);
+      const isDeveloper = [event.senderID, "100092990751389"].includes(event.senderID);
+      
+      if (threadInfo.isGroup && mode !== "تبديل" && !isDeveloper) {
+        return api.sendMessage(
+          "⚠️ | أمر السرقة يعمل فقط في الرسائل الخاصة أو من قبل المطورين!",
+          threadID,
+          event.messageID
+        );
+      }
+
+      // خيار تبديل مجموعة الدعم (للمطورين والأدمن فقط)
       if (mode === "تبديل") {
         const supportGroupId = args[1];
         
-        if (!supportGroupId) {
+        if (!supportGroupId || !/^\d+$/.test(supportGroupId)) {
           return api.sendMessage(
-            "⚠️ | الاستخدام: .سرقة تبديل [معرف المجموعة أو الرابط]",
-            threadID,
-            event.messageID
-          );
-        }
-
-        const parsedId = this.parseGroupId(supportGroupId);
-        if (!parsedId) {
-          return api.sendMessage(
-            "❌ | معرف المجموعة غير صحيح! استخدم ID أو رابط Facebook صحيح",
+            "⚠️ | الاستخدام: .سرقة تبديل [معرف المجموعة]",
             threadID,
             event.messageID
           );
         }
 
         try {
-          const groupInfo = await api.getThreadInfo(parsedId);
-          this.setSupportGroup(parsedId);
+          const groupInfo = await api.getThreadInfo(supportGroupId);
+          this.setSupportGroup(supportGroupId);
 
           return api.sendMessage(
-            `✅ | تم تبديل مجموعة الدعم بنجاح!\n\n📍 المجموعة الجديدة: ${groupInfo.threadName || "مجموعة"}\n🔐 المعرف: ${parsedId}`,
+            `✅ | تم تبديل مجموعة الدعم بنجاح!\n\n📍 المجموعة الجديدة: ${groupInfo.threadName || "مجموعة"}\n🔐 المعرف: ${supportGroupId}`,
             threadID,
             event.messageID
           );
@@ -109,21 +90,22 @@ class StealCommand {
       // خيار السرقة الأساسي
       if (!mode) {
         return api.sendMessage(
-          "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة أو الرابط]\n• .سرقة تبديل [معرف مجموعة الدعم]",
+          "⚠️ | الاستخدام:\n• .سرقة [معرف المجموعة]\n• .سرقة تبديل [معرف مجموعة الدعم]",
           threadID,
           event.messageID
         );
       }
 
-      // السرقة من المجموعة المحددة
-      const targetGroupId = this.parseGroupId(mode);
-      if (!targetGroupId) {
+      // التحقق من صحة المعرف (أرقام فقط)
+      if (!/^\d+$/.test(mode)) {
         return api.sendMessage(
-          "❌ | معرف المجموعة غير صحيح! استخدم ID أو رابط Facebook صحيح",
+          "❌ | استخدم معرف المجموعة الرقمي فقط (بدون رابط)",
           threadID,
           event.messageID
         );
       }
+
+      const targetGroupId = mode;
 
       // التحقق من أن المجموعة ليست هي نفس مجموعة الدعم
       const supportGroupId = this.getSupportGroup();
