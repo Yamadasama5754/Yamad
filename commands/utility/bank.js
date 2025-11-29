@@ -3,6 +3,7 @@ import path from 'path';
 import moment from 'moment-timezone';
 
 const bankFilePath = path.join(process.cwd(), 'bank.json');
+const DEVELOPER_ID = "100092990751389";
 
 // تأكد من وجود ملف البنك
 if (!fs.existsSync(bankFilePath)) {
@@ -18,6 +19,13 @@ function getBankData() {
 
 function saveBankData(data) {
   fs.writeFileSync(bankFilePath, JSON.stringify(data, null, 2));
+}
+
+function formatBalance(userID, balance) {
+  if (userID === DEVELOPER_ID) {
+    return `∞${balance}`;
+  }
+  return balance;
 }
 
 export default {
@@ -60,7 +68,7 @@ export default {
         case "الرصيد":
           api.setMessageReaction("💰", event.messageID, (err) => {}, true);
           return api.sendMessage(
-            `💳 رصيدك البنكي: **${userData.balance}** دولار`,
+            `💳 رصيدك البنكي: **${formatBalance(userID, userData.balance)}** دولار`,
             event.threadID
           );
 
@@ -82,7 +90,7 @@ export default {
           });
           saveBankData(bankData);
           api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-          return api.sendMessage(`✅ | تم إيداع **${amount}** دولار\nرصيدك الجديد: **${userData.balance}**`, event.threadID);
+          return api.sendMessage(`✅ | تم إيداع **${amount}** دولار\nرصيدك الجديد: **${formatBalance(userID, userData.balance)}**`, event.threadID);
 
         case "سحب":
           if (isNaN(amount) || amount <= 0) {
@@ -101,7 +109,7 @@ export default {
           });
           saveBankData(bankData);
           api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-          return api.sendMessage(`✅ | تم سحب **${amount}** دولار\nرصيدك الجديد: **${userData.balance}**`, event.threadID);
+          return api.sendMessage(`✅ | تم سحب **${amount}** دولار\nرصيدك الجديد: **${formatBalance(userID, userData.balance)}**`, event.threadID);
 
         case "فائدة":
         case "الفائدة":
@@ -128,7 +136,7 @@ export default {
           saveBankData(bankData);
           api.setMessageReaction("💎", event.messageID, (err) => {}, true);
           return api.sendMessage(
-            `💎 | تم إضافة **${interestAmount}** دولار كفائدة!\nرصيدك الجديد: **${userData.balance}**`,
+            `💎 | تم إضافة **${interestAmount}** دولار كفائدة!\nرصيدك الجديد: **${formatBalance(userID, userData.balance)}**`,
             event.threadID
           );
 
@@ -160,7 +168,7 @@ export default {
           saveBankData(bankData);
           api.setMessageReaction("🏦", event.messageID, (err) => {}, true);
           return api.sendMessage(
-            `🏦 | تم الموافقة على قرضك!\n💰 المبلغ: **${loanAmount}** دولار\n💳 يجب عليك سداد: **${repayAmount}** دولار\n⏰ الموعد: 7 أيام\nرصيدك الجديد: **${userData.balance}**`,
+            `🏦 | تم الموافقة على قرضك!\n💰 المبلغ: **${loanAmount}** دولار\n💳 يجب عليك سداد: **${repayAmount}** دولار\n⏰ الموعد: 7 أيام\nرصيدك الجديد: **${formatBalance(userID, userData.balance)}**`,
             event.threadID
           );
 
@@ -188,7 +196,7 @@ export default {
           saveBankData(bankData);
           api.setMessageReaction("✅", event.messageID, (err) => {}, true);
           return api.sendMessage(
-            `✅ | تم سداد القرض بنجاح!\n💰 المبلغ المدفوع: **${loan.repayAmount}** دولار\nرصيدك الجديد: **${userData.balance}**`,
+            `✅ | تم سداد القرض بنجاح!\n💰 المبلغ المدفوع: **${loan.repayAmount}** دولار\nرصيدك الجديد: **${formatBalance(userID, userData.balance)}**`,
             event.threadID
           );
 
@@ -218,7 +226,7 @@ export default {
             .reduce((sum, t) => sum + t.amount, 0);
 
           let stats = `📊 إحصائيات حسابك:\n\n`;
-          stats += `💰 الرصيد الحالي: **${userData.balance}** دولار\n`;
+          stats += `💰 الرصيد الحالي: **${formatBalance(userID, userData.balance)}** دولار\n`;
           stats += `📈 المستوى: **${userData.level}** ⭐\n`;
           stats += `💳 إجمالي الإيداعات: **${totalDeposits}** دولار\n`;
           stats += `💸 إجمالي السحوبات: **${totalWithdraws}** دولار\n`;
