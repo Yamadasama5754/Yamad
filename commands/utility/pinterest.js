@@ -1,102 +1,63 @@
-import axios from "axios";
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 
-class PinterestCommand {
-  constructor() {
-    this.name = "بانترست";
-    this.author = "Yamada KJ";
-    this.cooldowns = 3;
-    this.description = "صور من بنترست | استخدام: بانترست [كلمة البحث]";
-    this.role = 0;
-    this.aliases = ["بانس", "pinterest"];
-  }
+export default {
+    name: "صور",
+    author: "HUSSEIN YACOUBI",
+    role: "member",
+    aliases: ["بنتريست"],
+    description: "Searches Pinterest and returns related images based on the keyword.",
+    execute: async function({ api, event, args }) {
 
-  async execute({ api, event, args }) {
-    api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
-
-    if (!args || args.length === 0) {
-      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      return api.sendMessage(
-        "❌ | أدخل كلمة البحث المراد البحث عنها في بنترست.\n\n📝 مثال: .بانترست أنمي",
-        event.threadID,
-        event.messageID
-      );
-    }
-
-    let keySearch = args.join(" ");
-
-    try {
-      api.setMessageReaction("🔍", event.messageID, (err) => {}, true);
-
-      // البحث عن الصور
-      const response = await axios.get(
-        `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(keySearch)}`,
-        {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          },
-          timeout: 10000
+        // التحقق إذا لم يتم إدخال أي كلمة بحث
+        if (args.length === 0) {
+            return api.sendMessage("⚠️ | من فضلك أدخل كلمة بحث للبحث عن الصور في بنتريست.", event.threadID, event.messageID);
         }
-      );
 
-      // محاولة استخراج الصور من HTML
-      const imageUrls = [];
-      const regex = /\"image\":{\"orig\":{\"height\":\d+,\"width\":\d+,\"url\":\"([^\"]+)\"/g;
-      let match;
-      
-      while ((match = regex.exec(response.data)) !== null) {
-        imageUrls.push(match[1].replace(/\\\//g, '/'));
-        if (imageUrls.length >= 5) break;
-      }
+        const keySearch = args.join(" ");
 
-      if (imageUrls.length === 0) {
-        // محاولة بحث بديل
-        const altResponse = await axios.get(
-          `https://api.pinterest.com/v1/search/pins/?query=${encodeURIComponent(keySearch)}&access_token=test`,
-          { timeout: 5000 }
-        ).catch(() => null);
+        // React with ⏱️ to indicate the search has started
+        api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
 
-        if (!altResponse || altResponse.data.data.length === 0) {
-          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-          return api.sendMessage(
-            `❌ | لم يتم العثور على صور ل "${keySearch}"`,
-            event.threadID,
-            event.messageID
-          );
+        try {
+            // API request to fetch Pinterest images from the new API
+            const pinterestResponse = await axios.get(`https://smfahim.xyz/pin?title=${encodeURIComponent(keySearch)}&search=9`);
+            const data = pinterestResponse.data.data.slice(0, 9); // Limit to 9 images
+
+            const imgData = [];
+            const cacheDir = path.join(process.cwd(), 'cache');
+
+            // Ensure the cache directory exists
+            if (!fs.existsSync(cacheDir)) {
+                fs.mkdirSync(cacheDir);
+            }
+
+            for (let i = 0; i < data.length; i++) {
+                const imgPath = path.join(cacheDir, `image${i + 1}.jpg`);
+                const imageResponse = await axios.get(data[i], { responseType: 'arraybuffer' });
+                fs.writeFileSync(imgPath, Buffer.from(imageResponse.data, 'binary'));
+                imgData.push(fs.createReadStream(imgPath));
+            }
+
+            // Send the images in the chat
+            api.sendMessage({
+                attachment: imgData,
+                body: '[⚜️] هذه عمليات البحث ذات الصلة'
+            }, event.threadID, (err, info) => {
+                if (err) console.error(err);
+
+                // Clean up the cache by removing the downloaded images
+                for (let i = 0; i < data.length; i++) {
+                    fs.unlinkSync(path.join(cacheDir, `image${i + 1}.jpg`));
+                }
+
+                // React with ✅ to indicate the operation was successful
+                api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+            });
+        } catch (error) {
+            console.error(error);
+            api.sendMessage('حدث خطأ أثناء جلب الصور.', event.threadID);
         }
-      }
-
-      if (imageUrls.length === 0) {
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage(
-          `❌ | لم يتم العثور على صور ل "${keySearch}"\n\n🔄 حاول كلمة بحث أخرى`,
-          event.threadID,
-          event.messageID
-        );
-      }
-
-      // إرسال الصور
-      const imagesToSend = imageUrls.slice(0, 5);
-      
-      const message = {
-        attachment: imagesToSend.map((url) => ({
-          type: "image",
-          payload: { url: url }
-        }))
-      };
-
-      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-      api.sendMessage(message, event.threadID);
-
-    } catch (err) {
-      console.error("❌ Pinterest Error:", err.message);
-      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      return api.sendMessage(
-        `❌ | حدث خطأ: ${err.message || "خطأ غير معروف"}`,
-        event.threadID,
-        event.messageID
-      );
     }
-  }
-}
-
-export default new PinterestCommand();
+};
