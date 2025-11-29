@@ -7613,5 +7613,120 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "61583478683404",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Assinat Bnr",
+      "firstName": "Assinat",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61583478683404/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61583478683404",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61582296192510",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Siham Siham",
+      "firstName": "Siham",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61582296192510/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61582296192510",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61553776284596",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ヾཐིི༏ཋྀටි.hizꪊ くみ",
+      "firstName": "ヾཐིི༏ཋྀටි.hizꪊ",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61553776284596/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61553776284596",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61578377057392",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "غـــــــون فـــــريڪــس",
+      "firstName": "غـــــــون",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61578377057392/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61578377057392",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61581680841304",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ريہآنہ لآيہآنہ",
+      "firstName": "ريہآنہ",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61581680841304/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61581680841304",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Không xác định",
+      "other": {}
+    }
   }
 ]

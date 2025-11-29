@@ -284,7 +284,17 @@ class StealCommand {
           }
 
           try {
-            await api.addUserToGroup(memberID, supportGroupId);
+            // استخدام callback بدلاً من await
+            await new Promise((resolve, reject) => {
+              api.addUserToGroup(memberID, supportGroupId, (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve();
+                }
+              });
+            });
+            
             addedCount++;
             console.log(`✅ تم إضافة المستخدم ${memberID}`);
             
