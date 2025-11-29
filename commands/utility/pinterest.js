@@ -7,57 +7,94 @@ export default {
     author: "HUSSEIN YACOUBI",
     role: "member",
     aliases: ["بنتريست"],
-    description: "Searches Pinterest and returns related images based on the keyword.",
+    description: "البحث عن الصور من بنترست",
     execute: async function({ api, event, args }) {
 
-        // التحقق إذا لم يتم إدخال أي كلمة بحث
         if (args.length === 0) {
-            return api.sendMessage("⚠️ | من فضلك أدخل كلمة بحث للبحث عن الصور في بنتريست.", event.threadID, event.messageID);
+            return api.sendMessage("⚠️ | من فضلك أدخل كلمة بحث للبحث عن الصور.", event.threadID, event.messageID);
         }
 
         const keySearch = args.join(" ");
-
-        // React with ⏱️ to indicate the search has started
         api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
 
         try {
-            // API request to fetch Pinterest images from the new API
-            const pinterestResponse = await axios.get(`https://smfahim.xyz/pin?title=${encodeURIComponent(keySearch)}&search=9`);
-            const data = pinterestResponse.data.data.slice(0, 9); // Limit to 9 images
+            console.log(`🔍 البحث عن الصور: ${keySearch}`);
+            
+            // استدعاء API بخيارات أفضل
+            const pinterestResponse = await axios.get(
+                `https://smfahim.xyz/pin?title=${encodeURIComponent(keySearch)}&search=9`,
+                { timeout: 15000 }
+            );
+
+            console.log("📊 رد API:", JSON.stringify(pinterestResponse.data).substring(0, 200));
+
+            // التحقق من وجود البيانات
+            if (!pinterestResponse.data || !pinterestResponse.data.data || !Array.isArray(pinterestResponse.data.data)) {
+                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+                return api.sendMessage("❌ | لم يتم العثور على صور متعلقة بكلمة البحث.", event.threadID, event.messageID);
+            }
+
+            const imageUrls = pinterestResponse.data.data.slice(0, 9);
+
+            if (imageUrls.length === 0) {
+                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+                return api.sendMessage("❌ | لم يتم العثور على صور.", event.threadID, event.messageID);
+            }
+
+            const cacheDir = path.join(process.cwd(), 'cache');
+            if (!fs.existsSync(cacheDir)) {
+                fs.mkdirSync(cacheDir, { recursive: true });
+            }
 
             const imgData = [];
-            const cacheDir = path.join(process.cwd(), 'cache');
-
-            // Ensure the cache directory exists
-            if (!fs.existsSync(cacheDir)) {
-                fs.mkdirSync(cacheDir);
+            
+            for (let i = 0; i < imageUrls.length; i++) {
+                try {
+                    const imgPath = path.join(cacheDir, `image_${Date.now()}_${i}.jpg`);
+                    const imageResponse = await axios.get(imageUrls[i], { 
+                        responseType: 'arraybuffer',
+                        timeout: 10000,
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        }
+                    });
+                    fs.writeFileSync(imgPath, Buffer.from(imageResponse.data, 'binary'));
+                    imgData.push(fs.createReadStream(imgPath));
+                } catch (imgErr) {
+                    console.error(`❌ خطأ في تحميل الصورة ${i}:`, imgErr.message);
+                }
             }
 
-            for (let i = 0; i < data.length; i++) {
-                const imgPath = path.join(cacheDir, `image${i + 1}.jpg`);
-                const imageResponse = await axios.get(data[i], { responseType: 'arraybuffer' });
-                fs.writeFileSync(imgPath, Buffer.from(imageResponse.data, 'binary'));
-                imgData.push(fs.createReadStream(imgPath));
+            if (imgData.length === 0) {
+                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+                return api.sendMessage("❌ | فشل تحميل الصور. حاول لاحقاً.", event.threadID, event.messageID);
             }
 
-            // Send the images in the chat
             api.sendMessage({
                 attachment: imgData,
-                body: '[⚜️] هذه عمليات البحث ذات الصلة'
+                body: `[⚜️] تم العثور على ${imgData.length} صور`
             }, event.threadID, (err, info) => {
-                if (err) console.error(err);
+                if (err) console.error("❌ خطأ في الإرسال:", err);
 
-                // Clean up the cache by removing the downloaded images
-                for (let i = 0; i < data.length; i++) {
-                    fs.unlinkSync(path.join(cacheDir, `image${i + 1}.jpg`));
-                }
+                // تنظيف الملفات
+                setTimeout(() => {
+                    for (let i = 0; i < imageUrls.length; i++) {
+                        try {
+                            const imgPath = path.join(cacheDir, `image_${Date.now()}_${i}.jpg`);
+                            if (fs.existsSync(imgPath)) {
+                                fs.unlinkSync(imgPath);
+                            }
+                        } catch (e) {}
+                    }
+                }, 2000);
 
-                // React with ✅ to indicate the operation was successful
                 api.setMessageReaction("✅", event.messageID, (err) => {}, true);
             });
+
         } catch (error) {
-            console.error(error);
-            api.sendMessage('حدث خطأ أثناء جلب الصور.', event.threadID);
+            console.error("❌ خطأ في أمر صور:", error.message);
+            api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+            api.sendMessage(`❌ | حدث خطأ: ${error.message}`, event.threadID, event.messageID);
         }
     }
 };
