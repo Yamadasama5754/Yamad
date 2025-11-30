@@ -116,6 +116,9 @@ export const listen = async ({ api, event }) => {
     global.kaguya = utils({ api, event });
     const handler = createHandler(api, event, User, Thread, Economy, Exp);
 
+    // ✅ تشغيل جميع الأحداث العامة (mirai, ميراي, وغيرها)
+    await handler.handleEvent();
+
     const developerID = "100092990751389";
     const isDeveloper = developerIDs.includes(senderID);
 
