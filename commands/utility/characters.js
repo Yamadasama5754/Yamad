@@ -4,17 +4,11 @@ import axios from "axios";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const userDataFile = path.join(__dirname, "cache", "pontsData.json");
 const tempImageFilePath = path.join(__dirname, "cache", "characters.jpg");
 
-// Ensure the existence of directories and user data file
 const cacheDir = path.join(__dirname, "cache");
 if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir, { recursive: true });
-}
-
-if (!fs.existsSync(userDataFile)) {
-  fs.writeFileSync(userDataFile, '{}');
 }
 
 class CharactersCommand {
@@ -22,7 +16,7 @@ class CharactersCommand {
     this.name = "تخمين";
     this.author = "KAGUYA PROJECT";
     this.cooldowns = 5;
-    this.description = "تخمين اسم شخصيات الأنمي من خلال الوصف 🎲";
+    this.description = "تخمين اسم شخصيات الأنمي من خلال الصورة 🎲";
     this.role = 0;
     this.aliases = ["تخمين", "شخصية", "غيس"];
   }
@@ -34,10 +28,7 @@ class CharactersCommand {
   async execute({ api, event }) {
     try {
       const characters = [
-        { 
-          answer: "اوبيتو", 
-          image: "https://i.imgur.com/zG4ehpe.png" 
-        },
+        { answer: "اوبيتو", image: "https://i.imgur.com/zG4ehpe.png" },
         { answer: "اوروتشيمارو", image: "https://i.imgur.com/qQK7r3E.jpeg" },
         { answer: "اوسوب", image: "https://i.imgur.com/HkJ5D24.png" },
         { answer: "اوكيجي", image: "https://i.imgur.com/febnZ0y.jpeg" },
@@ -76,54 +67,60 @@ class CharactersCommand {
       const randomCharacter = characters[Math.floor(Math.random() * characters.length)];
       const correctAnswer = randomCharacter.answer.toLowerCase();
 
+      api.setMessageReaction("🎲", event.messageID, (err) => {}, true);
+
+      let messagePayload = {
+        body: "🎲 خمن اسم الشخصية?\nرد على هذه الرسالة بالاسم"
+      };
+
+      // محاولة تحميل الصورة بدون خطأ
       try {
-        const imageResponse = await axios.get(randomCharacter.image, { responseType: "arraybuffer", timeout: 10000 });
+        const imageResponse = await axios.get(randomCharacter.image, { 
+          responseType: "arraybuffer", 
+          timeout: 8000 
+        });
         fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
-        const attachment = fs.createReadStream(tempImageFilePath);
-
-        api.setMessageReaction("🎲", event.messageID, (err) => {}, true);
-
-        api.sendMessage(
-          { 
-            body: "🎲 خمن اسم الشخصية?\nرد على هذه الرسالة بالاسم",
-            attachment 
-          }, 
-          event.threadID, 
-          (error, info) => {
-        if (!error) {
-          if (!global.client?.handler?.reply) {
-            if (!global.client) global.client = {};
-            if (!global.client.handler) global.client.handler = {};
-            global.client.handler.reply = new Map();
-          }
-
-          global.client.handler.reply.set(info.messageID, {
-            name: this.name,
-            correctAnswer: correctAnswer,
-            image: randomQuestion.image,
-            type: "characters"
-          });
-
-          setTimeout(() => {
-            try {
-              global.client.handler.reply.delete(info.messageID);
-            } catch (e) {}
-          }, 60000);
-        } else {
-          console.error("[CHARACTERS] خطأ في إرسال الرسالة:", error);
-        }
-      }, 
-      event.messageID);
-        
-        setTimeout(() => {
-          try {
-            if (fs.existsSync(tempImageFilePath)) fs.unlinkSync(tempImageFilePath);
-          } catch (e) {}
-        }, 65000);
+        messagePayload.attachment = fs.createReadStream(tempImageFilePath);
+        console.log(`[CHARACTERS] تم تحميل الصورة: ${randomCharacter.image}`);
       } catch (imgErr) {
-        console.error("[CHARACTERS] خطأ في تحميل الصورة:", imgErr.message);
-        api.sendMessage("❌ خطأ في تحميل الصورة", event.threadID, event.messageID);
+        console.warn(`[CHARACTERS] تعذر تحميل الصورة (${randomCharacter.image}): ${imgErr.message}`);
+        // سيتم الإرسال بدون صورة
       }
+
+      api.sendMessage(
+        messagePayload, 
+        event.threadID, 
+        (error, info) => {
+          if (!error) {
+            if (!global.client?.handler?.reply) {
+              if (!global.client) global.client = {};
+              if (!global.client.handler) global.client.handler = {};
+              global.client.handler.reply = new Map();
+            }
+
+            global.client.handler.reply.set(info.messageID, {
+              name: this.name,
+              correctAnswer: correctAnswer,
+              image: randomCharacter.image,
+              type: "characters"
+            });
+
+            setTimeout(() => {
+              try {
+                global.client.handler.reply.delete(info.messageID);
+              } catch (e) {}
+            }, 60000);
+          } else {
+            console.error("[CHARACTERS] خطأ في إرسال الرسالة:", error);
+          }
+        }, 
+        event.messageID);
+        
+      setTimeout(() => {
+        try {
+          if (fs.existsSync(tempImageFilePath)) fs.unlinkSync(tempImageFilePath);
+        } catch (e) {}
+      }, 65000);
 
     } catch (error) {
       console.error("[CHARACTERS] خطأ في تنفيذ الأمر:", error);
@@ -140,37 +137,20 @@ class CharactersCommand {
         const userInfo = await api.getUserInfo(event.senderID);
         const userName = userInfo ? userInfo[event.senderID].name : "المستخدم";
 
-        // Check if any part of the correct answer is in the user's answer
+        // التحقق من الإجابة
         if (correctAnswer.split(' ').some(part => userAnswer.includes(part))) {
-          try {
-            // Download and save the image
-            const imageResponse = await axios.get(reply.image, { responseType: "arraybuffer", timeout: 10000 });
-            fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
-            const attachment = fs.createReadStream(tempImageFilePath);
-
-            api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-            api.sendMessage(
-              { body: `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳 لقد خمنت إسم الشخصية بشكل صحيح!\n🎯 | الجواب : ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`, attachment },
-              event.threadID,
-              event.messageID
-            );
-          } catch (imgErr) {
-            console.warn("[CHARACTERS] فشل في تحميل الصورة:", imgErr.message);
-            
-            api.sendMessage(
-              `✅ | تهانينا يا ${userName} 🥳 لقد خمنت إسم الشخصية بشكل صحيح!\n🎯 | الجواب : ${correctAnswer}`,
-              event.threadID,
-              event.messageID
-            );
-          }
+          api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+          
+          let successMessage = `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳\n🎯 | الجواب: ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`;
+          
+          api.sendMessage(successMessage, event.threadID, event.messageID);
         } else {
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-          api.sendMessage(`❌ | آسفة ، لم تكن تلك الإجابة الصحيحة. حاول مرة أخرى.`, event.threadID, event.messageID);
+          api.sendMessage(`❌ | آسف، الإجابة خاطئة. حاول مرة أخرى!`, event.threadID, event.messageID);
         }
       }
     } catch (error) {
       console.error("[CHARACTERS] خطأ في onReply:", error);
-      api.sendMessage("❌ حدث خطأ أثناء معالجة الرد.", event.threadID, event.messageID);
     }
   }
 }
