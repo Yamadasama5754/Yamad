@@ -72,14 +72,26 @@ class DevOnly {
   }
 }
 
-// دالة مساعدة لفحص الوضع قبل تنفيذ أي أمر
+// دالة مساعدة لفحص الوضع قبل تنفيذ أي أمر - ترجع true إذا كان يمكن المتابعة
 export function checkDevOnly(senderID) {
   let devOnly = false;
   if (fs.existsSync(configPath)) {
     const { devOnly: state } = JSON.parse(fs.readFileSync(configPath, "utf8"));
     devOnly = !!state;
   }
+  // ترجع true إذا كانت وضع المطور معطل (يمكن الجميع المتابعة) 
+  // أو إذا كان المرسل مطور (يمكن المطور المتابعة)
   return !devOnly || developerIDs.includes(senderID);
+}
+
+// دالة للتحقق إذا كان وضع المطور مفعل والمرسل ليس مطور - ترجع true إذا كان يجب الحجب
+export function isDevOnlyBlocked(senderID) {
+  let devOnly = false;
+  if (fs.existsSync(configPath)) {
+    const { devOnly: state } = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    devOnly = !!state;
+  }
+  return devOnly && !developerIDs.includes(senderID);
 }
 
 export default new DevOnly();

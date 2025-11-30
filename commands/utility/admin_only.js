@@ -100,4 +100,20 @@ class AdminOnly {
   }
 }
 
+// دالة للتحقق إذا كان وضع الإدمن فقط مفعل والمرسل ليس أدمن - ترجع true إذا كان يجب الحجب
+export function isAdminOnlyBlocked(senderID, threadID, adminList = []) {
+  let configData = {};
+  if (fs.existsSync(configPath)) {
+    configData = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  }
+  
+  const adminOnly = configData[threadID]?.adminOnly || false;
+  
+  // إذا لم يكن وضع الإدمن فقط مفعل، السماح للجميع
+  if (!adminOnly) return false;
+  
+  // إذا كان وضع الإدمن فقط مفعل، حجب المرسل إذا لم يكن أدمن
+  return !adminList.includes(senderID);
+}
+
 export default new AdminOnly();

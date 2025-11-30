@@ -5,7 +5,8 @@ import fs from "fs";
 import path from "path";
 import config from "../KaguyaSetUp/config.js";
 
-import { checkDevOnly } from "../commands/utility/devonly.js";
+import { checkDevOnly, isDevOnlyBlocked } from "../commands/utility/devonly.js";
+import { isAdminOnlyBlocked } from "../commands/utility/admin_only.js";
 import { checkBadWords } from "../commands/utility/badwords.js";
 import { autoPreventsKickedUsers } from "./auto-prevent-kicked-user.js";
 
@@ -116,11 +117,32 @@ export const listen = async ({ api, event }) => {
     global.kaguya = utils({ api, event });
     const handler = createHandler(api, event, User, Thread, Economy, Exp);
 
-    // ✅ تشغيل جميع الأحداث العامة (mirai, ميراي, وغيرها)
-    await handler.handleEvent();
-
     const developerID = "100092990751389";
     const isDeveloper = developerIDs.includes(senderID);
+    
+    // 🔒 فحص وضع المطور فقط والإدمن فقط - حجب صامت (بدون رسالة)
+    if (isDevOnlyBlocked(senderID)) {
+      return; // الصمت التام - لا أحداث، لا أوامر
+    }
+    
+    // الحصول على قائمة الأدمن للمجموعة
+    let adminList = [];
+    if (isGroup) {
+      try {
+        const threadInfo = await api.getThreadInfo(threadID);
+        adminList = threadInfo.adminIDs || [];
+      } catch (err) {
+        console.error('خطأ في الحصول على معلومات المجموعة:', err.message);
+      }
+    }
+    
+    // فحص وضع الإدمن فقط
+    if (isGroup && isAdminOnlyBlocked(senderID, threadID, adminList)) {
+      return; // الصمت التام - لا أحداث، لا أوامر
+    }
+
+    // ✅ تشغيل جميع الأحداث العامة (mirai, ميراي, وغيرها)
+    await handler.handleEvent();
 
     // ✅ فحص ما إذا كان البوت معطلاً في المجموعة (قبل كل شيء) مع caching
     let isBotDisabled = false;
@@ -224,9 +246,6 @@ export const listen = async ({ api, event }) => {
           }
         }
 
-        if (!checkDevOnly(senderID) && exists) {
-          return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
-        }
 
 
         if (exists) {
