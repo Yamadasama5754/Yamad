@@ -125,13 +125,21 @@ class TicTacToe {
       let opponentUID = null;
       let isMultiplayer = false;
 
+      // 1️⃣ تحقق من الرد على رسالة شخص (الأولوية الأولى)
       if (event.messageReply && event.messageReply.senderID) {
         opponentUID = event.messageReply.senderID;
         isMultiplayer = true;
-      } else {
-        const mentions = event.mentions || {};
-        opponentUID = Object.keys(mentions)[0];
-        isMultiplayer = !!opponentUID;
+        console.log(`[TicTacToe] لعب مع شخص: ${opponentUID} (رد على رسالة)`);
+      }
+      // 2️⃣ تحقق من @mention (الأولوية الثانية)
+      else if (event.mentions && Object.keys(event.mentions).length > 0) {
+        opponentUID = Object.keys(event.mentions)[0];
+        isMultiplayer = true;
+        console.log(`[TicTacToe] لعب مع شخص: ${opponentUID} (@mention)`);
+      }
+      // 3️⃣ وإلا لعب مع البوت
+      else {
+        console.log(`[TicTacToe] لعب مع البوت`);
       }
 
       if (global.tictactoeGames.has(gameKey)) {
@@ -144,9 +152,14 @@ class TicTacToe {
       const playerName = playerInfo?.[userID]?.name || 'لاعب';
 
       let opponentName = 'البوت 🤖';
-      if (isMultiplayer) {
-        const opponentInfo = await api.getUserInfo(opponentUID);
-        opponentName = opponentInfo?.[opponentUID]?.name || 'لاعب 2';
+      if (isMultiplayer && opponentUID) {
+        try {
+          const opponentInfo = await api.getUserInfo(opponentUID);
+          opponentName = opponentInfo?.[opponentUID]?.name || 'لاعب 2';
+        } catch (err) {
+          console.error('خطأ في الحصول على بيانات الخصم:', err);
+          opponentName = 'خصم';
+        }
       }
 
       const gameData = {
@@ -177,6 +190,7 @@ class TicTacToe {
         }
       } catch (err) {
         console.error('خطأ في إرسال رسالة البدء:', err);
+        api.sendMessage("❌ حدث خطأ في بدء اللعبة", event.threadID);
       }
 
     } catch (err) {
