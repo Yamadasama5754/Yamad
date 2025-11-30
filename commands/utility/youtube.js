@@ -89,14 +89,18 @@ class YouTubeCommand {
         message += `${i + 1}. ${title}\nالقناة: ${channelTitle}\n--------------------------\n`;
 
         try {
-          const imageUrl = result.snippet.thumbnails.high.url;
-          const imageBuffer = await axios.get(imageUrl, {
-            responseType: "arraybuffer",
-            timeout: 10000
-          });
-          const imagePath = path.join(cacheDir, `thumb_${Date.now()}_${i + 1}.jpg`);
-          fs.writeFileSync(imagePath, Buffer.from(imageBuffer.data));
-          attachments.push({ path: imagePath });
+          const thumbnails = result.snippet.thumbnails;
+          const imageUrl = thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url;
+          
+          if (imageUrl) {
+            const imageBuffer = await axios.get(imageUrl, {
+              responseType: "arraybuffer",
+              timeout: 10000
+            });
+            const imagePath = path.join(cacheDir, `thumb_${Date.now()}_${i + 1}.jpg`);
+            fs.writeFileSync(imagePath, Buffer.from(imageBuffer.data));
+            attachments.push({ path: imagePath });
+          }
         } catch (imgErr) {
           console.warn(`[YOUTUBE] فشل تحميل الصورة ${i + 1}:`, imgErr.message);
         }
