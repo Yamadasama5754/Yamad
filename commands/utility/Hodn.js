@@ -93,17 +93,8 @@ class HugCommand {
     return await img.getBufferAsync("image/png");
   }
 
-  async execute({ api, event, args, Economy }) {
+  async execute({ api, event, args }) {
     const { threadID, messageID, senderID, messageReply, mentions } = event;
-    const cost = 250;
-    const userBalance = (await Economy.getBalance(senderID)).data;
-    
-    if (userBalance < cost) {
-      return api.sendMessage(
-        `⚠️ | تحتاج إلى ${cost} دولار في محفظتك للعب`,
-        threadID
-      );
-    }
 
     try {
       let targetID = null;

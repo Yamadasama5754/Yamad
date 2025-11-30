@@ -47,7 +47,7 @@ class TakfikCommand {
     ];
   }
 
-  async execute({ api, event, Currencies, Users }) {
+  async execute({ api, event }) {
     try {
       api.setMessageReaction("🔤", event.messageID, (err) => {}, true);
 
@@ -60,8 +60,7 @@ class TakfikCommand {
       message += `❓ فكك كلمة: ${randomWord.question}\n\n`;
       message += `💡 تلميح: الكلمة مكونة من ${randomWord.answer.split(" ").length} أحرف\n\n`;
       message += `📝 ارد على هذه الرسالة بالأحرف المفككة\n`;
-      message += `(بدون مسافات)\n\n`;
-      message += `🏆 الجائزة: 50 دولار`;
+      message += `(بدون مسافات)`;
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
       
@@ -84,7 +83,7 @@ class TakfikCommand {
     }
   }
 
-  async onReply({ api, event, reply, Currencies, Users }) {
+  async onReply({ api, event, reply }) {
     try {
       const userAnswer = event.body.trim().toLowerCase().replace(/\s+/g, "");
       const correctAnswer = reply.correctAnswer.toLowerCase();
@@ -99,20 +98,12 @@ class TakfikCommand {
 
       if (userAnswer === correctAnswer) {
         api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-        
-        // إضافة جائزة
-        try {
-          await Currencies.increaseMoney(event.senderID, 50);
-        } catch (err) {
-          console.warn("[TAKFIK] خطأ في إضافة الجائزة:", err);
-        }
 
         let winMsg = `🎉 تهانينا يا ${userName}! 🎉\n`;
         winMsg += `════════════════════\n`;
         winMsg += `✅ الإجابة صحيحة!\n\n`;
         winMsg += `🔤 الكلمة: ${reply.word}\n`;
         winMsg += `📝 التفكيك: ${reply.correctAnswer}\n\n`;
-        winMsg += `💰 كسبت 50 دولار!\n`;
         winMsg += `════════════════════`;
         
         api.sendMessage(winMsg, event.threadID);

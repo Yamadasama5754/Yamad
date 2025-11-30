@@ -22,7 +22,7 @@ class CharactersCommand {
     this.name = "تخمين";
     this.author = "KAGUYA PROJECT";
     this.cooldowns = 5;
-    this.description = "تخمين اسم شخصيات الأنمي من خلال الوصف والفوز بالنقاط 🎲";
+    this.description = "تخمين اسم شخصيات الأنمي من خلال الوصف 🎲";
     this.role = 0;
     this.aliases = ["تخمين", "شخصية", "غيس"];
   }
@@ -261,30 +261,17 @@ class CharactersCommand {
             fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
             const attachment = fs.createReadStream(tempImageFilePath);
 
-            // Update user points
-            const pointsData = JSON.parse(fs.readFileSync(userDataFile, "utf8"));
-            const userPoints = pointsData[event.senderID] || { name: userName, points: 0 };
-            userPoints.points += 100;
-            pointsData[event.senderID] = userPoints;
-            fs.writeFileSync(userDataFile, JSON.stringify(pointsData, null, 2));
-
             api.setMessageReaction("✅", event.messageID, (err) => {}, true);
             api.sendMessage(
-              { body: `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳 لقد خمنت إسم الشخصية بشكل صحيح وربحت『 100』 نقطة\n🎯 | الجواب : ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`, attachment },
+              { body: `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳 لقد خمنت إسم الشخصية بشكل صحيح!\n🎯 | الجواب : ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`, attachment },
               event.threadID,
               event.messageID
             );
           } catch (imgErr) {
             console.warn("[CHARACTERS] فشل في تحميل الصورة:", imgErr.message);
             
-            const pointsData = JSON.parse(fs.readFileSync(userDataFile, "utf8"));
-            const userPoints = pointsData[event.senderID] || { name: userName, points: 0 };
-            userPoints.points += 100;
-            pointsData[event.senderID] = userPoints;
-            fs.writeFileSync(userDataFile, JSON.stringify(pointsData, null, 2));
-
             api.sendMessage(
-              `✅ | تهانينا يا ${userName} 🥳 لقد خمنت إسم الشخصية بشكل صحيح وربحت『 100』 نقطة\n🎯 | الجواب : ${correctAnswer}`,
+              `✅ | تهانينا يا ${userName} 🥳 لقد خمنت إسم الشخصية بشكل صحيح!\n🎯 | الجواب : ${correctAnswer}`,
               event.threadID,
               event.messageID
             );
