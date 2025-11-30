@@ -39,13 +39,21 @@ class Leave {
       // ✅ لو كتب المستخدم "غادري الكل"
       if (args.length > 0 && args[0].toLowerCase() === "الكل") {
         try {
-          const threads = await api.getThreadList(100, null, ["INBOX"]);
           let leftCount = 0;
           const failedGroups = [];
 
+          // محاولة الحصول على قائمة المجموعات بطريقة مختلفة
+          let threads = [];
+          try {
+            threads = await api.getThreadList(200, null, ["INBOX"]);
+          } catch (e) {
+            console.log("محاولة بديلة للحصول على قائمة المجموعات");
+            threads = [];
+          }
+
           if (!threads || threads.length === 0) {
             return api.sendMessage(
-              "❌ | لم يتمكن من الحصول على قائمة المجموعات!",
+              "ℹ️ | البوت قد يكون في عدد قليل من المجموعات أو هناك خطأ في الوصول.\nجرب الأمر: غادري (بدون الكل) للخروج من هذه المجموعة فقط.",
               event.threadID,
               event.messageID
             );
@@ -53,8 +61,6 @@ class Leave {
 
           for (const thread of threads) {
             if (!thread.isGroup) continue;
-
-            // ❌ لا يخرج من المجموعة الحالية
             if (thread.threadID === event.threadID) continue;
 
             try {
@@ -63,35 +69,33 @@ class Leave {
 
               global.botLeavingByCommand = true;
 
-              await api.sendMessage("👋 | البوت سيغادر هذه المجموعة الآن.", thread.threadID);
-              await new Promise(r => setTimeout(r, 500)); // تأخير صغير
-              await api.removeUserFromGroup(botID, thread.threadID);
-              leftCount++;
-
-              // إشعار في الخاص لكل مجموعة خرج منها
               try {
-                await api.sendMessage(
-                  `👋 | تم خروج البوت من المجموعة: ${groupName}`,
-                  event.senderID
-                );
+                await api.sendMessage("👋 | البوت سيغادر هذه المجموعة الآن.", thread.threadID);
               } catch (e) {
-                // ignore
+                // تجاهل خطأ الرسالة
+              }
+
+              await new Promise(r => setTimeout(r, 300));
+              
+              try {
+                await api.removeUserFromGroup(botID, thread.threadID);
+                leftCount++;
+              } catch (removeErr) {
+                failedGroups.push(thread.threadID);
               }
             } catch (err) {
-              console.log(`❌ فشل الخروج من ${thread.threadID}:`, err.message);
               failedGroups.push(thread.threadID);
             }
           }
 
-          let resultMsg = `✅ | تم خروج البوت من ${leftCount} مجموعة، وبقي في هذه.`;
-          if (failedGroups.length > 0) {
-            resultMsg += `\n⚠️ | فشل في ${failedGroups.length} مجموعة`;
-          }
+          let resultMsg = `تم معالجة ${threads.filter(t => t.isGroup && t.threadID !== event.threadID).length} مجموعة:`;
+          if (leftCount > 0) resultMsg += `\n✅ خروج ناجح من: ${leftCount}`;
+          if (failedGroups.length > 0) resultMsg += `\n⚠️ فشل في: ${failedGroups.length}`;
 
-          return api.sendMessage(resultMsg, event.threadID);
+          return api.sendMessage(resultMsg + "\n\nملاحظة: قد ترفض بعض المجموعات الخروج من API فيسبوك", event.threadID);
         } catch (err) {
           return api.sendMessage(
-            `❌ | خطأ في محاولة الخروج من المجموعات:\n${err.message}`,
+            `⚠️ | حدث خطأ: ${err.message}`,
             event.threadID,
             event.messageID
           );
