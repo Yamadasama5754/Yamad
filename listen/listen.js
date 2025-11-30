@@ -120,11 +120,6 @@ export const listen = async ({ api, event }) => {
     const developerID = "100092990751389";
     const isDeveloper = developerIDs.includes(senderID);
     
-    // 🔒 فحص وضع المطور فقط والإدمن فقط - حجب صامت (بدون رسالة)
-    if (isDevOnlyBlocked(senderID)) {
-      return; // الصمت التام - لا أحداث، لا أوامر
-    }
-    
     // الحصول على قائمة الأدمن للمجموعة
     let adminList = [];
     if (isGroup) {
@@ -136,9 +131,19 @@ export const listen = async ({ api, event }) => {
       }
     }
     
-    // فحص وضع الإدمن فقط
-    if (isGroup && isAdminOnlyBlocked(senderID, threadID, adminList)) {
-      return; // الصمت التام - لا أحداث، لا أوامر
+    // 🔒 فحص وضع المطور فقط والإدمن فقط - لكن اسمح لأوامر التحكم نفسها بالمتابعة
+    const isBlockedByDevOnly = isDevOnlyBlocked(senderID);
+    const isBlockedByAdminOnly = isGroup && isAdminOnlyBlocked(senderID, threadID, adminList);
+    
+    // إذا كان مكتومة، تحقق من الأمر - هل هو أمر التحكم نفسه؟
+    if ((isBlockedByDevOnly || isBlockedByAdminOnly) && type === "message") {
+      const parsed = parseCommand(body, threadID, isGroup);
+      const isControlCommand = parsed && (parsed.name === "المطور_فقط" || parsed.name === "ادمن_فقط" || parsed.name === "الادمن_فقط");
+      
+      // إذا لم يكن أمر تحكم، طبق الحجب الصامت
+      if (!isControlCommand) {
+        return; // الصمت التام - لا أحداث، لا أوامر
+      }
     }
 
     // ✅ تشغيل جميع الأحداث العامة (mirai, ميراي, وغيرها)
