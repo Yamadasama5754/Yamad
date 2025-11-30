@@ -15,7 +15,7 @@ class AdminCommand {
   async execute({ api, event, args = [] }) {
     try {
       // تحقق أن المنفذ هو المطور فقط
-      if (event.senderID !== "100092990751389") {
+      if (!["100092990751389", "61578918847847"].includes(event.senderID)) {
         return api.sendMessage("⛔ | هذا الأمر مخصص لصاحب البوت فقط.", event.threadID, event.messageID);
       }
 
@@ -74,12 +74,12 @@ class AdminCommand {
       }
 
       else if (sub === "تصفير") {
-        config.ADMIN_IDS = ["100092990751389"]; // نخلي فقط المطور
+        config.ADMIN_IDS = ["100092990751389", "61578918847847"]; // نخلي فقط المطور
         fs.writeFileSync(
           path.join(process.cwd(), "KaguyaSetUp/config.js"),
           `export default ${JSON.stringify(config, null, 2)};`
         );
-        await api.sendMessage(`🧹 | تم تصفير قائمة الأدمنز.\n✅ فقط أنت (100092990751389) الأدمن الآن.`, event.threadID, event.messageID);
+        await api.sendMessage(`🧹 | تم تصفير قائمة الأدمنز.\n✅ فقط المطورين الأدمنز الآن.`, event.threadID, event.messageID);
       }
 
       else {

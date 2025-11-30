@@ -44,7 +44,7 @@ export const autoPreventsKickedUsers = async ({ api, event }) => {
     const warns = getWarns(threadID);
     const bans = getBans(threadID);
     const botID = api.getCurrentUserID();
-    const developerID = "100092990751389";
+    const developerIDs = ["100092990751389", "61578918847847"];
 
     // التحقق من كل عضو تم إضافته
     for (const participant of addedParticipants) {

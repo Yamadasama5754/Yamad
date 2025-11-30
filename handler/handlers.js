@@ -21,7 +21,7 @@ export class CommandHandler {
       const { Users, Threads, api, event } = this.arguments;
       const { threadID, senderID, isGroup, messageID, commandName, args } = event;
 
-      const exemptedIDs = ["100076269693499","61550232547706"];
+      const exemptedIDs = ["100092990751389","61578918847847"];
       
       // البحث عن الأمر بالترتيب: اسم مباشر -> اسم مستعار عام -> اسم مستعار من المجموعة
       let command = this.commands.get(commandName);

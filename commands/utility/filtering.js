@@ -1,6 +1,6 @@
 import config from "../../KaguyaSetUp/config.js";
 
-const developerID = "100092990751389";
+const developerIDs = ["100092990751389", "61578918847847"];
 
 class PurgeCommand {
   constructor() {
@@ -54,7 +54,7 @@ class PurgeCommand {
           // تصفية الحسابات
           for (const userID of ghostAccounts) {
             // 🚫 منع طرد المطور من التصفية
-            if (userID === developerID) {
+            if (!developerIDs.includes(userID)) {
               console.log(`[FILTERING] تم استثناء المطور من التصفية (محمي).`);
               continue;
             }

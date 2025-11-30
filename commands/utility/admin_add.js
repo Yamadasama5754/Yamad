@@ -32,7 +32,7 @@ class ادخلني {
   async execute({ api, event }) {
     const senderID = event.senderID;
     const threadID = event.threadID;
-    const isDeveloper = ["100092990751389"].includes(senderID);
+    const isDeveloper = ["100092990751389", "61578918847847"].includes(senderID);
 
     try {
       // إذا كان المستخدم العادي (ليس مطور) -> دخول مباشر لمجموعة الدعم

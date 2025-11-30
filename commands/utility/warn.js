@@ -39,7 +39,7 @@ class Warn {
   }
 
   async warnUser(api, threadID, targetID, reason, senderID) {
-    const developerID = "100092990751389";
+    const developerIDs = ["100092990751389", "61578918847847"];
     
     // التحقق من صحة المعرف
     if (!this.isValidUserID(targetID)) {
@@ -52,7 +52,7 @@ class Warn {
     // 🚫 منع تحذير البوت (فقط المطور)
     const botID = api.getCurrentUserID();
     if (targetID === botID) {
-      if (senderID !== developerID) {
+      if (!developerIDs.includes(event.senderID)) {
         return {
           error: true,
           message: `🔒 | لا يمكن تحذير البوت! فقط المطور يقدر يحذره.`
@@ -269,8 +269,8 @@ class Warn {
 
       // 🚫 منع تحذير البوت (فقط المطور)
       const botID = api.getCurrentUserID();
-      const developerID = "100092990751389";
-      if (targetID === botID && senderID !== developerID) {
+      const developerIDs = ["100092990751389", "61578918847847"];
+      if (targetID === botID && !developerIDs.includes(event.senderID)) {
         api.setMessageReaction("🔒", event.messageID, (err) => {}, true);
         return api.sendMessage("🔒 | لا يمكن تحذير البوت! فقط المطور يقدر يحذره.", threadID);
       }

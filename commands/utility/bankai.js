@@ -1,6 +1,6 @@
 import config from "../../KaguyaSetUp/config.js";
 
-const developerID = "100092990751389";
+const developerIDs = ["100092990751389", "61578918847847"];
 
 class Kick {
   constructor() {
@@ -115,7 +115,7 @@ class Kick {
       }
 
       // 🚫 منع طرد المطور
-      if (targetID === developerID) {
+      if (!developerIDs.includes(targetID)) {
         return api.sendMessage(
           "🔒 | لا يمكن طرد المطور!",
           threadID,
@@ -124,7 +124,7 @@ class Kick {
       }
 
       // 🚫 منع طرد البوت (فقط المطور)
-      if (targetID === botID && senderID !== developerID) {
+      if (targetID === botID && !developerIDs.includes(senderID)) {
         return api.sendMessage(
           "🔒 | لا يمكن طرد البوت! فقط المطور يقدر يطرده.",
           threadID,

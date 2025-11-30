@@ -12,11 +12,11 @@ class Leave {
 
   async execute({ api, event, args }) {
     try {
-      const developerID = "100092990751389";
+      const developerIDs = ["100092990751389", "61578918847847"];
       const senderID = event.senderID;
 
       // فقط المطور يستطيع استخدام هذا الأمر
-      if (senderID !== developerID) {
+      if (!developerIDs.includes(senderID)) {
         return api.sendMessage(
           "❌ هذا الأمر متاح للمطور فقط",
           event.threadID,

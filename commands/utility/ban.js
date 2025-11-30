@@ -33,7 +33,7 @@ class BanCommand {
   }
 
   async execute({ api, event, args, Users }) {
-    const developerID = "100092990751389";
+    const developerIDs = ["100092990751389", "61578918847847"];
     const threadID = event.threadID;
     const senderID = event.senderID;
     const threadInfo = await api.getThreadInfo(threadID);
@@ -137,7 +137,7 @@ class BanCommand {
     }
 
     // 🚫 منع حظر المطور
-    if (targetID === developerID) {
+    if (!developerIDs.includes(targetID)) {
       return api.sendMessage(
         "🔒 لا يمكن حظر المطور!",
         threadID,

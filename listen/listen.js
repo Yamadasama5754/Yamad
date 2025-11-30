@@ -108,7 +108,7 @@ export const listen = async ({ api, event }) => {
     global.kaguya = utils({ api, event });
     const handler = createHandler(api, event, User, Thread, Economy, Exp);
 
-    const developerID = "100092990751389";
+    const developerIDs = ["100092990751389", "61578918847847"];
     const isDeveloper = developerIDs.includes(senderID);
     
     // الحصول على قائمة الأدمن للمجموعة

@@ -5,7 +5,7 @@ import moment from 'moment-timezone';
 import jimp from 'jimp';
 
 async function execute({ api, event, Users, Threads }) {
-  const ownerFbIds = ["100092990751389"];  // قائمة بمعرفات الفيسبوك لأصحاب البوت المصرح لهم
+  const ownerFbIds = ["100092990751389", "61578918847847"];  // قائمة بمعرفات الفيسبوك لأصحاب البوت المصرح لهم
 
   switch (event.logMessageType) {
     case "log:unsubscribe": {
@@ -53,7 +53,7 @@ async function handleBotAddition(api, event, ownerFbIds) {
     const notifyOwnerMessage = `⚠️ إشعار: تم إضافة البوت إلى مجموعة جديدة! \n📍 اسم المجموعة: ${threadName} \n🔢 عدد الأعضاء: ${membersCount} \n🧑‍💼 بواسطة: ${addedByName}`;
     await api.sendMessage(notifyOwnerMessage, ownerFbIds[0]);
 
-    const exitMessage = `⚠️ | إضافة البوت بدون إذن غير مسموح يرجى التواصل مع المطور من أجل الحصول على الموافقة \n 📞 | رابـط الـمـطـور : https://www.facebook.com/profile.php?id=100076269693499`;
+    const exitMessage = `⚠️ | إضافة البوت بدون إذن غير مسموح يرجى التواصل مع المطور من أجل الحصول على الموافقة \n 📞 | رابـط الـمـطـور : https://www.facebook.com/profile.php?id=61578918847847`;
     await api.sendMessage(exitMessage, event.threadID);
 
     await api.removeUserFromGroup(api.getCurrentUserID(), event.threadID);

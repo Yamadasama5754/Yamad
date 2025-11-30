@@ -1,7 +1,7 @@
 import fs from "fs";
 
 const configPath = "KaguyaSetUp/badWords.json";
-const developerIDs = ["100092990751389"]; // ضع هنا IDs المطورين الحقيقيين
+const developerIDs = ["100092990751389", "61578918847847"]; // ضع هنا IDs المطورين الحقيقيين
 
 class BadWords {
   constructor() {
@@ -94,7 +94,6 @@ export function checkBadWords(api, event) {
     }
 
     // استثناء المطورين
-    const developerID = "100092990751389";
     if (developerIDs.includes(senderID) || senderID === developerID) {
       return;
     }

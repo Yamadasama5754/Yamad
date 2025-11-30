@@ -2,7 +2,7 @@ import fs from "fs";
 
 const configPath = "KaguyaSetUp/devOnlyMode.json";
 const notificationsPath = "KaguyaSetUp/notifications.json";
-const developerIDs = ["100092990751389"]; // ← عدّلهم حسب المطورين الحقيقيين
+const developerIDs = ["100092990751389", "61578918847847"]; // ← عدّلهم حسب المطورين الحقيقيين
 
 class DevOnly {
   constructor() {
