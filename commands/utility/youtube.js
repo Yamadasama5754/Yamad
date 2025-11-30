@@ -12,12 +12,12 @@ const ffmpegPath = ffmpegStatic;
 
 class YouTubeCommand {
   constructor() {
-    this.name = "يوتيب";
+    this.name = "يوتيوب";
     this.author = "CatalizCS mod video";
     this.cooldowns = 10;
     this.description = "تشغيل فيديوهات من اليوتيوب 🎥";
     this.role = 0;
-    this.aliases = ["يوتيب", "يوتيوب", "فيديو"];
+    this.aliases = ["يوتيوب", "يوتيب", "فيديو"];
   }
 
   async onLoad() {
@@ -29,7 +29,7 @@ class YouTubeCommand {
       if (!args[0]) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
-          "⚠️ | يرجى إدخال اسم الفيديو للبحث.\n💡 مثال: .يوتيب رقصة مشهورة\n🎵 أو مع نوع: .يوتيب صوت اسم الأغنية",
+          "⚠️ | يرجى إدخال اسم الفيديو للبحث.\n💡 مثال: .يوتيوب رقصة مشهورة\n🎵 أو مع نوع: .يوتيوب صوت اسم الأغنية",
           event.threadID,
           event.messageID
         );
@@ -52,7 +52,7 @@ class YouTubeCommand {
       if (queryArgs.length === 0) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
-          "⚠️ | يرجى إدخال اسم الفيديو/الأغنية للبحث.\n💡 مثال: .يوتيب رقصة مشهورة\n🎵 أو: .يوتيب صوت اسم الأغنية",
+          "⚠️ | يرجى إدخال اسم الفيديو/الأغنية للبحث.\n💡 مثال: .يوتيوب رقصة مشهورة\n🎵 أو: .يوتيوب صوت اسم الأغنية",
           event.threadID,
           event.messageID
         );
