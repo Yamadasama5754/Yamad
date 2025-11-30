@@ -6,13 +6,44 @@ import { createCanvas, registerFont, loadImage } from "canvas";
 
 class RankCommand {
   constructor() {
-    this.name = "مستواي";
-    this.author = "CataliCS";
+    this.name = "لفل";
+    this.author = "عمر & محسّن";
     this.cooldowns = 20;
-    this.description = "عرض كارت مستواك";
+    this.description = "عرض كارت الرتبة والمستوى بتصميم احترافي";
     this.role = 0;
-    this.aliases = ["رانك", "rank"];
+    this.aliases = ["مستوى", "level", "rank", "رانك"];
     this.APIKEY = "571752207151901|AC-zG86sv6U6kpnT0_snIHBOHJc";
+    this.rankCardUrls = [
+      "https://i.postimg.cc/2SX994dy/370302233-350278991004060-783576214704582311-n.jpg",
+      "https://i.postimg.cc/2SX994dy/370302233-350278991004060-783576214704582311-n.jpg",
+      "https://i.postimg.cc/2SX994dy/370302233-350278991004060-783576214704582311-n.jpg"
+    ];
+  }
+
+  async downloadImage(url, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await axios.get(url, {
+          responseType: "arraybuffer",
+          timeout: 10000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        
+        if (response.data && response.data.length > 0) {
+          return Buffer.from(response.data, "binary");
+        }
+      } catch (error) {
+        console.error(`[RANK] محاولة ${i + 1} فشلت لتحميل الصورة:`, error.message);
+        
+        if (i < retries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+    
+    throw new Error(`فشل تحميل الصورة بعد ${retries} محاولات`);
   }
 
   async makeRankCard(data) {
@@ -27,18 +58,27 @@ class RankCommand {
     const pathImg = path.join(cacheDir, `rank_${id}.png`);
 
     try {
-      let rankCardUrl = "https://i.imgur.com/neYz0Wy.png";
-      const rankCardResponse = await axios.get(rankCardUrl, { responseType: "arraybuffer" });
-      const rankCardBuffer = rankCardResponse.data;
+      // اختر rankcard عشوائي
+      const randomIndex = Math.floor(Math.random() * this.rankCardUrls.length);
+      const rankCardUrl = this.rankCardUrls[randomIndex];
+      
+      let rankCardBuffer;
+      try {
+        rankCardBuffer = await this.downloadImage(rankCardUrl);
+      } catch (err) {
+        console.warn("[RANK] فشل تحميل rankcard، استخدام fallback");
+        rankCardBuffer = await this.downloadImage(this.rankCardUrls[0]);
+      }
       
       let rankCard = await loadImage(rankCardBuffer);
 
-      var expWidth = (expCurrent * 615) / expNextLevel;
+      let expWidth = (expCurrent * 615) / expNextLevel;
       if (expWidth > 615 - 18.5) expWidth = 615 - 18.5;
 
+      // تحميل الأفاتار من Facebook
       let avatarUrl = `https://graph.facebook.com/${id}/picture?width=512&height=512&access_token=${this.APIKEY}`;
-      let avatarResponse = await axios.get(avatarUrl, { responseType: "arraybuffer" });
-      let avatar = await this.circleImage(avatarResponse.data);
+      let avatarBuffer = await this.downloadImage(avatarUrl);
+      let avatar = await this.circleImage(avatarBuffer);
 
       const canvas = createCanvas(934, 282);
       const ctx = canvas.getContext("2d");
@@ -46,34 +86,34 @@ class RankCommand {
       ctx.drawImage(rankCard, 0, 0, canvas.width, canvas.height);
       ctx.drawImage(await loadImage(avatar), 45, 50, 180, 180);
 
-      ctx.font = `bold 36px Arial`;
-      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold 38px Arial`;
+      ctx.fillStyle = `#111111`;
       ctx.textAlign = "start";
-      ctx.fillText(name, 270, 164);
+      ctx.fillText(name, 270, 111);
 
-      ctx.font = `bold 32px Arial`;
-      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold 37px Arial`;
+      ctx.fillStyle = `#111111`;
       ctx.textAlign = "end";
-      ctx.fillText(level, 934 - 55, 82);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText("Lv.", 934 - 55 - ctx.measureText(level).width - 10, 82);
+      ctx.fillText(level, 870 - 55, 80);
+      ctx.fillStyle = `#111111`;
+      ctx.fillText("Lv.", 934 - 55 - ctx.measureText(level).width - 67, 80);
 
-      ctx.font = `bold 32px Arial`;
-      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold 37px Arial`;
+      ctx.fillStyle = `#111111`;
       ctx.textAlign = "end";
-      ctx.fillText(rank, 934 - 55 - ctx.measureText(level).width - 16 - ctx.measureText(`Lv.`).width - 25, 82);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText("#", 934 - 55 - ctx.measureText(level).width - 16 - ctx.measureText(`Lv.`).width - 16 - ctx.measureText(rank).width - 16, 82);
+      ctx.fillText(rank, 934 - 55 - ctx.measureText(level).width - 88 - ctx.measureText(`Lv.`).width + 190, 120);
+      ctx.fillStyle = `#111111`;
+      ctx.fillText("#", 904 - 55 - ctx.measureText(level).width - 19 - ctx.measureText(`Lv.`).width - 19 - ctx.measureText(rank).width + 170, 120);
 
-      ctx.font = `bold 26px Arial`;
-      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `bold 29px Arial`;
+      ctx.fillStyle = `#111111`;
       ctx.textAlign = "start";
-      ctx.fillText("/ " + expNextLevel, 710 + ctx.measureText(expCurrent).width + 10, 164);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(expCurrent, 710, 164);
+      ctx.fillText("/ " + expNextLevel, 710 + ctx.measureText(expCurrent).width + 104, 227);
+      ctx.fillStyle = `#111111`;
+      ctx.fillText(expCurrent, 800, 227);
 
       ctx.beginPath();
-      ctx.fillStyle = "#4283FF";
+      ctx.fillStyle = `#4283FF`;
       ctx.arc(257 + 18.5, 147.5 + 18.5 + 36.25, 18.5, 1.5 * PI, 0.5 * PI, true);
       ctx.fill();
       ctx.fillRect(257 + 18.5, 147.5 + 36.25, expWidth, 37.5);
@@ -84,7 +124,7 @@ class RankCommand {
       fs.writeFileSync(pathImg, imageBuffer);
       return pathImg;
     } catch (error) {
-      console.error("Error making rank card:", error);
+      console.error("[RANK] خطأ في إنشاء كارت الرتبة:", error);
       throw error;
     }
   }
@@ -95,7 +135,7 @@ class RankCommand {
       image.circle();
       return await image.getBuffer("image/png");
     } catch (error) {
-      console.error("Error creating circle image:", error);
+      console.error("[RANK] خطأ في إنشاء الصورة الدائرية:", error);
       throw error;
     }
   }
@@ -138,7 +178,7 @@ class RankCommand {
         return api.sendMessage("❌ | خطأ في جلب البيانات", event.threadID, event.messageID);
       }
 
-      dataAll.sort(function (a, b) { return b.exp - a.exp; });
+      dataAll.sort((a, b) => b.exp - a.exp);
 
       const rank = dataAll.findIndex(item => parseInt(item.userID) == parseInt(event.senderID)) + 1;
       
@@ -152,7 +192,7 @@ class RankCommand {
         const userInfo = await api.getUserInfo(event.senderID);
         userName = userInfo[event.senderID]?.name || "Unknown";
       } catch (e) {
-        console.warn("Could not get user name");
+        console.warn("[RANK] تعذر الحصول على اسم المستخدم");
       }
 
       const point = await this.getInfo(event.senderID, Currencies);
@@ -163,7 +203,7 @@ class RankCommand {
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
       return api.sendMessage(
         {
-          body: `✅ تم إنشاء الكارت في ${Date.now() - timeStart}ms`,
+          body: `👑 اسمك: ${userName}\n🏆 ترتيبك: #${rank}\n⏱️ تم الإنشاء في ${Date.now() - timeStart}ms`,
           attachment: fs.createReadStream(pathRankCard, { highWaterMark: 128 * 1024 })
         },
         event.threadID,
@@ -174,7 +214,7 @@ class RankCommand {
       );
 
     } catch (error) {
-      console.error("[RANK] Error:", error);
+      console.error("[RANK] خطأ:", error);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
       api.sendMessage("❌ حدث خطأ في الأمر: " + error.message, event.threadID, event.messageID);
     }
