@@ -3,7 +3,7 @@ export default {
   "BOT_NAME": "✿❀ 𝑴𝒊𝒓𝒂𝒊 ❀✿",
   "ADMIN_IDS": [
     "100092990751389",
-    "100010589765101"
+    "61578918847847"
   ],
   "botEnabled": true,
   "autogreet": true,
