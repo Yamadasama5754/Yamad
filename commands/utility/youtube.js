@@ -222,7 +222,27 @@ class YouTubeCommand {
         console.log(`[YOUTUBE] بدء تنزيل باستخدام play-dl: ${title}`);
 
         const url = `https://www.youtube.com/watch?v=${videoId}`;
+        
+        // محاولة تحميل معلومات الفيديو أولاً
+        let videoInfo;
+        try {
+          videoInfo = await play.getInfo(url);
+        } catch (infoErr) {
+          console.error("[YOUTUBE] خطأ في الحصول على معلومات الفيديو:", infoErr.message);
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          api.sendMessage(
+            "⛔ | تعذر الحصول على معلومات الفيديو. قد يكون الفيديو محظور أو محذوفاً.",
+            event.threadID,
+            event.messageID
+          );
+          return;
+        }
+
         const stream = await play.stream(url);
+        
+        if (!stream || !stream.stream) {
+          throw new Error("فشل إنشاء تدفق الفيديو");
+        }
         
         const writeStream = fs.createWriteStream(videoPath);
         stream.stream.pipe(writeStream);
