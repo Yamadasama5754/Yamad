@@ -187,7 +187,7 @@ export default {
             const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
             const correctAnswer = randomQuestion.answer.toLowerCase();
 
-            const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n\t🌟 | خمن إسم الشخصية :\n\t\t\t\t${randomQuestion.question}\nرد على هذه الرسالة بالجواب الصحيح\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
+            const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🌟 | خمن إسم الشخصية :\n${randomQuestion.question}\n\nرد على هذه الرسالة بالجواب الصحيح\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
 
             api.sendMessage(message, event.threadID, async (error, info) => {
                 if (!error) {
@@ -200,7 +200,6 @@ export default {
                         
                         global.client.handler.reply.set(info.messageID, {
                             author: event.senderID,
-                            type: "reply",
                             name: "تخمين",
                             correctAnswer: correctAnswer,
                             image: randomQuestion.image
@@ -218,41 +217,72 @@ export default {
     },
     onReply: async function ({ api, event, reply }) {
         try {
-            if (reply && reply.type === "reply" && reply.name === "تخمين") {
-                // تحقق من أن الشخص المردود عليه هو صاحب اللعبة فقط
-                if (reply.author && event.senderID !== reply.author) {
-                    api.setMessageReaction("🚫", event.messageID, (err) => {}, true);
-                    return api.sendMessage(
-                        "🚫 فقط صاحب اللعبة يقدر يجاوب!",
+            if (!reply || reply.name !== "تخمين") {
+                return;
+            }
+
+            // تحقق من أن الشخص المردود عليه هو صاحب اللعبة فقط
+            if (reply.author && event.senderID !== reply.author) {
+                api.setMessageReaction("🚫", event.messageID, (err) => {}, true);
+                return api.sendMessage(
+                    "🚫 فقط صاحب اللعبة يقدر يجاوب!",
+                    event.threadID,
+                    event.messageID
+                );
+            }
+
+            const userAnswer = event.body.trim().toLowerCase();
+            const correctAnswer = reply.correctAnswer && reply.correctAnswer.toLowerCase();
+
+            if (!correctAnswer) {
+                return;
+            }
+
+            let userName = "لاعب";
+            try {
+                const userInfo = await api.getUserInfo(event.senderID);
+                userName = userInfo[event.senderID]?.name || "لاعب";
+            } catch (e) {
+                console.warn("[GUESS] تعذر الحصول على اسم المستخدم");
+            }
+
+            // تحقق من الإجابة - قارن الكلمات المفصولة والكلمة كاملة
+            const answerWords = correctAnswer.split(' ');
+            const isCorrect = 
+                userAnswer === correctAnswer || 
+                answerWords.some(word => userAnswer === word || userAnswer.includes(word.trim()));
+
+            if (isCorrect) {
+                api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+
+                try {
+                    const imageResponse = await axios.get(reply.image, { responseType: "arraybuffer" });
+                    const tempImagePath = path.join(process.cwd(), "cache", `guess_${Date.now()}.jpg`);
+                    fs.writeFileSync(tempImagePath, Buffer.from(imageResponse.data, "binary"));
+                    const attachment = [fs.createReadStream(tempImagePath)];
+
+                    api.sendMessage(
+                        { body: `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳 \n🎯 | الإجابة الصحيحة: ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`, attachment },
                         event.threadID,
-                        event.messageID
+                        () => {
+                            try {
+                                fs.unlinkSync(tempImagePath);
+                            } catch (e) {}
+                        }
+                    );
+                } catch (imgErr) {
+                    api.sendMessage(
+                        `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳 \n🎯 | الإجابة الصحيحة: ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`,
+                        event.threadID
                     );
                 }
-
-                const userAnswer = event.body.trim().toLowerCase();
-                const correctAnswer = reply.correctAnswer && reply.correctAnswer.toLowerCase();
-
-                if (correctAnswer) {
-                    const userInfo = await api.getUserInfo(event.senderID);
-                    const userName = userInfo ? userInfo[event.senderID].name : "المستخدم";
-
-                    if (correctAnswer.split(' ').some(part => userAnswer.includes(part))) {
-                        const imageResponse = await axios.get(reply.image, { responseType: "arraybuffer" });
-                        fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
-                        const attachment = [fs.createReadStream(tempImageFilePath)];
-
-                        api.sendMessage(
-                            { body: `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳 \n🎯 | الجواب : ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`, attachment },
-                            event.threadID
-                        );
-
-                        api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-                        api.unsendMessage(reply.messageID);
-                    } else {
-                        api.sendMessage(`❌ | آسفة ، لم تكن تلك الإجابة الصحيحة. حاول مرة أخرى.`, event.threadID);
-                        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-                    }
-                }
+            } else {
+                api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+                
+                api.sendMessage(
+                    `❌ | آسفة يا ${userName}، الإجابة خاطئة! ❌\n\n✅ الإجابة الصحيحة: ${correctAnswer}\n\nحاول مرة أخرى!`,
+                    event.threadID
+                );
             }
         } catch (error) {
             console.error("حدث خطأ أثناء معالجة الرد:", error);
