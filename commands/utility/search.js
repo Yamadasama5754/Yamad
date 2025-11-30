@@ -92,9 +92,9 @@ class SearchCommand {
         const pageId = Object.keys(pages)[0];
         let summary = pages[pageId].extract;
 
-        // قص النص إلى 4000 حرف
-        if (summary.length > 4000) {
-          summary = summary.substring(0, 4000) + "...\n\n📖 لمزيد من المعلومات، ابحث على ويكيبيديا مباشرة";
+        // قص النص إلى 2000 حرف
+        if (summary.length > 2000) {
+          summary = summary.substring(0, 2000) + "...\n\n📖 لمزيد من المعلومات، ابحث على ويكيبيديا مباشرة";
         }
 
         const finalMessage = `📚 ${pageTitle}\n\n${summary}`;

@@ -167,39 +167,6 @@ export class CommandHandler {
     const { messageReply } = this.arguments.event;
     if (!messageReply) return;
 
-    // التحقق من global.client.handleReply (من أوامر مثل يوتيوب والبحث)
-    if (global.client?.handleReply && Array.isArray(global.client.handleReply)) {
-      const replyHandler = global.client.handleReply.find(
-        h => h.messageID === messageReply.messageID && 
-             h.author === this.arguments.event.senderID
-      );
-
-      if (replyHandler) {
-        const command = this.commands.get(replyHandler.name);
-        if (command && command.handleReply) {
-          try {
-            await command.handleReply({
-              api: this.arguments.api,
-              event: this.arguments.event,
-              handleReply: replyHandler
-            });
-          } catch (err) {
-            console.error(`خطأ في handleReply للأمر ${replyHandler.name}:`, err);
-            this.arguments.api.sendMessage(
-              `❌ حدث خطأ: ${err.message}`,
-              this.arguments.event.threadID,
-              this.arguments.event.messageID
-            );
-          }
-          // حذف من القائمة بعد المعالجة
-          global.client.handleReply = global.client.handleReply.filter(
-            h => h.messageID !== messageReply.messageID
-          );
-        }
-        return;
-      }
-    }
-
     const reply = this.handler.reply.get(messageReply.messageID);
     if (!reply) return;
 

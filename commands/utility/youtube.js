@@ -84,19 +84,21 @@ class YouTubeCommand {
         },
         event.threadID,
         (err, info) => {
-          if (!global.client) global.client = {};
-          if (!global.client.handleReply) global.client.handleReply = [];
+          if (!global.client?.handler?.reply) {
+            if (!global.client) global.client = {};
+            if (!global.client.handler) global.client.handler = {};
+            global.client.handler.reply = new Map();
+          }
 
-          global.client.handleReply.push({
+          global.client.handler.reply.set(info.messageID, {
             name: this.name,
-            messageID: info.messageID,
-            author: event.senderID,
             searchResults,
             attachments
           });
 
           setTimeout(() => {
             try {
+              global.client.handler.reply.delete(info.messageID);
               attachments.forEach(att => {
                 if (fs.existsSync(att.path)) {
                   fs.unlinkSync(att.path);
@@ -119,11 +121,11 @@ class YouTubeCommand {
     }
   }
 
-  async handleReply({ api, event, handleReply }) {
+  async onReply({ api, event, reply }) {
     try {
       const index = parseInt(event.body) - 1;
 
-      if (isNaN(index) || index < 0 || index >= handleReply.searchResults.length) {
+      if (isNaN(index) || index < 0 || index >= reply.searchResults.length) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "❌ | الرجاء إدخال رقم صحيح من النتائج.",
@@ -132,7 +134,7 @@ class YouTubeCommand {
         );
       }
 
-      const selectedVideo = handleReply.searchResults[index];
+      const selectedVideo = reply.searchResults[index];
       const videoId = selectedVideo.id.videoId;
       const title = selectedVideo.snippet.title;
 
@@ -204,8 +206,8 @@ class YouTubeCommand {
 
           // تنظيف الصور المؤقتة
           try {
-            if (handleReply.attachments) {
-              handleReply.attachments.forEach(att => {
+            if (reply.attachments) {
+              reply.attachments.forEach(att => {
                 if (fs.existsSync(att.path)) {
                   fs.unlinkSync(att.path);
                 }
@@ -229,7 +231,7 @@ class YouTubeCommand {
         });
 
     } catch (error) {
-      console.error("[YOUTUBE] خطأ في handleReply:", error);
+      console.error("[YOUTUBE] خطأ في onReply:", error);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
       api.sendMessage(
         `⛔ | حدث خطأ أثناء تنفيذ الطلب: ${error.message}`,
