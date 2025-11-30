@@ -46,18 +46,61 @@ class CharacterGame {
     this.aliases = ["شخصيه", "احزر"];
   }
 
+  async downloadImage(imageUrl, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await axios.get(imageUrl, {
+          responseType: "arraybuffer",
+          timeout: 10000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        
+        if (response.data && response.data.length > 0) {
+          return Buffer.from(response.data, "binary");
+        }
+      } catch (error) {
+        console.error(`[CHARACTERS] محاولة ${i + 1} فشلت لتحميل الصورة:`, error.message);
+        
+        if (i < retries - 1) {
+          // انتظر قبل المحاولة القادمة
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+    
+    throw new Error(`فشل تحميل الصورة بعد ${retries} محاولات`);
+  }
+
   async execute({ api, event }) {
     try {
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
       const randomCharacter = characters[Math.floor(Math.random() * characters.length)];
 
-      const imageResponse = await axios.get(randomCharacter.image, {
-        responseType: "arraybuffer",
-        timeout: 15000
-      });
+      let imageBuffer;
+      try {
+        imageBuffer = await this.downloadImage(randomCharacter.image);
+      } catch (downloadError) {
+        console.error("[CHARACTERS] خطأ في تحميل الصورة:", downloadError.message);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | حدث خطأ في تحميل الصورة، حاول مرة أخرى لاحقاً",
+          event.threadID
+        );
+      }
 
-      fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
+      try {
+        fs.writeFileSync(tempImageFilePath, imageBuffer);
+      } catch (writeError) {
+        console.error("[CHARACTERS] خطأ في حفظ الصورة:", writeError.message);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | حدث خطأ في معالجة الصورة، حاول مرة أخرى لاحقاً",
+          event.threadID
+        );
+      }
 
       const attachment = [fs.createReadStream(tempImageFilePath)];
       const message = `▱▱▱▱▱▱▱▱▱▱▱▱▱\n🎮 ما هو اسم هذه الشخصية؟\n▱▱▱▱▱▱▱▱▱▱▱▱▱`;
@@ -65,7 +108,7 @@ class CharacterGame {
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
       api.sendMessage({ body: message, attachment }, event.threadID, (error, info) => {
-        if (!error) {
+        if (!error && info && info.messageID) {
           global.client.handler.reply.set(info.messageID, {
             author: event.senderID,
             type: "reply",
@@ -74,12 +117,12 @@ class CharacterGame {
             unsend: true
           });
         } else {
-          console.error("[CHARACTERS] Error sending message:", error);
+          console.error("[CHARACTERS] خطأ في إرسال الرسالة:", error?.message || "خطأ غير معروف");
         }
       });
 
     } catch (error) {
-      console.error("[CHARACTERS] Error executing the game:", error.message);
+      console.error("[CHARACTERS] خطأ عام في تنفيذ اللعبة:", error.message, error.stack);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
       api.sendMessage("❌ | حدث خطأ أثناء تحميل اللعبة، يرجى المحاولة لاحقاً", event.threadID);
     }
@@ -96,7 +139,7 @@ class CharacterGame {
           const userInfo = await api.getUserInfo(event.senderID);
           userData = userInfo[event.senderID];
         } catch (e) {
-          console.warn("[CHARACTERS] Could not get user info");
+          console.warn("[CHARACTERS] تعذر الحصول على معلومات المستخدم");
         }
 
         const userName = userData?.name || "اللاعب";
@@ -118,7 +161,7 @@ class CharacterGame {
         }
       }
     } catch (error) {
-      console.error("[CHARACTERS] Error in onReply:", error.message);
+      console.error("[CHARACTERS] خطأ في معالجة الرد:", error.message);
     }
   }
 }
