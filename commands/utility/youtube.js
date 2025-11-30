@@ -4,9 +4,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { promisify } from "util";
+import ffmpegStatic from "ffmpeg-static";
 
 const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ffmpegPath = ffmpegStatic;
 
 class YouTubeCommand {
   constructor() {
@@ -222,12 +224,50 @@ class YouTubeCommand {
       });
 
       videoStream.data
-        .pipe(fs.createWriteStream(filePath))
+        .pipe(fs.createWriteStream(videoPath))
         .on("close", async () => {
           try {
-            let finalPath = filePath;
-            let finalSize = fs.statSync(filePath).size;
-
+            let finalPath = videoPath;
+            
+            // إذا كان الطلب صوت، حول الفيديو لصوت
+            if (downloadType === "audio") {
+              try {
+                api.setMessageReaction("🎵", event.messageID, (err) => {}, true);
+                console.log(`[YOUTUBE] تحويل ${videoPath} إلى ${audioPath}`);
+                
+                // استخدم FFmpeg لتحويل الفيديو لصوت
+                const ffmpegCmd = `"${ffmpegPath}" -i "${videoPath}" -q:a 0 -map a:0 "${audioPath}" -y`;
+                console.log(`[YOUTUBE] أمر FFmpeg: ${ffmpegCmd}`);
+                
+                await execAsync(ffmpegCmd, { maxBuffer: 50 * 1024 * 1024, timeout: 120000 });
+                
+                // حذف الفيديو الأصلي
+                if (fs.existsSync(videoPath)) {
+                  fs.unlinkSync(videoPath);
+                }
+                
+                finalPath = audioPath;
+                console.log(`[YOUTUBE] تحويل نجح! حجم الصوت: ${fs.statSync(audioPath).size} بايت`);
+              } catch (ffmpegErr) {
+                console.error("[YOUTUBE] خطأ FFmpeg:", ffmpegErr.message);
+                api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
+                
+                // إذا فشل التحويل، أرسل رسالة خطأ
+                return api.sendMessage(
+                  "⛔ | عذراً، حدث خطأ في تحويل الملف لصوت. يرجى المحاولة مرة أخرى.",
+                  event.threadID,
+                  (err) => {
+                    try {
+                      if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+                      if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+                    } catch (e) {}
+                  },
+                  event.messageID
+                );
+              }
+            }
+            
+            let finalSize = fs.statSync(finalPath).size;
             const fileSize = finalSize;
 
             if (fileSize > 26214400) {
