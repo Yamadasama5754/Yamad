@@ -71,6 +71,7 @@ class WYRCommand {
             name: this.name,
             option1,
             option2,
+            author: event.senderID,
             isWYRGame: true
           });
 
@@ -132,6 +133,16 @@ class WYRCommand {
         );
       }
 
+      // تحقق من أن الشخص المردود عليه هو صاحب اللعبة فقط
+      if (replyData.author && event.senderID !== replyData.author) {
+        api.setMessageReaction("🚫", event.messageID, () => {}, true);
+        return api.sendMessage(
+          "🚫 فقط صاحب اللعبة يقدر يجاوب!",
+          event.threadID,
+          event.messageID
+        );
+      }
+
       // رسالة الاختيار
       let message = "";
       if (choice === "1") {
@@ -163,6 +174,7 @@ class WYRCommand {
               name: this.name,
               option1,
               option2,
+              author: event.senderID,
               isWYRGame: true
             });
 

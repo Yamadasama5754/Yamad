@@ -50,7 +50,7 @@ export default {
   { 
     question: "شخصي معروفة باسم ديكو (اليابانية: デ ク)، هو بطل خارق والبطل الرئيسي لسلسلة المانجا أكاديميتي للأبطال، التي أنشأها كوهي هوريكوشي وكان قدوته هو اول مايتو", 
     answer: "ميدوريا", 
-    image: "https://i.imgur.com/zAP7sPD.png" 
+    image: "https://i.imgur.com/zAF7sPD.png" 
   },
   { 
     question: "شخصية من أنمي ون بيس ظهر في الحلقة 167 في ارك سكايبيا ولديه مكافئة 500,000,000 بيلي ويلقب نفسه باانه إلاه", 
@@ -192,7 +192,13 @@ export default {
             api.sendMessage(message, event.threadID, async (error, info) => {
                 if (!error) {
                     try {
-                        client.handler.reply.set(info.messageID, {
+                        if (!global.client?.handler?.reply) {
+                            if (!global.client) global.client = {};
+                            if (!global.client.handler) global.client.handler = {};
+                            global.client.handler.reply = new Map();
+                        }
+                        
+                        global.client.handler.reply.set(info.messageID, {
                             author: event.senderID,
                             type: "reply",
                             name: "تخمين",
@@ -213,6 +219,16 @@ export default {
     onReply: async function ({ api, event, reply }) {
         try {
             if (reply && reply.type === "reply" && reply.name === "تخمين") {
+                // تحقق من أن الشخص المردود عليه هو صاحب اللعبة فقط
+                if (reply.author && event.senderID !== reply.author) {
+                    api.setMessageReaction("🚫", event.messageID, (err) => {}, true);
+                    return api.sendMessage(
+                        "🚫 فقط صاحب اللعبة يقدر يجاوب!",
+                        event.threadID,
+                        event.messageID
+                    );
+                }
+
                 const userAnswer = event.body.trim().toLowerCase();
                 const correctAnswer = reply.correctAnswer && reply.correctAnswer.toLowerCase();
 
