@@ -125,4 +125,13 @@ export function isDevOnlyBlocked(senderID) {
   return devOnly && !developerIDs.includes(senderID);
 }
 
+// دالة للتحقق من حالة الإشعارات في المجموعة/الخاص
+export function areNotificationsEnabled(threadID) {
+  if (!fs.existsSync(notificationsPath)) {
+    return true; // افتراضياً الإشعارات مفعلة
+  }
+  const data = JSON.parse(fs.readFileSync(notificationsPath, "utf8"));
+  return data[threadID]?.enabled !== false; // افتراضياً مفعلة
+}
+
 export default new DevOnly();

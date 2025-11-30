@@ -5,8 +5,8 @@ import fs from "fs";
 import path from "path";
 import config from "../KaguyaSetUp/config.js";
 
-import { checkDevOnly, isDevOnlyBlocked } from "../commands/utility/devonly.js";
-import { isAdminOnlyBlocked } from "../commands/utility/admin_only.js";
+import { checkDevOnly, isDevOnlyBlocked, areNotificationsEnabled as areDevNotificationsEnabled } from "../commands/utility/devonly.js";
+import { isAdminOnlyBlocked, areNotificationsEnabled as areAdminNotificationsEnabled } from "../commands/utility/admin_only.js";
 import { checkBadWords } from "../commands/utility/badwords.js";
 import { autoPreventsKickedUsers } from "./auto-prevent-kicked-user.js";
 
@@ -335,7 +335,11 @@ export const listen = async ({ api, event }) => {
           }
 
           if (!checkDevOnly(senderID) && exists) {
-            return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
+            // تحقق من الإشعارات قبل إرسال الرسالة
+            if (areDevNotificationsEnabled(threadID)) {
+              return api.sendMessage("⚠️ | البوت حالياً في وضع المطور فقط.", threadID);
+            }
+            return; // صمت إذا كانت الإشعارات معطلة
           }
 
 
