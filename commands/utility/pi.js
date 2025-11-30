@@ -74,6 +74,15 @@ class PiCommand {
           body: `🤖 بي: ${res.text}`
         };
 
+        // إذا كان الصوت مفعّل وهناك ملف صوتي، أرسله
+        if (voiceSetting.voice && res.audio) {
+          try {
+            replyPayload.attachment = await global.utils.getStreamFromURL(res.audio);
+          } catch (audioErr) {
+            console.warn("[PI Audio] فشل جلب الصوت:", audioErr.message);
+          }
+        }
+
         return api.sendMessage(replyPayload, threadID, (err, info) => {
           if (!err) {
             this.saveReplyHandler(info.messageID, senderID, session, voiceSetting);
@@ -96,17 +105,19 @@ class PiCommand {
       const senderID = event.senderID;
       let query = event.body?.trim();
 
-      if (!query && (!event.attachments || event.attachments.length === 0)) return;
-      if (!Reply || !Reply.author) return;
-      if (senderID !== Reply.author) return;
-
-      // فحص الصور في الرد
+      // فحص الرسالة والصور
+      let hasAttachments = false;
       if (event.attachments && event.attachments.length > 0) {
-        const images = event.attachments.filter(att => att.type === "photo");
+        const images = event.attachments.filter(att => att.type === "photo" || att.type === "image");
         if (images.length > 0) {
-          query = `${query || ""} [تم إرسال ${images.length} صورة - اشرح محتواها]`.trim();
+          query = `${query || ""} [صورة: اشرح محتوى هذه الصورة بالتفصيل]`.trim();
+          hasAttachments = true;
         }
       }
+
+      if (!query && !hasAttachments) return;
+      if (!Reply || !Reply.author) return;
+      if (senderID !== Reply.author) return;
 
       let voiceSetting = Reply.voiceSetting || await this.getUserVoiceSetting(senderID);
       const session = Reply.session || `pi-${senderID}`;
@@ -121,6 +132,15 @@ class PiCommand {
         const replyPayload = {
           body: `🤖 بي: ${res.text}`
         };
+
+        // إذا كان الصوت مفعّل وهناك ملف صوتي، أرسله
+        if (voiceSetting.voice && res.audio) {
+          try {
+            replyPayload.attachment = await global.utils.getStreamFromURL(res.audio);
+          } catch (audioErr) {
+            console.warn("[PI Audio] فشل جلب الصوت:", audioErr.message);
+          }
+        }
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
           if (!err) {
