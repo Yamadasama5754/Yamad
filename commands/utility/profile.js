@@ -2,7 +2,6 @@ import axios from "axios";
 import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
-import jimp from "jimp";
 import config from "../../KaguyaSetUp/config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -57,77 +56,55 @@ class Profile {
         return api.sendMessage("❌ UID غير صالح", event.threadID, event.messageID);
       }
 
+      // الحصول على بيانات المستخدم
       const userData = await Users.find(uid);
-      // ✅ زيادة الدقة إلى 1080×1080 (أقصى دقة متاحة)
+      
+      // رابط الصورة بدقة عالية
       const avatarURL = `https://graph.facebook.com/${uid}/picture?width=1080&height=1080&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
 
+      // إنشء مجلد ذاكرة التخزين المؤقتة
       const cacheDir = path.join(__dirname, "../../cache");
       await fs.ensureDir(cacheDir);
       const cachePath = path.join(cacheDir, `profile_${uid}.png`);
 
-      // ✅ تحسين الصورة باستخدام Jimp
-      let imageData;
       try {
-        const response = await axios.get(avatarURL, { responseType: "arraybuffer" });
-        imageData = response.data;
+        // تحميل الصورة
+        const response = await axios.get(avatarURL, { 
+          responseType: "arraybuffer",
+          timeout: 10000
+        });
         
-        // قراءة الصورة باستخدام Jimp لتحسين الجودة
-        let image = await jimp.read(Buffer.from(imageData));
+        // حفظ الصورة
+        await fs.writeFile(cachePath, Buffer.from(response.data));
         
-        // تحسينات على الصورة:
-        // 1. زيادة التشبع قليلاً لجودة أفضل
-        image = image.color([
-          { apply: 'saturate', params: [15] },
-          { apply: 'hue', params: [0] },
-          { apply: 'brighten', params: [5] }
-        ]);
-
-        // 2. شحذ الصورة للوضوح الأفضل
-        if (image.sharpen) {
-          image = image.sharpen();
-        }
-
-        // 3. حفظ بجودة عالية
-        await image.write(cachePath);
-
+        // إرسال الصورة فقط (بدون نص)
         api.sendMessage({
-          body: `✅ تم استخراج البروفايل بنجاح!`,
           attachment: fs.createReadStream(cachePath)
         }, event.threadID, (err, info) => {
           if (!err) {
             api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+          } else {
+            console.error("Error sending image:", err);
+            api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           }
         });
 
-      } catch (jimpErr) {
-        // إذا فشل Jimp، أرسل الصورة الأصلية
-        console.warn("Jimp processing failed, sending original image:", jimpErr.message);
-        
-        if (imageData) {
-          await fs.writeFile(cachePath, Buffer.from(imageData));
-        } else {
-          const response = await axios.get(avatarURL, { responseType: "arraybuffer" });
-          await fs.writeFile(cachePath, Buffer.from(response.data));
-        }
-        
-        api.sendMessage({
-          body: `✅ تم استخراج البروفايل بنجاح!`,
-          attachment: fs.createReadStream(cachePath)
-        }, event.threadID, (err, info) => {
-          if (!err) {
-            api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-          }
-        });
+      } catch (err) {
+        console.error("Error downloading profile:", err);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        api.sendMessage("❌ لم أتمكن من تحميل صورة البروفايل", event.threadID, event.messageID);
       }
 
-      // تنظيف الذاكرة المؤقتة بعد قليل
+      // تنظيف الذاكرة المؤقتة بعد فترة
       setTimeout(async () => {
         try {
-          await fs.remove(cachePath);
+          if (await fs.pathExists(cachePath)) {
+            await fs.remove(cachePath);
+          }
         } catch (err) {
-          console.log("Error removing cache file:", err);
+          console.warn("Error cleaning cache:", err);
         }
-      }, 3000);
+      }, 5000);
 
     } catch (err) {
       console.error("Error in profile command:", err);
