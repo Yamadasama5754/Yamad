@@ -40,10 +40,13 @@ class AdminOnly {
       notificationsData[event.threadID] = { enabled: newState };
       fs.writeFileSync(notificationsPath, JSON.stringify(notificationsData, null, 2));
 
-      const message = newState
-        ? `✅ | تم تفعيل الإشعارات!`
-        : `❌ | تم إيقاف الإشعارات! (الأوامر ستعمل بهدوء)`;
+      // إذا تم إيقاف الإشعارات، لا ترسل رسالة
+      if (!newState) {
+        return; // صمت - لا رسالة
+      }
 
+      // إذا تم تفعيل الإشعارات، ارسل رسالة
+      const message = `✅ | تم تفعيل الإشعارات!`;
       return api.sendMessage(message, event.threadID, event.messageID);
     }
 
