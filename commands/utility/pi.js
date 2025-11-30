@@ -64,7 +64,7 @@ class PiCommand {
       const session = `pi-${senderID}`;
       const finalQuery = imageQuery || input;
       try {
-        const res = await this.callPi(finalQuery, session, voiceSetting.voice, voiceSetting.model);
+        const res = await this.callPi(finalQuery, session, false, 1);
         
         if (!res?.text) {
           return api.sendMessage("❌ | بي لم ترد على رسالتك", threadID, event.messageID);
@@ -73,15 +73,6 @@ class PiCommand {
         const replyPayload = {
           body: `🤖 بي: ${res.text}`
         };
-
-        // إذا كان الصوت مفعّل وهناك ملف صوتي، أرسله
-        if (voiceSetting.voice && res.audio) {
-          try {
-            replyPayload.attachment = await global.utils.getStreamFromURL(res.audio);
-          } catch (audioErr) {
-            console.warn("[PI Audio] فشل جلب الصوت:", audioErr.message);
-          }
-        }
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
           if (!err) {
@@ -123,7 +114,7 @@ class PiCommand {
       const session = Reply.session || `pi-${senderID}`;
 
       try {
-        const res = await this.callPi(query, session, voiceSetting.voice, voiceSetting.model);
+        const res = await this.callPi(query, session, false, 1);
 
         if (!res?.text) {
           return api.sendMessage("❌ | بي لم ترد على رسالتك", threadID);
@@ -132,15 +123,6 @@ class PiCommand {
         const replyPayload = {
           body: `🤖 بي: ${res.text}`
         };
-
-        // إذا كان الصوت مفعّل وهناك ملف صوتي، أرسله
-        if (voiceSetting.voice && res.audio) {
-          try {
-            replyPayload.attachment = await global.utils.getStreamFromURL(res.audio);
-          } catch (audioErr) {
-            console.warn("[PI Audio] فشل جلب الصوت:", audioErr.message);
-          }
-        }
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
           if (!err) {
@@ -163,11 +145,13 @@ class PiCommand {
 
     if (!cmd || (!["on", "off"].includes(cmd) && isNaN(cmd))) {
       return api.sendMessage(
-        "⚙️ | استخدام ضبط الصوت:\n" +
-        "`.بي ضبط_الصوت on` - 🔊 تفعيل الصوت (ترسل الردود مع صوت)\n" +
-        "`.بي ضبط_الصوت off` - 🔇 إيقاف الصوت (نصوص فقط)\n" +
-        "`.بي ضبط_الصوت 1-8` - 🎙️ اختر نموذج صوتي (1-8)\n\n" +
-        "ملاحظة: النموذج يتطلب تفعيل الصوت أولاً",
+        "⚙️ | ضبط الصوت:\n\n" +
+        "في الوقت الحالي: 📌\n" +
+        "الخادم يدعم نصوص فقط 📝\n" +
+        "البحث جارٍ عن خادم يدعم الصوت 🔊\n\n" +
+        "الأوامر المتاحة:\n" +
+        "`.بي قائمة` - عرض المعلومات\n" +
+        "`.بي رسالتك` - محادثة عادية",
         threadID,
         messageID
       );

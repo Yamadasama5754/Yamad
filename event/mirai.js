@@ -9,6 +9,9 @@ class MiraiEvent {
   async execute({ api, event }) {
     const { threadID, messageID, senderID } = event;
     
+    // فحص إذا كانت الرسالة فارغة أو بدون نص
+    if (!event.body || typeof event.body !== "string") return;
+    
     const tl = [
       "عمتكم😺؟",
       "منو ينادي محبوبه الكل >_<...",
