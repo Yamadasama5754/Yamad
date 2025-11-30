@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { promisify } from "util";
 import ffmpegStatic from "ffmpeg-static";
+import play from "play-dl";
 
 const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -197,35 +198,22 @@ class YouTubeCommand {
         event.messageID
       );
 
-      const res = await axios.get(
-        `https://nayan-video-downloader.vercel.app/alldown?url=https://www.youtube.com/watch?v=${videoId}`,
-        { timeout: 30000 }
-      );
+      try {
+        const cacheDir = path.join(__dirname, "cache");
+        fs.ensureDirSync(cacheDir);
+        const videoPath = path.join(cacheDir, `video_${Date.now()}.mp4`);
+        const audioPath = path.join(cacheDir, `audio_${Date.now()}.mp3`);
 
-      const cacheDir = path.join(__dirname, "cache");
-      fs.ensureDirSync(cacheDir);
-      const videoPath = path.join(cacheDir, `video_${Date.now()}.mp4`);
-      const audioPath = path.join(cacheDir, `audio_${Date.now()}.mp3`);
+        api.setMessageReaction("⬇️", event.messageID, (err) => {}, true);
+        console.log(`[YOUTUBE] بدء تنزيل باستخدام play-dl: ${title}`);
 
-      api.setMessageReaction("⬇️", event.messageID, (err) => {}, true);
+        const url = `https://www.youtube.com/watch?v=${videoId}`;
+        const stream = await play.stream(url);
+        
+        const writeStream = fs.createWriteStream(videoPath);
+        stream.stream.pipe(writeStream);
 
-      // اختر رابط التنزيل حسب نوع الملف
-      const downloadLink = downloadType === "audio" 
-        ? (res.data.data.audio || res.data.data.high)  // حاول الصوت أولاً
-        : res.data.data.high;  // الفيديو
-      
-      const filePath = downloadType === "audio" ? audioPath : videoPath;
-
-      const videoStream = await axios({
-        url: downloadLink,
-        method: "GET",
-        responseType: "stream",
-        timeout: 60000
-      });
-
-      videoStream.data
-        .pipe(fs.createWriteStream(videoPath))
-        .on("close", async () => {
+        writeStream.on("finish", async () => {
           try {
             let finalPath = videoPath;
             
@@ -235,13 +223,9 @@ class YouTubeCommand {
                 api.setMessageReaction("🎵", event.messageID, (err) => {}, true);
                 console.log(`[YOUTUBE] تحويل ${videoPath} إلى ${audioPath}`);
                 
-                // استخدم FFmpeg لتحويل الفيديو لصوت
                 const ffmpegCmd = `"${ffmpegPath}" -i "${videoPath}" -q:a 0 -map a:0 "${audioPath}" -y`;
-                console.log(`[YOUTUBE] أمر FFmpeg: ${ffmpegCmd}`);
-                
                 await execAsync(ffmpegCmd, { maxBuffer: 50 * 1024 * 1024, timeout: 120000 });
                 
-                // حذف الفيديو الأصلي
                 if (fs.existsSync(videoPath)) {
                   fs.unlinkSync(videoPath);
                 }
@@ -252,7 +236,6 @@ class YouTubeCommand {
                 console.error("[YOUTUBE] خطأ FFmpeg:", ffmpegErr.message);
                 api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
                 
-                // إذا فشل التحويل، أرسل رسالة خطأ
                 return api.sendMessage(
                   "⛔ | عذراً، حدث خطأ في تحويل الملف لصوت. يرجى المحاولة مرة أخرى.",
                   event.threadID,
@@ -267,8 +250,7 @@ class YouTubeCommand {
               }
             }
             
-            let finalSize = fs.statSync(finalPath).size;
-            const fileSize = finalSize;
+            const fileSize = fs.statSync(finalPath).size;
 
             if (fileSize > 26214400) {
               api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
@@ -280,7 +262,7 @@ class YouTubeCommand {
                 event.threadID,
                 (err) => {
                   try {
-                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
                   } catch (e) {}
                 },
                 event.messageID
@@ -297,7 +279,7 @@ class YouTubeCommand {
                 (err, info) => {
                   setTimeout(() => {
                     try {
-                      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                      if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
                     } catch (e) {}
                   }, 3000);
 
@@ -307,7 +289,6 @@ class YouTubeCommand {
               );
             }
 
-            // تنظيف الصور المؤقتة
             try {
               if (replyData.attachments) {
                 replyData.attachments.forEach(att => {
@@ -326,11 +307,12 @@ class YouTubeCommand {
               event.messageID
             );
             try {
-              if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+              if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
             } catch (e) {}
           }
-        })
-        .on("error", (error) => {
+        });
+
+        writeStream.on("error", (error) => {
           console.error("[YOUTUBE] خطأ في التنزيل:", error);
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
           api.sendMessage(
@@ -338,13 +320,21 @@ class YouTubeCommand {
             event.threadID,
             (err) => {
               try {
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
               } catch (e) {}
             },
             event.messageID
           );
         });
-
+      } catch (downloadError) {
+        console.error("[YOUTUBE] خطأ في التنزيل:", downloadError);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        api.sendMessage(
+          `⛔ | فشل التنزيل: ${downloadError.message}`,
+          event.threadID,
+          event.messageID
+        );
+      }
     } catch (error) {
       console.error("[YOUTUBE] خطأ في onReply:", error);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);

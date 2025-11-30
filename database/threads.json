@@ -1221,5 +1221,32 @@
         "time": null
       }
     }
+  },
+  {
+    "threadID": "8361566607197301",
+    "data": {
+      "name": "⚔️༺♡مًمًلَکْةّ ♕لَآوٌتٌآکْوٌ ♕آلَمًظُلَمًةّ♡༻⚔️",
+      "threadThumbnail": "https://scontent-sea5-1.xx.fbcdn.net/v/t1.15752-9/541062410_1813128755944275_1993477154446364681_n.jpg?stp=dst-jpg_s960x960_tt6&_nc_cat=103&ccb=1-7&_nc_sid=935a9d&_nc_eui2=AeH7XJFC9i-LRyUyYeA3T3swzzrXgc29xwbPOteBzb3HBgp_NSZlTsoJsqLRpp7OlJbrdV1gM5SbR7lXc94qc63k&_nc_ohc=NqY_X1-OYQkQ7kNvwGdyGkZ&_nc_oc=AdlKQRZ_YoM1J-6QPblMItvZwU5sg8mL7cyME5n-bypH8Yiree0cfWB3eqSJwuCHm5U&_nc_zt=23&_nc_ht=scontent-sea5-1.xx&oh=03_Q7cD3wEyjTifoPfyAnv4SeZVOWUURtpo3Pye-jf2k1eHIol48Q&oe=6953855F",
+      "members": 246,
+      "adminIDs": [
+        "61554523559277",
+        "61558453320440",
+        "61565488345067",
+        "61567463584961",
+        "61573146066638"
+      ],
+      "emoji": "🙂",
+      "prefix": null,
+      "approvalMode": true,
+      "anti": {
+        "nameBox": false,
+        "imageBox": false
+      },
+      "banned": {
+        "status": false,
+        "reason": null,
+        "time": null
+      }
+    }
   }
 ]
