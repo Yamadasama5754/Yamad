@@ -78,50 +78,39 @@ class TikTokCommand {
 
       api.setMessageReaction("⬇️", loadingMessage, (err) => {}, true);
 
-      // تحميل الفيديو
-      const videoStream = await axios({
+      // تحميل الفيديو بطريقة آمنة
+      const videoResponse = await axios({
         method: "GET",
         url: videoUrl,
-        responseType: "stream",
+        responseType: "arraybuffer",
         timeout: 30000
       });
 
-      const writer = fs.createWriteStream(filePath);
+      fs.writeFileSync(filePath, Buffer.from(videoResponse.data));
 
-      videoStream.data.pipe(writer);
+      api.setMessageReaction("📤", loadingMessage, (err) => {}, true);
 
-      writer.on("finish", () => {
-        api.setMessageReaction("📤", loadingMessage, (err) => {}, true);
-
-        api.sendMessage(
-          {
-            body: message,
-            attachment: fs.createReadStream(filePath)
-          },
-          event.threadID,
-          (err, info) => {
-            // تنظيف الملف بعد الإرسال
-            setTimeout(() => {
+      // إرسال الفيديو
+      api.sendMessage(
+        {
+          body: message,
+          attachment: fs.createReadStream(filePath)
+        },
+        event.threadID,
+        (err, info) => {
+          // تنظيف الملف بعد الإرسال
+          setTimeout(() => {
+            try {
               if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
               }
-            }, 2000);
+            } catch (e) {}
+          }, 3000);
 
-            api.setMessageReaction("✅", loadingMessage, (err) => {}, true);
-          }
-        );
-      });
-
-      writer.on("error", (err) => {
-        console.error("[TIKTOK] خطأ في الكتابة:", err);
-        api.setMessageReaction("❌", loadingMessage, (err) => {}, true);
-        api.sendMessage(
-          "❌ حدث خطأ أثناء تحميل الفيديو",
-          event.threadID,
-          loadingMessage
-        );
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      });
+          api.setMessageReaction("✅", loadingMessage, (err) => {}, true);
+        },
+        loadingMessage
+      );
 
     } catch (error) {
       console.error("[TIKTOK] خطأ:", error.message);
