@@ -53,14 +53,15 @@ class TakfikCommand {
 
       const words = this.getWords();
       const randomWord = words[Math.floor(Math.random() * words.length)];
-      const correctAnswer = randomWord.answer.toLowerCase().replace(/\s+/g, "");
+      const correctAnswerWithSpaces = randomWord.answer.toLowerCase();
+      const correctAnswerNoSpaces = correctAnswerWithSpaces.replace(/\s+/g, "");
 
       let message = `🔤 لعبة تفكيك الكلمة 🔤\n`;
       message += `════════════════════\n\n`;
       message += `❓ فكك كلمة: ${randomWord.question}\n\n`;
       message += `💡 تلميح: الكلمة مكونة من ${randomWord.answer.split(" ").length} أحرف\n\n`;
       message += `📝 ارد على هذه الرسالة بالأحرف المفككة\n`;
-      message += `(بدون مسافات)`;
+      message += `(مثال: ب ي ت)`;
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
       
@@ -69,9 +70,11 @@ class TakfikCommand {
           global.client.handler.reply.set(info.messageID, {
             name: this.name,
             author: this.author,
-            correctAnswer: correctAnswer,
+            correctAnswerWithSpaces: correctAnswerWithSpaces,
+            correctAnswerNoSpaces: correctAnswerNoSpaces,
             word: randomWord.question,
-            messageID: info.messageID
+            messageID: info.messageID,
+            author_id: event.senderID
           });
         }
       });
@@ -85,8 +88,18 @@ class TakfikCommand {
 
   async onReply({ api, event, reply }) {
     try {
+      // تحقق من أن الشخص المردود عليه هو صاحب اللعبة فقط
+      if (reply.author_id && event.senderID !== reply.author_id) {
+        api.setMessageReaction("🚫", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "🚫 فقط صاحب اللعبة يقدر يجاوب!",
+          event.threadID,
+          event.messageID
+        );
+      }
+
       const userAnswer = event.body.trim().toLowerCase().replace(/\s+/g, "");
-      const correctAnswer = reply.correctAnswer.toLowerCase();
+      const correctAnswerNoSpaces = reply.correctAnswerNoSpaces.toLowerCase();
 
       let userName = "لاعب";
       try {
@@ -96,14 +109,14 @@ class TakfikCommand {
         console.warn("[TAKFIK] تعذر الحصول على اسم المستخدم");
       }
 
-      if (userAnswer === correctAnswer) {
+      if (userAnswer === correctAnswerNoSpaces) {
         api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
         let winMsg = `🎉 تهانينا يا ${userName}! 🎉\n`;
         winMsg += `════════════════════\n`;
         winMsg += `✅ الإجابة صحيحة!\n\n`;
         winMsg += `🔤 الكلمة: ${reply.word}\n`;
-        winMsg += `📝 التفكيك: ${reply.correctAnswer}\n\n`;
+        winMsg += `📝 التفكيك: ${reply.correctAnswerWithSpaces}\n\n`;
         winMsg += `════════════════════`;
         
         api.sendMessage(winMsg, event.threadID);
@@ -113,7 +126,7 @@ class TakfikCommand {
         let loseMsg = `❌ خطأ يا ${userName}! ❌\n`;
         loseMsg += `════════════════════\n`;
         loseMsg += `🔤 الكلمة: ${reply.word}\n`;
-        loseMsg += `📝 الإجابة الصحيحة: ${reply.correctAnswer}\n\n`;
+        loseMsg += `📝 الإجابة الصحيحة: ${reply.correctAnswerWithSpaces}\n\n`;
         loseMsg += `💭 حاول مرة أخرى!\n`;
         loseMsg += `════════════════════`;
         
