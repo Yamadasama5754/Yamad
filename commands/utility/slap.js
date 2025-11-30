@@ -17,24 +17,8 @@ class SlapCommand {
   }
 
   async onLoad() {
-    const cacheDir = path.join(__dirname, "cache/canvas");
-    const imagePath = path.join(cacheDir, "sato.png");
-
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
-
-    if (!fs.existsSync(imagePath)) {
-      try {
-        const response = await axios.get("https://i.imgur.com/dsrmtlg.jpg", {
-          responseType: "arraybuffer",
-          timeout: 10000
-        });
-        fs.writeFileSync(imagePath, Buffer.from(response.data));
-      } catch (err) {
-        console.warn("[SLAP] خطأ في تحميل الصورة الأساسية:", err.message);
-      }
-    }
+    // لا نحتاج إلى تحميل صورة أساسية
+    console.log("[SLAP] تم تحضير أمر الاصفعي بنجاح");
   }
 
   async makeCircle(imagePath) {
@@ -52,22 +36,8 @@ class SlapCommand {
     const cacheDir = path.join(__dirname, "cache/canvas");
     fs.ensureDirSync(cacheDir);
 
-    // تحميل الصورة الأساسية مع ضمان وجودها
-    const imagePath = path.join(cacheDir, "sato.png");
-    if (!fs.existsSync(imagePath)) {
-      try {
-        const response = await axios.get("https://i.imgur.com/dsrmtlg.jpg", {
-          responseType: "arraybuffer",
-          timeout: 10000
-        });
-        fs.writeFileSync(imagePath, Buffer.from(response.data));
-      } catch (err) {
-        console.error("[SLAP] خطأ في تحميل الصورة الأساسية:", err.message);
-        throw err;
-      }
-    }
-
-    let baseImg = await jimp.read(imagePath);
+    // إنشاء صورة بيضاء بسيطة كخلفية
+    let baseImg = new jimp(600, 600, 0xffffffff);
     let outputPath = path.join(cacheDir, `sato_${one}_${two}.png`);
     let avatarOne = path.join(cacheDir, `avt_slap_${one}.png`);
     let avatarTwo = path.join(cacheDir, `avt_slap_${two}.png`);
