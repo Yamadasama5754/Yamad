@@ -1201,7 +1201,7 @@
     "uid": "100092990751389",
     "data": {
       "money": 5981,
-      "exp": 3,
+      "exp": 5,
       "level": 0,
       "banned": {
         "status": false,
@@ -3342,7 +3342,7 @@
     "uid": "61582973186917",
     "data": {
       "money": 0,
-      "exp": 0,
+      "exp": 2,
       "level": 0,
       "banned": {
         "status": false,
