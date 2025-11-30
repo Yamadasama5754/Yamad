@@ -149,8 +149,27 @@ class YouTubeCommand {
   async onReply({ api, event, reply }) {
     try {
       const index = parseInt(event.body) - 1;
+      
+      // الحصول على البيانات المخزنة
+      let replyData = reply;
+      
+      // إذا لم تكن البيانات موجودة في reply مباشرة، حاول الحصول عليها من handler
+      if (!replyData || !replyData.searchResults) {
+        if (event.messageReply && global.client?.handler?.reply) {
+          replyData = global.client.handler.reply.get(event.messageReply.messageID);
+        }
+      }
 
-      if (isNaN(index) || index < 0 || index >= reply.searchResults.length) {
+      if (!replyData || !replyData.searchResults) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | انتهت صلاحية البحث. يرجى محاولة البحث مرة أخرى.",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      if (isNaN(index) || index < 0 || index >= replyData.searchResults.length) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
           "❌ | الرجاء إدخال رقم صحيح من النتائج.",
@@ -159,10 +178,10 @@ class YouTubeCommand {
         );
       }
 
-      const selectedVideo = reply.searchResults[index];
+      const selectedVideo = replyData.searchResults[index];
       const videoId = selectedVideo.id.videoId;
       const title = selectedVideo.snippet.title;
-      const downloadType = reply.downloadType || "video";
+      const downloadType = replyData.downloadType || "video";
 
       api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
 
@@ -181,15 +200,19 @@ class YouTubeCommand {
         { timeout: 30000 }
       );
 
-      // API فقط يعطي فيديو، سنحوله لصوت إذا طلب المستخدم
-      const downloadLink = res.data.data.high;
       const cacheDir = path.join(__dirname, "cache");
       fs.ensureDirSync(cacheDir);
       const videoPath = path.join(cacheDir, `video_${Date.now()}.mp4`);
       const audioPath = path.join(cacheDir, `audio_${Date.now()}.mp3`);
-      const filePath = downloadType === "audio" ? audioPath : videoPath;
 
       api.setMessageReaction("⬇️", event.messageID, (err) => {}, true);
+
+      // اختر رابط التنزيل حسب نوع الملف
+      const downloadLink = downloadType === "audio" 
+        ? (res.data.data.audio || res.data.data.high)  // حاول الصوت أولاً
+        : res.data.data.high;  // الفيديو
+      
+      const filePath = downloadType === "audio" ? audioPath : videoPath;
 
       const videoStream = await axios({
         url: downloadLink,
@@ -199,27 +222,11 @@ class YouTubeCommand {
       });
 
       videoStream.data
-        .pipe(fs.createWriteStream(videoPath))
+        .pipe(fs.createWriteStream(filePath))
         .on("close", async () => {
           try {
-            let finalPath = videoPath;
-            let finalSize = fs.statSync(videoPath).size;
-
-            // إذا كان النوع صوت، حول الفيديو لصوت
-            if (downloadType === "audio") {
-              api.setMessageReaction("🎵", event.messageID, (err) => {}, true);
-              try {
-                await execAsync(`ffmpeg -i "${videoPath}" -q:a 0 -map a "${audioPath}" -y 2>/dev/null`);
-                // حذف الفيديو الأصلي
-                if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-                finalPath = audioPath;
-                finalSize = fs.statSync(audioPath).size;
-              } catch (ffmpegErr) {
-                console.warn("[YOUTUBE] تحويل FFmpeg فشل، سيتم إرسال الفيديو بدلاً من الصوت:", ffmpegErr.message);
-                finalPath = videoPath;
-                finalSize = fs.statSync(videoPath).size;
-              }
-            }
+            let finalPath = filePath;
+            let finalSize = fs.statSync(filePath).size;
 
             const fileSize = finalSize;
 
@@ -233,8 +240,7 @@ class YouTubeCommand {
                 event.threadID,
                 (err) => {
                   try {
-                    if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-                    if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
                   } catch (e) {}
                 },
                 event.messageID
@@ -251,8 +257,7 @@ class YouTubeCommand {
                 (err, info) => {
                   setTimeout(() => {
                     try {
-                      if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-                      if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+                      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
                     } catch (e) {}
                   }, 3000);
 
@@ -264,8 +269,8 @@ class YouTubeCommand {
 
             // تنظيف الصور المؤقتة
             try {
-              if (reply.attachments) {
-                reply.attachments.forEach(att => {
+              if (replyData.attachments) {
+                replyData.attachments.forEach(att => {
                   if (fs.existsSync(att.path)) {
                     fs.unlinkSync(att.path);
                   }
@@ -281,8 +286,7 @@ class YouTubeCommand {
               event.messageID
             );
             try {
-              if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-              if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+              if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
             } catch (e) {}
           }
         })
