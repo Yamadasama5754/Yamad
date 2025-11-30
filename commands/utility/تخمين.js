@@ -6,12 +6,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class CharactersGuessCommand {
   constructor() {
-    this.name = "شخصيات";
+    this.name = "تخمين";
     this.author = "عمر";
     this.cooldowns = 5;
     this.description = "احزر اسم الشخصية من الوصف 🎭";
     this.role = 0;
-    this.aliases = ["شخصيات", "تخمين_شخصية"];
+    this.aliases = ["تخمين"];
   }
 
   async onLoad() {
@@ -79,7 +79,7 @@ class CharactersGuessCommand {
 
   async onReply({ api, event, reply }) {
     try {
-      if (reply && reply.type === "characters_guess" && reply.name === "شخصيات") {
+      if (reply && reply.type === "characters_guess" && reply.name === "تخمين") {
         const userAnswer = event.body.trim().toLowerCase();
         const correctAnswer = reply.correctAnswer.toLowerCase();
 
