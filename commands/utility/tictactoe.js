@@ -169,7 +169,8 @@ class TicTacToe {
         isMultiplayer: isMultiplayer,
         opponentUID: opponentUID || null,
         playerName: playerName,
-        opponentName: opponentName
+        opponentName: opponentName,
+        threadID: event.threadID
       };
 
       global.tictactoeGames.set(gameKey, gameData);
@@ -182,11 +183,16 @@ class TicTacToe {
 
       try {
         const sentMessage = await api.sendMessage(startMsg, event.threadID);
-        if (sentMessage) {
+        if (sentMessage?.messageID) {
+          // سجل رسالة اللعبة بحيث تحفظ معرف الرسالة
           global.client.handler.reply.set(sentMessage.messageID, {
             name: this.name,
-            author: this.author
+            author: this.author,
+            gameKey: gameKey,
+            isGameMessage: true
           });
+          // احفظ معرف الرسالة في بيانات اللعبة
+          gameData.messageID = sentMessage.messageID;
         }
       } catch (err) {
         console.error('خطأ في إرسال رسالة البدء:', err);
@@ -199,29 +205,19 @@ class TicTacToe {
     }
   }
 
-  async onReply({ api, event, Users }) {
-    const gameKey = `${event.threadID}`;
-    const userID = event.senderID;
-
+  async onReply({ api, event, reply, Users }) {
     try {
+      const gameKey = `${event.threadID}`;
+      const userID = event.senderID;
+
+      // احصل على بيانات اللعبة من المخزن العام
       let gameData = global.tictactoeGames.get(gameKey);
 
-      // إذا لم توجد لعبة وهناك رد على رسالة، ابدأ لعبة مع الشخص الأصلي
-      if (!gameData && event.messageReply && event.messageReply.senderID) {
-        const moveText = event.body?.trim();
-        const move = parseInt(moveText);
-
-        if (isNaN(move) || move < 1 || move > 9) {
-          return api.sendMessage("❌ ابدأ اللعبة بكتابة: .اكس او أو .اكس او @منشن", event.threadID);
-        }
-
-        return api.sendMessage("❌ لا توجد لعبة جارية! ابدأ اللعبة بـ: .اكس او أو .اكس او @منشن", event.threadID);
-      }
-
       if (!gameData) {
-        return api.sendMessage("❌ لا توجد لعبة جارية حالياً!", event.threadID);
+        return api.sendMessage("❌ لا توجد لعبة جارية حالياً! ابدأ لعبة جديدة بـ: .اكس او", event.threadID);
       }
 
+      // تحقق من أن اللاعب الحالي هو من يجب أن يلعب
       if (gameData.currentPlayer === 'X' && userID !== gameData.playerUID) {
         return api.sendMessage(`⚠️ ليس دورك الآن! دور ${gameData.playerName}`, event.threadID);
       }
@@ -246,7 +242,9 @@ class TicTacToe {
         winMsg += this.displayBoard(gameData.board);
         api.sendMessage(winMsg, event.threadID);
         global.tictactoeGames.delete(gameKey);
-        global.client.handler.reply.delete(event.messageReply.messageID);
+        if (gameData.messageID) {
+          global.client.handler.reply.delete(gameData.messageID);
+        }
         return;
       }
 
@@ -255,7 +253,9 @@ class TicTacToe {
         tieMsg += this.displayBoard(gameData.board);
         api.sendMessage(tieMsg, event.threadID);
         global.tictactoeGames.delete(gameKey);
-        global.client.handler.reply.delete(event.messageReply.messageID);
+        if (gameData.messageID) {
+          global.client.handler.reply.delete(gameData.messageID);
+        }
         return;
       }
 
@@ -270,7 +270,9 @@ class TicTacToe {
           botWinMsg += this.displayBoard(gameData.board);
           api.sendMessage(botWinMsg, event.threadID);
           global.tictactoeGames.delete(gameKey);
-          global.client.handler.reply.delete(event.messageReply.messageID);
+          if (gameData.messageID) {
+            global.client.handler.reply.delete(gameData.messageID);
+          }
           return;
         }
 
@@ -279,7 +281,9 @@ class TicTacToe {
           tieMsg += this.displayBoard(gameData.board);
           api.sendMessage(tieMsg, event.threadID);
           global.tictactoeGames.delete(gameKey);
-          global.client.handler.reply.delete(event.messageReply.messageID);
+          if (gameData.messageID) {
+            global.client.handler.reply.delete(gameData.messageID);
+          }
           return;
         }
 
@@ -292,11 +296,15 @@ class TicTacToe {
 
       try {
         const sentMessage = await api.sendMessage(msg, event.threadID);
-        if (sentMessage) {
+        if (sentMessage?.messageID) {
+          // حدّث معرف الرسالة
           global.client.handler.reply.set(sentMessage.messageID, {
             name: this.name,
-            author: this.author
+            author: this.author,
+            gameKey: gameKey,
+            isGameMessage: true
           });
+          gameData.messageID = sentMessage.messageID;
         }
       } catch (err) {
         console.error('خطأ في إرسال رسالة اللعبة:', err);
