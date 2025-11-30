@@ -33,7 +33,26 @@ const characters = [
   { name: "ليفاي", image: "https://i.imgur.com/xzDQSD2.jpg" },
   { name: "مايكي", image: "https://i.pinimg.com/236x/eb/a1/c6/eba1c6ed1611c3332655649ef405490a.jpg" },
   { name: "هيناتا", image: "https://i.imgur.com/koAzMr9.jpg" },
-  { name: "هيسوكا", image: "https://i.imgur.com/6Mj5GcO.jpg" }
+  { name: "هيسوكا", image: "https://i.imgur.com/6Mj5GcO.jpg" },
+  { name: "كورومي", image: "https://i.imgur.com/yrEx6fs.jpg" },
+  { name: "الينا", image: "https://i.imgur.com/cAFukZB.jpg" },
+  { name: "فوليت", image: "https://i.pinimg.com/236x/63/c7/47/63c7474adaab4e36525611da528a20bd.jpg" },
+  { name: "ميدوريا", image: "https://i.pinimg.com/236x/3a/df/87/3adf878c1b6ef2a90ed32abf674b780c.jpg" },
+  { name: "وين", image: "https://i.pinimg.com/564x/d2/c0/42/d2c042eeb8a92713b3f6e0a6dba2c353.jpg" },
+  { name: "نينم", image: "https://i.pinimg.com/236x/f6/85/2b/f6852bfa6a09474771a17aca9018852e.jpg" },
+  { name: "هانكو", image: "https://i.pinimg.com/236x/b6/0e/36/b60e36d13d8c11731c85b73e89f63189.jpg" },
+  { name: "زيرو تو", image: "https://i.pinimg.com/236x/bd/9d/5a/bd9d5a5040e872d4ec9e9607561e22da.jpg" },
+  { name: "ايروين", image: "https://i.pinimg.com/236x/5f/e8/f3/5fe8f3b46a33de8ce98927e95e804988.jpg" },
+  { name: "تودروكي", image: "https://i.pinimg.com/474x/ab/3f/5e/ab3f5ec03eb6b18d2812f8c13c62bb92.jpg" },
+  { name: "غوجو", image: "https://i.pinimg.com/236x/26/6e/8d/266e8d8e9ea0a9d474a8316b9ed54207.jpg" },
+  { name: "دازاي", image: "https://i.pinimg.com/474x/e5/2f/a3/e52fa34886b53184b767b04c70ce0885.jpg" },
+  { name: "فوتوبا", image: "https://i.pinimg.com/236x/03/af/3e/03af3e2769811b62eb75f1a8e63affe5.jpg" },
+  { name: "سيستا", image: "https://i.pinimg.com/236x/7f/38/6c/7f386c4afed64d0055205452091a313e.jpg" },
+  { name: "كيلوا", image: "https://i.pinimg.com/236x/8a/c8/f9/8ac8f98dd946fefdae4e66020073e5ee.jpg" },
+  { name: "كايل", image: "https://i.pinimg.com/236x/e1/6a/5c/e16a5c5f91190ebf407ff3736135cb5a.jpg" },
+  { name: "نيرو", image: "https://i.pinimg.com/564x/36/43/fc/3643fc4d86d3a7e8e60d14e71f8050a0.jpg" },
+  { name: "ريوك", image: "https://i.pinimg.com/236x/3b/b5/ef/3bb5efac247e16fe3fc30c9a7478cc07.jpg" },
+  { name: "تاكت", image: "https://i.pinimg.com/236x/79/9b/66/799b66006bc650a03fa264936ce254c7.jpg" }
 ];
 
 class CharacterGame {
