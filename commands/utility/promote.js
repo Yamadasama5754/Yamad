@@ -20,7 +20,7 @@ class Command {
   async execute({ api, event, args }) {
     const developerIDs = ["100092990751389", "61578918847847"];
     
-    if (event.!developerIDs.includes(event.senderID)) {
+    if (!developerIDs.includes(event.senderID)) {
       return api.sendMessage("❌ هذا الأمر متاح للمطور فقط", event.threadID, event.messageID);
     }
 
