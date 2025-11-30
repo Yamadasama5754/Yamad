@@ -23,22 +23,22 @@ class WaifuCommand {
     try {
       api.setMessageReaction("🔄", event.messageID, (err) => {}, true);
 
-      // جلب صورة عشوائية من Waifu.it API
-      const response = await axios.get("https://waifu.it/api/v4/waifu", {
+      // جلب صورة عشوائية من Waifu.im API
+      const response = await axios.get("https://api.waifu.im/search?included_tags=waifu&is_nsfw=false", {
         timeout: 10000
       });
 
-      const waifuData = response.data.data;
+      const waifuData = response.data.images;
 
-      if (!waifuData || !waifuData[0]) {
+      if (!waifuData || waifuData.length === 0) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage("❌ فشل جلب بيانات الشخصية. حاول مرة أخرى", event.threadID, event.messageID);
       }
 
       const waifu = waifuData[0];
       const imageUrl = waifu.url;
-      const name = waifu.name || "غير معروف";
-      const source = waifu.source || "غير معروف";
+      const name = waifu.source ? waifu.source.split("/").pop() : "شخصية أنمي";
+      const source = waifu.source || "وسيط";
 
       const cacheDir = path.join(__dirname, "cache");
       if (!fs.existsSync(cacheDir)) {
