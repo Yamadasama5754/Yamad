@@ -1,237 +1,280 @@
-export default {
-  name: "اكس_او",
-  author: "kaguya project",
-  role: "member",
-  description: "لعبة اكس او - لعب مع البوت أو مع صديق",
+class TicTacToe {
+  constructor() {
+    this.name = "اكس_او";
+    this.author = "Yamada KJ & Alastor";
+    this.cooldowns = 10;
+    this.description = "لعبة اكس او | الاستخدام: اكس او أو اكس او @منشن";
+    this.role = 0;
+    this.aliases = ["xo", "tic", "tictactoe"];
+  }
 
-  async execute({ event, api, args }) {
-    const mention = Object.keys(event.mentions);
+  createBoard() {
+    return [
+      ['1️⃣', '2️⃣', '3️⃣'],
+      ['4️⃣', '5️⃣', '6️⃣'],
+      ['7️⃣', '8️⃣', '9️⃣']
+    ];
+  }
 
-    if (args[0] == "إغلاق") {
-      if (!global.game || !global.game.hasOwnProperty(event.threadID) || global.game[event.threadID].on == false) {
-        api.sendMessage("لا توجد مباراة قيد التشغيل في هذه المجموعة", event.threadID);
-      } else {
-        if (event.senderID == global.game[event.threadID].player1.id || event.senderID == global.game[event.threadID].player2.id) {
-          if (event.senderID == global.game[event.threadID].player1.id) {
-            api.sendMessage({
-              body: `يا له من طفل بكاء 🙂. ${global.game[event.threadID].player1.name} لقد ترك اللعبة.\nوبذلك يكون الفائز هو ${global.game[event.threadID].player2.name}.`,
-              mentions: [{
-                tag: global.game[event.threadID].player1.name,
-                id: global.game[event.threadID].player1.id,
-              }, {
-                tag: global.game[event.threadID].player2.name,
-                id: global.game[event.threadID].player2.id,
-              }]
-            }, event.threadID);
-          } else {
-            api.sendMessage({
-              body: `يا له من طفل بكاء 🙂. ${global.game[event.threadID].player2.name} لقد ترك اللعبة.\nوبذلك يكون الرابح هو ${global.game[event.threadID].player1.name}.`,
-              mentions: [{
-                tag: global.game[event.threadID].player1.name,
-                id: global.game[event.threadID].player1.id,
-              }, {
-                tag: global.game[event.threadID].player2.name,
-                id: global.game[event.threadID].player2.id,
-              }]
-            }, event.threadID);
-          }
-          global.game[event.threadID].on = false;
-        } else {
-          api.sendMessage("ليس لديك أي لعبة قيد التشغيل في هذه المجموعة", event.threadID);
-        }
-      }
-    } else if (mention.length == 0 && args[0] !== "إغلاق") {
-      // لعب مع البوت
-      if (!global.game) {
-        global.game = {};
-      }
+  displayBoard(board) {
+    let display = "╭─────────╮\n";
+    for (let i = 0; i < 3; i++) {
+      display += `│ ${board[i][0]} ${board[i][1]} ${board[i][2]} │\n`;
+    }
+    display += "╰─────────╯";
+    return display;
+  }
 
-      const userInfo = await api.getUserInfo(event.senderID);
-      const userName = userInfo[event.senderID]?.name || "Unknown";
+  checkWinner(board, player) {
+    const symbol = player === 'X' ? '❌' : '⭕';
 
-      global.game[event.threadID] = {
-        on: true,
-        board: "🔲🔲🔲\n🔲🔲🔲\n🔲🔲🔲",
-        bid: "",
-        board2: "123456789",
-        avcell: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        turn: event.senderID,
-        player1: { id: event.senderID, name: userName, isBot: false },
-        player2: { id: "BOT", name: "🤖 البوت", isBot: true },
-        bidd: "❌",
-        bid: "",
-        ttrns: [],
-        counting: 0
-      };
-
-      api.sendMessage("🎮 لعبة اكس او ضد البوت!\nأنت: ❌ | البوت: ⭕\n\n" + global.game[event.threadID].board, event.threadID, (err, info) => {
-        global.game[event.threadID].bid = info.messageID;
-      });
-    } else {
-      if (mention.length == 0) return api.sendMessage("يرجى عمل منشن لشخص ما أو اكتب .اكس_او للعب مع البوت", event.threadID);
-
-      if (!global.game || !global.game.hasOwnProperty(event.threadID) || !global.game[event.threadID] || global.game[event.threadID].on === false) {
-        if (!global.game) {
-          global.game = {};
-        }
-
-        const player1Info = await api.getUserInfo(mention[0]);
-        const player2Info = await api.getUserInfo(event.senderID);
-
-        global.game[event.threadID] = {
-          on: true,
-          board: "🔲🔲🔲\n🔲🔲🔲\n🔲🔲🔲",
-          bid: "",
-          board2: "123456789",
-          avcell: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-          turn: mention[0],
-          player1: { id: mention[0], name: player1Info[mention[0]].name, isBot: false },
-          player2: { id: event.senderID, name: player2Info[event.senderID].name, isBot: false },
-          bidd: "❌",
-          bid: "",
-          ttrns: [],
-          counting: 0
-        };
-
-        api.sendMessage(global.game[event.threadID].board, event.threadID, (err, info) => {
-          global.game[event.threadID].bid = info.messageID;
-        });
-      } else {
-        api.sendMessage("هناك لعبة موجودة بالفعل في هذه المجموعة", event.threadID);
+    for (let i = 0; i < 3; i++) {
+      if (board[i][0] === symbol && board[i][1] === symbol && board[i][2] === symbol) {
+        return true;
       }
     }
 
-    api.listenMqtt((err, event) => {
-      if (err) return console.error(err);
+    for (let i = 0; i < 3; i++) {
+      if (board[0][i] === symbol && board[1][i] === symbol && board[2][i] === symbol) {
+        return true;
+      }
+    }
 
-      if (event.type === "message_reply" && global.game[event.threadID] && global.game[event.threadID].on === true) {
-        if (event.messageReply.messageID === global.game[event.threadID].bid) {
-          if (global.game[event.threadID].turn === event.senderID) {
-            if (["1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(event.body)) {
-              if (global.game[event.threadID].avcell.includes(event.body)) {
-                global.game[event.threadID].avcell.splice(global.game[event.threadID].avcell.indexOf(event.body), 1);
+    if (board[0][0] === symbol && board[1][1] === symbol && board[2][2] === symbol) {
+      return true;
+    }
+    if (board[0][2] === symbol && board[1][1] === symbol && board[2][0] === symbol) {
+      return true;
+    }
 
-                let input2 = event.body * 2;
-                global.game[event.threadID].ttrns.map(e => {
-                  if (e < event.body) {
-                    input2--;
-                  }
-                });
+    return false;
+  }
 
-                if (["4", "5", "6"].includes(event.body)) {
-                  input2++;
-                } else if (["7", "8", "9"].includes(event.body)) {
-                  input2 += 2;
-                }
-
-                global.game[event.threadID].board = global.game[event.threadID].board.replaceAt("🔲", global.game[event.threadID].bidd, input2 - 2);
-                global.game[event.threadID].board2 = global.game[event.threadID].board2.replace(event.body, global.game[event.threadID].bidd);
-
-                api.sendMessage(global.game[event.threadID].board, event.threadID, (err, infos) => {
-                  global.game[event.threadID].bid = infos.messageID;
-                });
-                let winncomb = [
-                  (global.game[event.threadID].board2[0] === global.game[event.threadID].bidd && global.game[event.threadID].board2[1] === global.game[event.threadID].bidd && global.game[event.threadID].board2[2] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[3] === global.game[event.threadID].bidd && global.game[event.threadID].board2[4] === global.game[event.threadID].bidd && global.game[event.threadID].board2[5] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[6] === global.game[event.threadID].bidd && global.game[event.threadID].board2[7] === global.game[event.threadID].bidd && global.game[event.threadID].board2[8] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[0] === global.game[event.threadID].bidd && global.game[event.threadID].board2[3] === global.game[event.threadID].bidd && global.game[event.threadID].board2[6] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[1] === global.game[event.threadID].bidd && global.game[event.threadID].board2[4] === global.game[event.threadID].bidd && global.game[event.threadID].board2[7] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[2] === global.game[event.threadID].bidd && global.game[event.threadID].board2[5] === global.game[event.threadID].bidd && global.game[event.threadID].board2[8] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[0] === global.game[event.threadID].bidd && global.game[event.threadID].board2[4] === global.game[event.threadID].bidd && global.game[event.threadID].board2[8] === global.game[event.threadID].bidd),
-                  (global.game[event.threadID].board2[2] === global.game[event.threadID].bidd && global.game[event.threadID].board2[4] === global.game[event.threadID].bidd && global.game[event.threadID].board2[6] === global.game[event.threadID].bidd)
-                ];
-
-                let winncomb2 = [
-                  [1, 2, 3],
-                  [4, 5, 6],
-                  [7, 8, 9],
-                  [1, 4, 7],
-                  [2, 5, 8],
-                  [3, 6, 9],
-                  [1, 5, 9],
-                  [3, 5, 7]
-                ];
-
-                if (winncomb.includes(true)) {
-                  api.unsendMessage(event.messageReply.messageID);
-
-                  let winl = winncomb2[winncomb.indexOf(true)];
-                  winl.forEach(fn => {
-                    let input2 = fn * 2;
-                    global.game[event.threadID].ttrns.map(e => {
-                      if (e < fn) {
-                        input2--;
-                      }
-                    });
-
-                    if (["4", "5", "6"].includes(fn)) {
-                      input2++;
-                    } else if (["7", "8", "9"].includes(fn)) {
-                      input2 += 2;
-                    }
-
-                    global.game[event.threadID].board = global.game[event.threadID].board.replaceAt(global.game[event.threadID].bidd, "✅", input2 - 2);
-                  });
-
-                  api.sendMessage(global.game[event.threadID].board, event.threadID);
-
-                  if (global.game[event.threadID].turn === global.game[event.threadID].player1.id) {
-                    setTimeout(() => {
-                      api.sendMessage({
-                        body: `تهانينا 🥳 ${global.game[event.threadID].player1.name} , أنت الفائز في هذه المباراة..`,
-                        mentions: [{
-                          tag: global.game[event.threadID].player1.name,
-                          id: global.game[event.threadID].player1.id,
-                        }]
-                      }, event.threadID);
-                    }, 1000);
-                  } else {
-                    setTimeout(() => {
-                      api.sendMessage({
-                        body: `تهانينا 🥳 ${global.game[event.threadID].player2.name} , أنت الفائز في هذه المباراة..`,
-                        mentions: [{
-                          tag: global.game[event.threadID].player2.name,
-                          id: global.game[event.threadID].player2.id,
-                        }]
-                      }, event.threadID);
-                    }, 1000);
-                  }
-                  global.game[event.threadID].on = false;
-                } else if (global.game[event.threadID].counting === 8) {
-                  setTimeout(() => {
-                    api.sendMessage("إنتهت المباراة بالتعادل.....", event.threadID);
-                  }, 1000);
-                  global.game[event.threadID].on = false;
-                } else {
-                  global.game[event.threadID].counting += 1;
-                  api.unsendMessage(event.messageReply.messageID);
-                  global.game[event.threadID].ttrns.push(event.body);
-                  if (global.game[event.threadID].turn === global.game[event.threadID].player1.id) {
-                    global.game[event.threadID].turn = global.game[event.threadID].player2.id;
-                    global.game[event.threadID].bidd = "⭕";
-                  } else {
-                    global.game[event.threadID].turn = global.game[event.threadID].player1.id;
-                    global.game[event.threadID].bidd = "❌";
-                  }
-                }
-              } else {
-                api.sendMessage("تم حظر هذا بالفعل", event.threadID);
-              }
-            } else {
-              api.sendMessage("قم بالرد من 1 -9", event.threadID);
-            }
-          } else {
-            api.sendMessage("ليس دورك يا غبي 🌝", event.threadID);
-          }
+  isBoardFull(board) {
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[i][j].includes('️⃣')) {
+          return false;
         }
       }
-    });
+    }
+    return true;
   }
-};
 
-String.prototype.replaceAt = function (search, replace, from) {
-  if (this.length > from) {
-    return this.slice(0, from) + this.slice(from).replace(search, replace);
+  getAvailableMoves(board) {
+    const moves = [];
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[i][j].includes('️⃣')) {
+          moves.push(parseInt(board[i][j].charAt(0)));
+        }
+      }
+    }
+    return moves;
   }
-  return this;
-};
+
+  makeMove(board, move, player) {
+    const symbol = player === 'X' ? '❌' : '⭕';
+    const position = move - 1;
+    const row = Math.floor(position / 3);
+    const col = position % 3;
+
+    if (board[row][col].includes('️⃣')) {
+      board[row][col] = symbol;
+      return true;
+    }
+    return false;
+  }
+
+  getBotMove(board) {
+    const availableMoves = this.getAvailableMoves(board);
+
+    for (let move of availableMoves) {
+      const testBoard = board.map(row => [...row]);
+      this.makeMove(testBoard, move, 'O');
+      if (this.checkWinner(testBoard, 'O')) {
+        return move;
+      }
+    }
+
+    for (let move of availableMoves) {
+      const testBoard = board.map(row => [...row]);
+      this.makeMove(testBoard, move, 'X');
+      if (this.checkWinner(testBoard, 'X')) {
+        return move;
+      }
+    }
+
+    if (availableMoves.includes(5)) {
+      return 5;
+    }
+
+    const corners = [1, 3, 7, 9].filter(m => availableMoves.includes(m));
+    if (corners.length > 0) {
+      return corners[Math.floor(Math.random() * corners.length)];
+    }
+
+    return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+  }
+
+  async execute({ api, event, args, Users }) {
+    const gameKey = `${event.threadID}`;
+    const userID = event.senderID;
+
+    try {
+      let opponentUID = null;
+      let isMultiplayer = false;
+
+      if (event.messageReply && event.messageReply.senderID) {
+        opponentUID = event.messageReply.senderID;
+        isMultiplayer = true;
+      } else {
+        const mentions = event.mentions || {};
+        opponentUID = Object.keys(mentions)[0];
+        isMultiplayer = !!opponentUID;
+      }
+
+      if (global.tictactoeGames.has(gameKey)) {
+        return api.sendMessage("⚠️ يوجد لعبة جارية بالفعل! اكتب 'إيقاف' لإيقافها.", event.threadID);
+      }
+
+      const board = this.createBoard();
+
+      const playerInfo = await api.getUserInfo(userID);
+      const playerName = playerInfo?.[userID]?.name || 'لاعب';
+
+      let opponentName = 'البوت 🤖';
+      if (isMultiplayer) {
+        const opponentInfo = await api.getUserInfo(opponentUID);
+        opponentName = opponentInfo?.[opponentUID]?.name || 'لاعب 2';
+      }
+
+      const gameData = {
+        board: board,
+        currentPlayer: 'X',
+        playerUID: userID,
+        isMultiplayer: isMultiplayer,
+        opponentUID: opponentUID || null,
+        playerName: playerName,
+        opponentName: opponentName
+      };
+
+      global.tictactoeGames.set(gameKey, gameData);
+
+      let startMsg = `🎮 اكس او!\n`;
+      startMsg += `❌ ${gameData.playerName}\n`;
+      startMsg += `⭕ ${gameData.opponentName}\n\n`;
+      startMsg += this.displayBoard(board);
+      startMsg += `\n\n${gameData.playerName} دورك! اكتب رقم (1-9) 🎯`;
+
+      api.sendMessage(startMsg, event.threadID, (err, info) => {
+        if (!err && info) {
+          global.client.handler.reply.set(info.messageID, {
+            name: this.name,
+            author: this.author
+          });
+        }
+      });
+
+    } catch (err) {
+      console.error('TicTacToe Error:', err);
+      api.sendMessage("❌ حدث خطأ: " + err.message, event.threadID);
+    }
+  }
+
+  async onReply({ api, event, Users }) {
+    const gameKey = `${event.threadID}`;
+    const userID = event.senderID;
+
+    try {
+      const gameData = global.tictactoeGames.get(gameKey);
+
+      if (!gameData) {
+        return api.sendMessage("❌ لا توجد لعبة جارية حالياً!", event.threadID);
+      }
+
+      if (gameData.currentPlayer === 'X' && userID !== gameData.playerUID) {
+        return api.sendMessage(`⚠️ ليس دورك الآن! دور ${gameData.playerName}`, event.threadID);
+      }
+
+      if (gameData.currentPlayer === 'O' && gameData.isMultiplayer && userID !== gameData.opponentUID) {
+        return api.sendMessage(`⚠️ ليس دورك الآن! دور ${gameData.opponentName}`, event.threadID);
+      }
+
+      const moveText = event.body?.trim();
+      const move = parseInt(moveText);
+
+      if (isNaN(move) || move < 1 || move > 9) {
+        return api.sendMessage("❌ أدخل رقم صحيح من 1 إلى 9", event.threadID);
+      }
+
+      if (!this.makeMove(gameData.board, move, gameData.currentPlayer)) {
+        return api.sendMessage("❌ الخانة مشغولة بالفعل! اختر خانة أخرى", event.threadID);
+      }
+
+      if (this.checkWinner(gameData.board, gameData.currentPlayer)) {
+        let winMsg = `🎉 ${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} فاز!\n\n`;
+        winMsg += this.displayBoard(gameData.board);
+        api.sendMessage(winMsg, event.threadID);
+        global.tictactoeGames.delete(gameKey);
+        global.client.handler.reply.delete(event.messageReply.messageID);
+        return;
+      }
+
+      if (this.isBoardFull(gameData.board)) {
+        let tieMsg = `🤝 تعادل!\n\n`;
+        tieMsg += this.displayBoard(gameData.board);
+        api.sendMessage(tieMsg, event.threadID);
+        global.tictactoeGames.delete(gameKey);
+        global.client.handler.reply.delete(event.messageReply.messageID);
+        return;
+      }
+
+      gameData.currentPlayer = gameData.currentPlayer === 'X' ? 'O' : 'X';
+
+      if (!gameData.isMultiplayer && gameData.currentPlayer === 'O') {
+        const botMove = this.getBotMove(gameData.board);
+        this.makeMove(gameData.board, botMove, 'O');
+
+        if (this.checkWinner(gameData.board, 'O')) {
+          let botWinMsg = `🤖 البوت فاز!\n\n`;
+          botWinMsg += this.displayBoard(gameData.board);
+          api.sendMessage(botWinMsg, event.threadID);
+          global.tictactoeGames.delete(gameKey);
+          global.client.handler.reply.delete(event.messageReply.messageID);
+          return;
+        }
+
+        if (this.isBoardFull(gameData.board)) {
+          let tieMsg = `🤝 تعادل!\n\n`;
+          tieMsg += this.displayBoard(gameData.board);
+          api.sendMessage(tieMsg, event.threadID);
+          global.tictactoeGames.delete(gameKey);
+          global.client.handler.reply.delete(event.messageReply.messageID);
+          return;
+        }
+
+        gameData.currentPlayer = 'X';
+      }
+
+      let msg = `🎮 اللعبة جارية...\n\n`;
+      msg += this.displayBoard(gameData.board);
+      msg += `\n\n${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} دورك! 🎯`;
+
+      api.sendMessage(msg, event.threadID, (err, info) => {
+        if (!err && info) {
+          global.client.handler.reply.set(info.messageID, {
+            name: this.name,
+            author: this.author
+          });
+        }
+      });
+
+    } catch (err) {
+      console.error('TicTacToe Reply Error:', err);
+      api.sendMessage("❌ حدث خطأ: " + err.message, event.threadID);
+    }
+  }
+}
+
+export default new TicTacToe();
