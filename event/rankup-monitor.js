@@ -14,22 +14,13 @@ class RankupMonitor {
     return 3 * level * (level - 1);
   }
 
-  async execute({ api, event, Users, Threads, Economy }) {
+  async execute({ api, event, Users, Threads }) {
     try {
       // فقط للرسائل العادية
       if (event.type !== "message" || !event.isGroup) return;
       if (!event.body || event.body.trim().length === 0) return;
 
       const { threadID, senderID } = event;
-
-      // الحصول على بيانات المجموعة
-      const threadData = await Threads.find(threadID);
-      if (!threadData.status) return;
-
-      const data = threadData.data.data || {};
-      
-      // إذا كانت الإشعارات معطلة، خرج
-      if (data.rankupNotify === false) return;
 
       // الحصول على الخبرة الحالية
       const userInfo = await Users.find(senderID);
@@ -47,28 +38,32 @@ class RankupMonitor {
 
       // إذا صعد المستوى
       if (newLevel > currentLevel && newLevel !== 1) {
-        const nameInfo = await api.getUserInfo(senderID);
-        const userName = nameInfo[senderID]?.name || "Unknown";
+        try {
+          const nameInfo = await api.getUserInfo(senderID);
+          const userName = nameInfo[senderID]?.name || "Unknown";
 
-        const message = `◆❯━━━━━▣✦▣━━━━━━❮◆
+          const message = `◆❯━━━━━▣✦▣━━━━━━❮◆
 تـهـانـيـنـا يـا ${userName} ✨
  ارتـفـع مـسـتـواك إلـى [${newLevel}]
 ◆❯━━━━━▣✦▣━━━━━━❮◆`;
 
-        api.sendMessage(
-          { body: message, mentions: [{ tag: userName, id: senderID }] },
-          threadID
-        );
+          api.sendMessage(
+            { body: message, mentions: [{ tag: userName, id: senderID }] },
+            threadID
+          );
+        } catch (e) {
+          // لا تعطل البوت إذا فشل الإرسال
+        }
 
         // تحديث المستوى في قاعدة البيانات
-        await Users.setData(senderID, { level: newLevel, exp: currentExp });
+        await Users.update(senderID, { level: newLevel, exp: currentExp });
       } else {
         // فقط تحديث الخبرة
-        await Users.setData(senderID, { exp: currentExp });
+        await Users.update(senderID, { exp: currentExp });
       }
 
     } catch (error) {
-      console.error("Rankup monitor error:", error.message);
+      // تجاهل الأخطاء ولا تعطل البوت
     }
   }
 }

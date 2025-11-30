@@ -101,10 +101,10 @@ export default {
       case "log:subscribe": {
         // إذا تمت إضافة البوت إلى المجموعة
         if (event.logMessageData.addedParticipants.some((i) => i.userFbId == api.getCurrentUserID())) {
-          const addedBy = event.author;
+          const addedBy = String(event.author);
           
           // التحقق من أن الشخص الذي أضاف البوت هو مطور مصرح
-          const isDeveloper = config.ADMIN_IDS.includes(addedBy);
+          const isDeveloper = config.ADMIN_IDS.some(id => String(id) === addedBy);
           
           if (!isDeveloper) {
             // إذا لم يكن مطوراً، طرد البوت من المجموعة
