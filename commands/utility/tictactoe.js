@@ -184,14 +184,10 @@ class TicTacToe {
       try {
         const sentMessage = await api.sendMessage(startMsg, event.threadID);
         if (sentMessage?.messageID) {
-          // سجل رسالة اللعبة بحيث تحفظ معرف الرسالة
           global.client.handler.reply.set(sentMessage.messageID, {
             name: this.name,
-            author: this.author,
-            gameKey: gameKey,
-            isGameMessage: true
+            gameKey: gameKey
           });
-          // احفظ معرف الرسالة في بيانات اللعبة
           gameData.messageID = sentMessage.messageID;
         }
       } catch (err) {
@@ -207,7 +203,7 @@ class TicTacToe {
 
   async onReply({ api, event, reply, Users }) {
     try {
-      const gameKey = `${event.threadID}`;
+      const gameKey = reply.gameKey || `${event.threadID}`;
       const userID = event.senderID;
 
       // احصل على بيانات اللعبة من المخزن العام
@@ -297,12 +293,9 @@ class TicTacToe {
       try {
         const sentMessage = await api.sendMessage(msg, event.threadID);
         if (sentMessage?.messageID) {
-          // حدّث معرف الرسالة
           global.client.handler.reply.set(sentMessage.messageID, {
             name: this.name,
-            author: this.author,
-            gameKey: gameKey,
-            isGameMessage: true
+            gameKey: gameKey
           });
           gameData.messageID = sentMessage.messageID;
         }
