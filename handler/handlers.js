@@ -136,6 +136,11 @@ export class CommandHandler {
       if (event.messageReply && command.onReply) {
         // تحقق من البيانات المحفوظة في handler.reply أولاً
         const storedReply = this.handler.reply?.get(event.messageReply.messageID);
+        // تحقق من أن البيانات تعود فعلاً لهذا الأمر
+        if (storedReply && storedReply.name && storedReply.name !== command.name) {
+          // البيانات تعود لأمر آخر، نفذ الأمر الحالي بدلاً من onReply
+          return await command.execute({ ...this.arguments, args });
+        }
         const replyData = storedReply || event.messageReply;
         return await command.onReply({ ...this.arguments, args, reply: replyData });
       }
