@@ -23,35 +23,45 @@ class CodeExecutor {
       
       if (!fullCode) {
         return api.sendMessage(
-          `❌ استخدام خاطئ!\n\nالطرق المدعومة:\n1️⃣ .تنفيذ js|كود جفاسكريبت\n2️⃣ .تنفيذ py|كود بايثون\n3️⃣ .تنفيذ node|كود نود جس\n\nمثال:\n.تنفيذ js|console.log(2+2)`,
+          `❌ استخدام خاطئ!\n\nطرق الاستخدام:\n1️⃣ .تنفيذ js|كود (تحديد اللغة)\n2️⃣ .تنفيذ الكود (اكتشاف تلقائي)\n\nاللغات المدعومة: Python, JavaScript, Node.js\n\nأمثلة:\n▪️ .تنفيذ print('مرحبا')\n▪️ .تنفيذ console.log(2+2)\n▪️ .تنفيذ py|print('test')`,
           event.threadID
         );
       }
 
-      const [language, ...codeParts] = fullCode.split('|');
-      const code = codeParts.join('|').trim();
+      let language = null;
+      let code = fullCode;
 
-      if (!code) {
+      // التحقق من وجود | لتحديد اللغة يدويًا
+      if (fullCode.includes('|')) {
+        const [specifiedLang, ...codeParts] = fullCode.split('|');
+        const userLang = specifiedLang.toLowerCase().trim();
+        
+        if (['js', 'javascript', 'py', 'python', 'node', 'nodejs'].includes(userLang)) {
+          language = userLang;
+          code = codeParts.join('|').trim();
+        }
+      }
+
+      // إذا لم تُحدد اللغة، اكتشفها تلقائيًا
+      if (!language) {
+        language = this.detectLanguage(code);
+      }
+
+      if (!language) {
         return api.sendMessage(
-          `❌ الرجاء كتابة الكود بعد |`,
+          `❌ لم أتمكن من اكتشاف اللغة!\nالرجاء تحديد اللغة: js|كود أو py|كود`,
           event.threadID
         );
       }
 
       let result = '';
-      const lang = language.toLowerCase().trim();
 
-      if (lang === 'js' || lang === 'javascript') {
+      if (language === 'js' || language === 'javascript') {
         result = await this.executeJavaScript(code, api, event);
-      } else if (lang === 'py' || lang === 'python') {
+      } else if (language === 'py' || language === 'python') {
         result = await this.executePython(code);
-      } else if (lang === 'node' || lang === 'nodejs') {
+      } else if (language === 'node' || language === 'nodejs') {
         result = await this.executeNode(code, api, event);
-      } else {
-        return api.sendMessage(
-          `❌ لغة غير معروفة!\nاللغات المدعومة: js, py, node`,
-          event.threadID
-        );
       }
 
       // تقليص النتيجة إذا كانت طويلة
@@ -76,6 +86,56 @@ class CodeExecutor {
         event.threadID
       );
     }
+  }
+
+  detectLanguage(code) {
+    // تنقية الكود من المسافات الزائدة
+    const cleanCode = code.trim();
+    
+    // أنماط Python
+    const pythonPatterns = [
+      /\bimport\s+\w+/,           // import module
+      /\bfrom\s+\w+\s+import/,    // from module import
+      /\bdef\s+\w+\s*\(/,         // def function():
+      /\bclass\s+\w+/,            // class ClassName:
+      /\bfor\s+\w+\s+in\s+/,      // for x in
+      /\bif\s+.*:\s*$/m,          // if condition:
+      /\bwhile\s+.*:\s*$/m,       // while condition:
+      /\b(print|len|range|str|int|float|list|dict|set|tuple)\s*\(/,  // Python built-ins
+      /^\s*(elif|else|try|except|finally|with)\s*:/m,  // Python keywords
+      /print\s*\(/                // print function
+    ];
+    
+    // أنماط JavaScript
+    const jsPatterns = [
+      /\bconst\s+\w+\s*=/,        // const var =
+      /\blet\s+\w+\s*=/,          // let var =
+      /\bvar\s+\w+\s*=/,          // var var =
+      /\bfunction\s+\w+\s*\(/,    // function name()
+      /\basync\s+\w+/,            // async keyword
+      /\bawait\s+/,               // await keyword
+      /=>\s*{/,                   // arrow functions =>
+      /\bconsole\.(log|error|warn|info)\s*\(/,  // console methods
+      /\bsetTimeout\s*\(/,        // setTimeout
+      /\bsetInterval\s*\(/,       // setInterval
+      /document\./,               // document object
+      /window\./,                 // window object
+      /\.then\s*\(/,              // promise .then
+      /\bcatch\s*\(/              // .catch
+    ];
+    
+    // عد تطابقات كل لغة
+    let pythonScore = pythonPatterns.filter(p => p.test(cleanCode)).length;
+    let jsScore = jsPatterns.filter(p => p.test(cleanCode)).length;
+    
+    // إذا كانت النتيجة متساوية أو غير واضحة، افترض JavaScript
+    if (pythonScore > jsScore) {
+      return 'python';
+    } else if (jsScore > 0 || pythonScore === 0) {
+      return 'javascript';  // الاختيار الافتراضي
+    }
+    
+    return null;
   }
 
   async executeJavaScript(code, api, event) {
