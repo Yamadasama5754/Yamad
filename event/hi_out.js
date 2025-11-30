@@ -21,7 +21,7 @@ async function execute({ api, event, Users, Threads }) {
         console.error('Error getting members count:', error);
         return "Unknown";
       });
-      const farewellMessage = `❏ الإســم 👤 : 『${profileName}』 \n❏ الـسـبـب 📝 : \n『${type}』 \n 『${farewellReason}』\n❏ المـتـبـقـيـيـن : ${membersCount} عـضـو`;
+      const farewellMessage = `😺 الإســم 👤 : 『${profileName}』 \n⏱️ الـسـبـب 📝 : \n『${type}』 \n 『${farewellReason}』\n❏ المـتـبـقـيـيـن : ${membersCount} عـضـو`;
       const profilePicturePath = await getProfilePicture(leftParticipantFbId);
       await sendWelcomeOrFarewellMessage(api, event.threadID, farewellMessage, profilePicturePath);
       break;

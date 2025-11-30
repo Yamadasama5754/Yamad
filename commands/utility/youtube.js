@@ -8,12 +8,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class YouTubeCommand {
   constructor() {
-    this.name = "يوتيب";
+    this.name = "يوتيوب";
     this.author = "CatalizCS mod video by Đăng";
     this.cooldowns = 10;
     this.description = "تشغيل فيديوهات من اليوتيوب";
     this.role = 0;
-    this.aliases = ["يوتيب", "youtube", "فيديو"];
+    this.aliases = ["يوتيوب", "youtube", "فيديو"];
   }
 
   async execute({ api, event, args }) {
