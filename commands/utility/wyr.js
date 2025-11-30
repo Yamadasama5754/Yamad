@@ -5,7 +5,7 @@ class WYRCommand {
     this.name = "لوخيروك";
     this.author = "KAGUYA PROJECT";
     this.cooldowns = 5;
-    this.description = "لعبة لو خيروك بسؤال عشوائي 🎲";
+    this.description = "لعبة لو خيروك بأسئلة متسلسلة 🎲";
     this.role = 0;
     this.aliases = ["لوخيروك", "wyr", "خيار"];
   }
@@ -22,10 +22,8 @@ class WYRCommand {
     }
   }
 
-  async execute({ api, event }) {
+  async getQuestion() {
     try {
-      api.setMessageReaction("🎲", event.messageID, () => {}, true);
-
       const response = await axios.get("https://api.popcat.xyz/wyr", {
         timeout: 10000
       });
@@ -37,7 +35,25 @@ class WYRCommand {
       const option1 = await this.translateText(response.data.ops1);
       const option2 = await this.translateText(response.data.ops2);
 
-      const message = `لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}\n\n👆 اختار 1 أو 2`;
+      return { option1, option2 };
+    } catch (error) {
+      console.error("[WYR] خطأ في جلب السؤال:", error.message);
+      return null;
+    }
+  }
+
+  async execute({ api, event }) {
+    try {
+      api.setMessageReaction("🎲", event.messageID, () => {}, true);
+
+      const questionData = await this.getQuestion();
+      
+      if (!questionData) {
+        throw new Error("فشل جلب السؤال");
+      }
+
+      const { option1, option2 } = questionData;
+      const message = `🎮 لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}\n\n👆 اختار 1 أو 2\n\n(كل اختيار يفتح لعبة جديدة 🔁)`;
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
 
@@ -54,14 +70,15 @@ class WYRCommand {
           global.client.handler.reply.set(info.messageID, {
             name: this.name,
             option1,
-            option2
+            option2,
+            isWYRGame: true
           });
 
           setTimeout(() => {
             try {
               global.client.handler.reply.delete(info.messageID);
             } catch (e) {}
-          }, 60000);
+          }, 120000);
         },
         event.messageID
       );
@@ -79,12 +96,21 @@ class WYRCommand {
 
   async onReply({ api, event, reply }) {
     try {
-      const choice = event.body.trim();
+      const choice = event.body.trim().toLowerCase();
+
+      if (choice === "إيقاف" || choice === "stop" || choice === "end") {
+        api.setMessageReaction("🛑", event.messageID, () => {}, true);
+        return api.sendMessage(
+          "🛑 انتهت اللعبة! شكراً للعب معنا 👋",
+          event.threadID,
+          event.messageID
+        );
+      }
 
       if (choice !== "1" && choice !== "2") {
         api.setMessageReaction("❌", event.messageID, () => {}, true);
         return api.sendMessage(
-          "❌ يرجى اختيار 1 أو 2 فقط",
+          "❌ يرجى اختيار 1 أو 2 فقط\n\n(أو اكتب 'إيقاف' لإنهاء اللعبة)",
           event.threadID,
           event.messageID
         );
@@ -106,15 +132,52 @@ class WYRCommand {
         );
       }
 
+      // رسالة الاختيار
       let message = "";
       if (choice === "1") {
-        message = `✅ اخترت: ${replyData.option1}`;
+        message = `✅ اخترت: ${replyData.option1}\n\n`;
       } else {
-        message = `✅ اخترت: ${replyData.option2}`;
+        message = `✅ اخترت: ${replyData.option2}\n\n`;
       }
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
-      api.sendMessage(message, event.threadID, event.messageID);
+
+      // جلب سؤال جديد
+      const newQuestion = await this.getQuestion();
+      
+      if (newQuestion) {
+        const { option1, option2 } = newQuestion;
+        message += `🎮 لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}\n\n👆 اختار 1 أو 2`;
+        
+        api.sendMessage(
+          { body: message },
+          event.threadID,
+          (err, info) => {
+            if (!global.client?.handler?.reply) {
+              if (!global.client) global.client = {};
+              if (!global.client.handler) global.client.handler = {};
+              global.client.handler.reply = new Map();
+            }
+
+            global.client.handler.reply.set(info.messageID, {
+              name: this.name,
+              option1,
+              option2,
+              isWYRGame: true
+            });
+
+            setTimeout(() => {
+              try {
+                global.client.handler.reply.delete(info.messageID);
+              } catch (e) {}
+            }, 120000);
+          },
+          event.messageID
+        );
+      } else {
+        message += "❌ حدث خطأ في جلب السؤال الجديد. حاول مرة أخرى بـ .لوخيروك";
+        api.sendMessage(message, event.threadID, event.messageID);
+      }
 
     } catch (error) {
       console.error("[WYR] خطأ في onReply:", error.message);
