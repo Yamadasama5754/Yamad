@@ -76,8 +76,8 @@ class WeaponsCommand {
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
 
       // الحصول على بيانات المستخدم
-      const userData = await Users.getData(event.senderID);
-      const userName = userData?.name || "لاعب";
+      const userInfo = await api.getUserInfo(event.senderID);
+      const userName = userInfo?.[event.senderID]?.name || "لاعب";
 
       // توليد أرقام عشوائية
       const zombieCount = Math.floor(Math.random() * 101);
