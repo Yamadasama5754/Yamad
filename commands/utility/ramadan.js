@@ -9,17 +9,16 @@ class RamadanCommand {
   }
 
   getNextRamadan() {
-    // رمضان 1447 هـ = 19 أغسطس 2025
-    // رمضان 1448 هـ = 9 أغسطس 2026
+    // رمضان 1447 هـ = 19 فبراير 2026 - 20 مارس 2026
+    // رمضان 1448 هـ = 8 فبراير 2027 - 9 مارس 2027
     const now = new Date();
-    const currentYear = now.getFullYear();
     
-    // تاريخ رمضان لسنة 2025
-    let ramadanDate = new Date("August 19, 2025 00:00:00");
+    // تاريخ رمضان 1447 هـ (2026)
+    let ramadanDate = new Date("February 19, 2026 00:00:00");
     
-    // إذا مضى تاريخ رمضان 2025، استخدم رمضان 2026
+    // إذا مضى رمضان 2026، استخدم رمضان 2027
     if (now > ramadanDate) {
-      ramadanDate = new Date("August 9, 2026 00:00:00");
+      ramadanDate = new Date("February 8, 2027 00:00:00");
     }
     
     return ramadanDate;
