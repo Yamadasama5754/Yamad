@@ -27,7 +27,7 @@ class DevOnly {
   async execute({ api, event, args }) {
     const mode = args[0];
 
-    // خيار الإشعارات (تبديل)
+    // خيار الإشعارات (تبديل) - دائماً يرسل رسالة
     if (mode === "اشعار") {
       let notificationsData = {};
       if (fs.existsSync(notificationsPath)) {
@@ -40,13 +40,11 @@ class DevOnly {
       notificationsData[event.threadID] = { enabled: newState };
       fs.writeFileSync(notificationsPath, JSON.stringify(notificationsData, null, 2));
 
-      // إذا تم إيقاف الإشعارات، لا ترسل رسالة
-      if (!newState) {
-        return; // صمت - لا رسالة
-      }
-
-      // إذا تم تفعيل الإشعارات، ارسل رسالة
-      const message = `✅ | تم تفعيل الإشعارات!`;
+      // دائماً ارسل رسالة عند تغيير الإشعارات
+      const message = newState 
+        ? `✅ | تم تفعيل الإشعارات! سيصل البوت برسائل عند تفعيل/تعطيل وضع المطور.`
+        : `❌ | تم تعطيل الإشعارات! البوت سيعمل بدون إرسال رسائل عند تفعيل/تعطيل وضع المطور.`;
+      
       return api.sendMessage(message, event.threadID, event.messageID);
     }
 
