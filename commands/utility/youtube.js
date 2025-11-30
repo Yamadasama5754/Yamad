@@ -1,184 +1,243 @@
-import axios from 'axios';
-import fs from 'fs-extra';
-import path from 'path';
+import axios from "axios";
+import fs from "fs-extra";
+import path from "path";
+import { fileURLToPath } from "url";
 
-class YouTube {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+class YouTubeCommand {
   constructor() {
-    this.name = "يوتيوب";
-    this.author = "حسين يعقوبي";
-    this.cooldowns = 60;
-    this.description = "تنزيل مقطع من YouTube";
+    this.name = "يوتيب";
+    this.author = "CatalizCS mod video";
+    this.cooldowns = 10;
+    this.description = "تشغيل فيديوهات من اليوتيوب 🎥";
     this.role = 0;
-    this.aliases = ["يوتيب", "فيديو", "مقطع"];
+    this.aliases = ["يوتيب", "يوتيوب", "فيديو"];
   }
 
-  async execute({ api, event }) {
-    const input = event.body;
-    const data = input.split(" ");
+  async onLoad() {
+    console.log("[YOUTUBE] تم تحضير أمر يوتيوب بنجاح");
+  }
 
-    if (data.length < 2) {
-      return api.sendMessage("⚠️ | أرجوك قم بإدخال اسم المقطع.", event.threadID);
-    }
-
-    data.shift();
-    const videoName = data.join(" ");
-
+  async execute({ api, event, args }) {
     try {
-      const sentMessage = await api.sendMessage(`✔ | جاري البحث عن المقطع المطلوب "${videoName}". المرجو الانتظار...`, event.threadID);
-
-      const searchUrl = `https://c-v1.onrender.com/yt/s?query=${encodeURIComponent(videoName)}`;
-      const searchResponse = await axios.get(searchUrl, { timeout: 15000 });
-
-      const searchResults = searchResponse.data;
-      if (!searchResults || searchResults.length === 0) {
-        api.unsendMessage(sentMessage.messageID);
-        return api.sendMessage("⚠️ | لم يتم العثور على أي نتائج.", event.threadID);
+      if (!args[0]) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "⚠️ | يرجى إدخال اسم الفيديو للبحث.\n💡 مثال: .يوتيب رقصة مشهورة",
+          event.threadID,
+          event.messageID
+        );
       }
 
-      let msg = '🎥 | تم العثور على المقاطع التالية:\n\n';
-      const selectedResults = searchResults.slice(0, 4);
+      api.setMessageReaction("🔍", event.messageID, (err) => {}, true);
+
+      const query = args.join(" ");
+      const apiKey = "AIzaSyC_CVzKGFtLAqxNdAZ_EyLbL0VRGJ-FaMU";
+      const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${apiKey}&type=video&maxResults=6`;
+
+      const res = await axios.get(apiUrl, { timeout: 15000 });
+      const results = res.data.items;
+
+      if (!results || results.length === 0) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | لم يتم العثور على أي نتائج.",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      const searchResults = results.slice(0, 4);
+      let message = "🎥 نتائج البحث:\n\n";
       const attachments = [];
+      const cacheDir = path.join(__dirname, "cache");
+      fs.ensureDirSync(cacheDir);
 
-      const numberSymbols = ['⓵', '⓶', '⓷', '⓸'];
+      for (let i = 0; i < searchResults.length; i++) {
+        const result = searchResults[i];
+        const title = result.snippet.title;
+        const channelTitle = result.snippet.channelTitle;
 
-      for (let i = 0; i < selectedResults.length; i++) {
-        const video = selectedResults[i];
-        const videoIndex = numberSymbols[i];
+        message += `${i + 1}. ${title}\nالقناة: ${channelTitle}\n--------------------------\n`;
 
-        msg += `${videoIndex} ❀ العنوان: ${video.title}\n`;
-
-        // تنزيل الصورة وإضافتها إلى المرفقات
         try {
-          const imagePath = path.join(process.cwd(), 'cache', `video_thumb_${i + 1}.jpg`);
-          
-          // تأكد من وجود مجلد cache
-          await fs.ensureDir(path.join(process.cwd(), 'cache'));
-          
-          const imageStream = await axios({
-            url: video.thumbnail,
-            responseType: 'stream',
+          const imageUrl = result.snippet.thumbnails.high.url;
+          const imageBuffer = await axios.get(imageUrl, {
+            responseType: "arraybuffer",
             timeout: 10000
           });
-
-          const writer = fs.createWriteStream(imagePath);
-          imageStream.data.pipe(writer);
-
-          await new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
-          });
-
-          attachments.push(fs.createReadStream(imagePath));
+          const imagePath = path.join(cacheDir, `thumb_${Date.now()}_${i + 1}.jpg`);
+          fs.writeFileSync(imagePath, Buffer.from(imageBuffer.data));
+          attachments.push({ path: imagePath });
         } catch (imgErr) {
-          console.warn(`تحذير: فشل تحميل الصورة ${i + 1}:`, imgErr.message);
+          console.warn(`[YOUTUBE] فشل تحميل الصورة ${i + 1}:`, imgErr.message);
         }
       }
 
-      msg += '\n📥 | الرجاء الرد برقم المقطع الذي تود تنزيله.';
+      api.setMessageReaction("📋", event.messageID, (err) => {}, true);
 
-      api.unsendMessage(sentMessage.messageID);
+      api.sendMessage(
+        {
+          body: message + "\n👆 قم بالرد برقم الفيديو الذي تريد تحميله (1-4).",
+          attachment: attachments.map(att => fs.createReadStream(att.path))
+        },
+        event.threadID,
+        (err, info) => {
+          if (!global.client) global.client = {};
+          if (!global.client.handleReply) global.client.handleReply = [];
 
-      api.sendMessage({ body: msg, attachment: attachments }, event.threadID, (error, info) => {
-        if (error) return console.error(error);
+          global.client.handleReply.push({
+            name: this.name,
+            messageID: info.messageID,
+            author: event.senderID,
+            searchResults,
+            attachments
+          });
 
-        global.client.handler.reply.set(info.messageID, {
-          author: event.senderID,
-          type: "pick",
-          name: "يوتيوب",
-          searchResults: selectedResults,
-          unsend: true
-        });
-
-        // حذف الصور المؤقتة بعد إرسال الرسالة
-        attachments.forEach((file) => {
-          try {
-            fs.unlinkSync(file.path);
-          } catch (e) {}
-        });
-      });
+          setTimeout(() => {
+            try {
+              attachments.forEach(att => {
+                if (fs.existsSync(att.path)) {
+                  fs.unlinkSync(att.path);
+                }
+              });
+            } catch (e) {}
+          }, 15000);
+        },
+        event.messageID
+      );
 
     } catch (error) {
-      console.error('[ERROR]', error.message);
-      api.sendMessage('🥱 ❀ حدث خطأ أثناء معالجة الأمر.', event.threadID);
+      console.error("[YOUTUBE] خطأ:", error);
+      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+      api.sendMessage(
+        `⛔ | حدث خطأ أثناء البحث: ${error.message}`,
+        event.threadID,
+        event.messageID
+      );
     }
   }
 
-  async onReply({ api, event, reply }) {
-    if (reply.type !== 'pick') return;
-
-    const { author, searchResults } = reply;
-
-    if (event.senderID !== author) {
-      return api.sendMessage("⚠️ | هذا ليس لك.", event.threadID);
-    }
-
-    const selectedIndex = parseInt(event.body, 10) - 1;
-
-    if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= searchResults.length) {
-      return api.sendMessage("❌ | الرد غير صالح. يرجى الرد برقم صحيح.", event.threadID);
-    }
-
-    const video = searchResults[selectedIndex];
-    const videoUrl = video.videoUrl;
-
+  async handleReply({ api, event, handleReply }) {
     try {
+      const index = parseInt(event.body) - 1;
+
+      if (isNaN(index) || index < 0 || index >= handleReply.searchResults.length) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | الرجاء إدخال رقم صحيح من النتائج.",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      const selectedVideo = handleReply.searchResults[index];
+      const videoId = selectedVideo.id.videoId;
+      const title = selectedVideo.snippet.title;
+
+      api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
+
+      api.sendMessage(
+        `⏱️ | جاري تنزيل الفيديو: ${title}\nقد يستغرق هذا بعض الوقت، يرجى الانتظار...`,
+        event.threadID,
+        event.messageID
+      );
+
+      const res = await axios.get(
+        `https://nayan-video-downloader.vercel.app/alldown?url=https://www.youtube.com/watch?v=${videoId}`,
+        { timeout: 30000 }
+      );
+
+      const downloadLink = res.data.data.high;
+      const cacheDir = path.join(__dirname, "cache");
+      fs.ensureDirSync(cacheDir);
+      const filePath = path.join(cacheDir, `video_${Date.now()}.mp4`);
+
       api.setMessageReaction("⬇️", event.messageID, (err) => {}, true);
 
-      const downloadUrl = `https://c-v1.onrender.com/downloader?url=${encodeURIComponent(videoUrl)}`;
-      const downloadResponse = await axios.get(downloadUrl, { timeout: 30000 });
-
-      const videoFileUrl = downloadResponse.data.media.url;
-      if (!videoFileUrl) {
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage("⚠️ | لم يتم العثور على رابط تحميل المقطع.", event.threadID);
-      }
-
-      const fileName = `${event.senderID}_${Date.now()}.mp4`;
-      const filePath = path.join(process.cwd(), 'cache', fileName);
-
-      // تأكد من وجود مجلد cache
-      await fs.ensureDir(path.join(process.cwd(), 'cache'));
-
-      const writer = fs.createWriteStream(filePath);
-      
-      const videoStream = await axios.get(videoFileUrl, { 
-        responseType: 'stream',
-        timeout: 60000 
-      });
-      
-      videoStream.data.pipe(writer);
-
-      await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
+      const videoStream = await axios({
+        url: downloadLink,
+        method: "GET",
+        responseType: "stream",
+        timeout: 60000
       });
 
-      const fileStats = fs.statSync(filePath);
-      if (fileStats.size > 26214400) {
-        fs.unlinkSync(filePath);
-        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-        return api.sendMessage('❌ | لا يمكن إرسال الملف لأن حجمه أكبر من 25 ميغابايت.', event.threadID);
-      }
+      videoStream.data
+        .pipe(fs.createWriteStream(filePath))
+        .on("close", () => {
+          const fileSize = fs.statSync(filePath).size;
 
-      api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+          if (fileSize > 26214400) {
+            api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
+            api.sendMessage(
+              "⚠️ | تعذر إرسال الفيديو لأن حجمه يتجاوز 25 ميغابايت.",
+              event.threadID,
+              (err) => {
+                try {
+                  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                } catch (e) {}
+              },
+              event.messageID
+            );
+          } else {
+            api.setMessageReaction("📤", event.messageID, (err) => {}, true);
 
-      const message = {
-        body: `━━━━━━━◈✿◈━━━━━━━\n✅ | تـم تـحـمـيـل الـفـيـديو:\n❀ الـعـنـوان : ${video.title}\n━━━━━━━◈✿◈━━━━━━━`,
-        attachment: fs.createReadStream(filePath)
-      };
+            api.sendMessage(
+              {
+                body: `✅ ${title}`,
+                attachment: fs.createReadStream(filePath)
+              },
+              event.threadID,
+              (err, info) => {
+                setTimeout(() => {
+                  try {
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                  } catch (e) {}
+                }, 3000);
 
-      api.sendMessage(message, event.threadID, () => {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (e) {}
-      });
+                api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+              },
+              event.messageID
+            );
+          }
+
+          // تنظيف الصور المؤقتة
+          try {
+            if (handleReply.attachments) {
+              handleReply.attachments.forEach(att => {
+                if (fs.existsSync(att.path)) {
+                  fs.unlinkSync(att.path);
+                }
+              });
+            }
+          } catch (e) {}
+        })
+        .on("error", (error) => {
+          console.error("[YOUTUBE] خطأ في التنزيل:", error);
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          api.sendMessage(
+            `⛔ | خطأ أثناء التنزيل: ${error.message}`,
+            event.threadID,
+            (err) => {
+              try {
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+              } catch (e) {}
+            },
+            event.messageID
+          );
+        });
 
     } catch (error) {
-      console.error('[ERROR]', error.message);
+      console.error("[YOUTUBE] خطأ في handleReply:", error);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      api.sendMessage('🥱 ❀ حدث خطأ أثناء معالجة الأمر.', event.threadID);
+      api.sendMessage(
+        `⛔ | حدث خطأ أثناء تنفيذ الطلب: ${error.message}`,
+        event.threadID,
+        event.messageID
+      );
     }
   }
 }
 
-export default new YouTube();
+export default new YouTubeCommand();
