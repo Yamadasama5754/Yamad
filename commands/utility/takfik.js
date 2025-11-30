@@ -1,10 +1,10 @@
-class TakfikCommand {
+class TajmeeCommand {
     constructor() {
-        this.name = "تفكيك";
+        this.name = "تجميع";
         this.version = "1.0.0";
         this.hasPermssion = 0;
         this.credits = "عبدالرحمن";
-        this.description = "لعبة تفكيك الكلمه ";
+        this.description = "لعبة تجميع الأحرف ";
         this.usages = ["لعبة"];
         this.commandCategory = "العاب";
         this.cooldowns = 0;
@@ -12,40 +12,40 @@ class TakfikCommand {
 
     getQuestions() {
         return [
-            { question: "بيت", answer: "ب ي ت" },
-            { question: "رجل", answer: "ر ج ل" },
-            { question: "امرأة", answer: "ا م ر أ ة" },
-            { question: "ولد", answer: "و ل د" },
-            { question: "فتاة", answer: "ف ت ا ة" },
-            { question: "ماء", answer: "م ا ء" },
-            { question: "نار", answer: "ن ا ر" },
-            { question: "شمس", answer: "ش م س" },
-            { question: "قمر", answer: "ق م ر" },
-            { question: "ليل", answer: "ل ي ل" },
-            { question: "نهار", answer: "ن ه ا ر" },
-            { question: "جبل", answer: "ج ب ل" },
-            { question: "سهل", answer: "س ه ل" },
-            { question: "شجرة", answer: "ش ج ر ة" },
-            { question: "زهرة", answer: "ز ه ر ة" },
-            { question: "طير", answer: "ط ي ر" },
-            { question: "أسد", answer: "أ س د" },
-            { question: "ذئب", answer: "ذ ئ ب" },
-            { question: "جمل", answer: "ج م ل" },
-            { question: "بقر", answer: "ب ق ر" },
-            { question: "غنم", answer: "غ ن م" },
-            { question: "كتاب", answer: "ك ت ا ب" },
-            { question: "قلم", answer: "ق ل م" },
-            { question: "ورقة", answer: "و ر ق ة" },
-            { question: "منزل", answer: "م ن ز ل" },
-            { question: "مدرسة", answer: "م د ر س ة" },
-            { question: "مستشفى", answer: "م س ت ش ف ى" },
-            { question: "متجر", answer: "م ت ج ر" },
-            { question: "مطعم", answer: "م ط ع م" },
-            { question: "سيارة", answer: "س ي أ ر ة" },
-            { question: "دراجة", answer: "د ر ا ج ة" },
-            { question: "طائرة", answer: "ط ا ئ ر ة" },
-            { question: "قطار", answer: "ق ط ا ر" },
-            { question: "سفينة", answer: "س ف ي ن ة" }
+            { word: "بيت", scattered: "ب ي ت" },
+            { word: "رجل", scattered: "ر ج ل" },
+            { word: "امرأة", scattered: "ا م ر أ ة" },
+            { word: "ولد", scattered: "و ل د" },
+            { word: "فتاة", scattered: "ف ت ا ة" },
+            { word: "ماء", scattered: "م ا ء" },
+            { word: "نار", scattered: "ن ا ر" },
+            { word: "شمس", scattered: "ش م س" },
+            { word: "قمر", scattered: "ق م ر" },
+            { word: "ليل", scattered: "ل ي ل" },
+            { word: "نهار", scattered: "ن ه ا ر" },
+            { word: "جبل", scattered: "ج ب ل" },
+            { word: "سهل", scattered: "س ه ل" },
+            { word: "شجرة", scattered: "ش ج ر ة" },
+            { word: "زهرة", scattered: "ز ه ر ة" },
+            { word: "طير", scattered: "ط ي ر" },
+            { word: "أسد", scattered: "أ س د" },
+            { word: "ذئب", scattered: "ذ ئ ب" },
+            { word: "جمل", scattered: "ج م ل" },
+            { word: "بقر", scattered: "ب ق ر" },
+            { word: "غنم", scattered: "غ ن م" },
+            { word: "كتاب", scattered: "ك ت ا ب" },
+            { word: "قلم", scattered: "ق ل م" },
+            { word: "ورقة", scattered: "و ر ق ة" },
+            { word: "منزل", scattered: "م ن ز ل" },
+            { word: "مدرسة", scattered: "م د ر س ة" },
+            { word: "مستشفى", scattered: "م س ت ش ف ى" },
+            { word: "متجر", scattered: "م ت ج ر" },
+            { word: "مطعم", scattered: "م ط ع م" },
+            { word: "سيارة", scattered: "س ي أ ر ة" },
+            { word: "دراجة", scattered: "د ر ا ج ة" },
+            { word: "طائرة", scattered: "ط ا ئ ر ة" },
+            { word: "قطار", scattered: "ق ط ا ر" },
+            { word: "سفينة", scattered: "س ف ي ن ة" }
         ];
     }
 
@@ -53,10 +53,10 @@ class TakfikCommand {
         try {
             const questions = this.getQuestions();
             const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-            const correctAnswer = randomQuestion.answer;
-            const question = randomQuestion.question;
+            const correctAnswer = randomQuestion.word;
+            const scatteredLetters = randomQuestion.scattered;
 
-            const message = `اسرع شخص يفكك كلمه: ${question}`;
+            const message = `اسرع شخص يجمع الأحرف: ${scatteredLetters}`;
 
             api.sendMessage({ body: message }, event.threadID, (error, info) => {
                 if (!error) {
@@ -71,7 +71,7 @@ class TakfikCommand {
                 }
             });
         } catch (error) {
-            console.error("[TAKFIK] خطأ:", error);
+            console.error("[TAJMEE] خطأ:", error);
             api.sendMessage("❌ حدث خطأ: " + error.message, event.threadID, event.messageID);
         }
     }
@@ -90,9 +90,9 @@ class TakfikCommand {
                 api.sendMessage(`خطأ حاول مره اخرا`, event.threadID);
             }
         } catch (error) {
-            console.error("[TAKFIK] خطأ في handleReply:", error);
+            console.error("[TAJMEE] خطأ في handleReply:", error);
         }
     }
 }
 
-export default new TakfikCommand();
+export default new TajmeeCommand();
