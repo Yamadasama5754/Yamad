@@ -91,10 +91,13 @@ class Profile {
         await image.write(cachePath);
 
         api.sendMessage({
+          body: `✅ تم استخراج البروفايل بنجاح!`,
           attachment: fs.createReadStream(cachePath)
-        }, event.threadID);
-
-        api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+        }, event.threadID, (err, info) => {
+          if (!err) {
+            api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+          }
+        });
 
       } catch (jimpErr) {
         // إذا فشل Jimp، أرسل الصورة الأصلية
@@ -108,10 +111,13 @@ class Profile {
         }
         
         api.sendMessage({
+          body: `✅ تم استخراج البروفايل بنجاح!`,
           attachment: fs.createReadStream(cachePath)
-        }, event.threadID);
-
-        api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+        }, event.threadID, (err, info) => {
+          if (!err) {
+            api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+          }
+        });
       }
 
       // تنظيف الذاكرة المؤقتة بعد قليل

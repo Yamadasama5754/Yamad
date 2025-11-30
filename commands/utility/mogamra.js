@@ -44,11 +44,15 @@ class MogamraCommand {
     } catch (error) {
       console.error("[MOGAMRA] خطأ:", error);
       api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-      api.sendMessage(
-        "❌ خطأ في تحميل المغامرة: " + (error.message || "حدث خطأ ما"),
-        event.threadID,
-        event.messageID
-      );
+      
+      let errorMsg = "❌ لم نتمكن من تحميل المغامرة في الوقت الحالي\n";
+      if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+        errorMsg = "❌ السيرفر الخارجي غير متاح حالياً\n\n💡 يرجى المحاولة لاحقاً";
+      } else {
+        errorMsg += "السبب: " + (error.message || "خطأ غير معروف");
+      }
+      
+      api.sendMessage(errorMsg, event.threadID, event.messageID);
     }
   }
 
