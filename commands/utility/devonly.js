@@ -15,6 +15,15 @@ class DevOnly {
     this.aliases = ["developer_only", "مطور_فقط"];
   }
 
+  // دالة مساعدة للتحقق من حالة الإشعارات
+  getNotificationStatus(threadID) {
+    if (!fs.existsSync(notificationsPath)) {
+      return true; // افتراضياً الإشعارات مفعلة
+    }
+    const data = JSON.parse(fs.readFileSync(notificationsPath, "utf8"));
+    return data[threadID]?.enabled !== false; // افتراضياً مفعلة
+  }
+
   async execute({ api, event, args }) {
     const mode = args[0];
 
@@ -57,20 +66,39 @@ class DevOnly {
       currentState = !!devOnly;
     }
 
+    // التحقق من حالة الإشعارات
+    const notificationsEnabled = this.getNotificationStatus(event.threadID);
+
     if (mode === "تشغيل") {
       if (currentState) {
-        return api.sendMessage("ℹ️ | وضع المطور فقط مشغّل بالفعل.", event.threadID, event.messageID);
+        if (notificationsEnabled) {
+          return api.sendMessage("ℹ️ | وضع المطور فقط مشغّل بالفعل.", event.threadID, event.messageID);
+        }
+        return; // صمت إذا كانت الإشعارات معطلة
       }
       fs.writeFileSync(configPath, JSON.stringify({ devOnly: true }, null, 2));
-      return api.sendMessage("✅ | تم تفعيل وضع المطور فقط. الأوامر متاحة للمطورين فقط.", event.threadID, event.messageID);
+      
+      // ارسل رسالة فقط إذا كانت الإشعارات مفعلة
+      if (notificationsEnabled) {
+        return api.sendMessage("✅ | تم تفعيل وضع المطور فقط. الأوامر متاحة للمطورين فقط.", event.threadID, event.messageID);
+      }
+      return; // صمت إذا كانت الإشعارات معطلة
     }
 
     if (mode === "ايقاف") {
       if (!currentState) {
-        return api.sendMessage("ℹ️ | وضع المطور فقط متوقف بالفعل.", event.threadID, event.messageID);
+        if (notificationsEnabled) {
+          return api.sendMessage("ℹ️ | وضع المطور فقط متوقف بالفعل.", event.threadID, event.messageID);
+        }
+        return; // صمت إذا كانت الإشعارات معطلة
       }
       fs.writeFileSync(configPath, JSON.stringify({ devOnly: false }, null, 2));
-      return api.sendMessage("❌ | تم إيقاف وضع المطور فقط. يمكن للجميع استخدام البوت.", event.threadID, event.messageID);
+      
+      // ارسل رسالة فقط إذا كانت الإشعارات مفعلة
+      if (notificationsEnabled) {
+        return api.sendMessage("❌ | تم إيقاف وضع المطور فقط. يمكن للجميع استخدام البوت.", event.threadID, event.messageID);
+      }
+      return; // صمت إذا كانت الإشعارات معطلة
     }
   }
 }

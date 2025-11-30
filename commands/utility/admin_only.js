@@ -14,6 +14,15 @@ class AdminOnly {
     this.aliases = ["adminonly","ادمن_فقط"];
   }
 
+  // دالة مساعدة للتحقق من حالة الإشعارات
+  getNotificationStatus(threadID) {
+    if (!fs.existsSync(notificationsPath)) {
+      return true; // افتراضياً الإشعارات مفعلة
+    }
+    const data = JSON.parse(fs.readFileSync(notificationsPath, "utf8"));
+    return data[threadID]?.enabled !== false; // افتراضياً مفعلة
+  }
+
   async execute({ api, event, args }) {
     // ✅ تحقق أولاً: هل الأمر داخل مجموعة؟
     const threadInfo = await api.getThreadInfo(event.threadID);
@@ -67,38 +76,57 @@ class AdminOnly {
 
     const currentState = configData[event.threadID]?.adminOnly || false;
 
+    // التحقق من حالة الإشعارات
+    const notificationsEnabled = this.getNotificationStatus(event.threadID);
+
     if (mode === "تشغيل") {
       if (currentState) {
+        if (notificationsEnabled) {
+          return api.sendMessage(
+            "ℹ️ | وضع الأدمن فقط مشغّل بالفعل في هذه المجموعة.",
+            event.threadID,
+            event.messageID
+          );
+        }
+        return; // صمت إذا كانت الإشعارات معطلة
+      }
+      configData[event.threadID] = { adminOnly: true };
+      fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
+      
+      // ارسل رسالة فقط إذا كانت الإشعارات مفعلة
+      if (notificationsEnabled) {
         return api.sendMessage(
-          "ℹ️ | وضع الأدمن فقط مشغّل بالفعل في هذه المجموعة.",
+          "✅ | تم تفعيل وضع الأدمن فقط في هذه المجموعة. لن يستجيب البوت إلا للأدمن هنا.",
           event.threadID,
           event.messageID
         );
       }
-      configData[event.threadID] = { adminOnly: true };
-      fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
-      return api.sendMessage(
-        "✅ | تم تفعيل وضع الأدمن فقط في هذه المجموعة. لن يستجيب البوت إلا للأدمن هنا.",
-        event.threadID,
-        event.messageID
-      );
+      return; // صمت إذا كانت الإشعارات معطلة
     }
 
     if (mode === "ايقاف") {
       if (!currentState) {
+        if (notificationsEnabled) {
+          return api.sendMessage(
+            "ℹ️ | وضع الأدمن فقط متوقف بالفعل في هذه المجموعة.",
+            event.threadID,
+            event.messageID
+          );
+        }
+        return; // صمت إذا كانت الإشعارات معطلة
+      }
+      configData[event.threadID] = { adminOnly: false };
+      fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
+      
+      // ارسل رسالة فقط إذا كانت الإشعارات مفعلة
+      if (notificationsEnabled) {
         return api.sendMessage(
-          "ℹ️ | وضع الأدمن فقط متوقف بالفعل في هذه المجموعة.",
+          "❌ | تم إيقاف وضع الأدمن فقط في هذه المجموعة. يمكن للجميع استخدام البوت هنا.",
           event.threadID,
           event.messageID
         );
       }
-      configData[event.threadID] = { adminOnly: false };
-      fs.writeFileSync(configPath, JSON.stringify(configData, null, 2));
-      return api.sendMessage(
-        "❌ | تم إيقاف وضع الأدمن فقط في هذه المجموعة. يمكن للجميع استخدام البوت هنا.",
-        event.threadID,
-        event.messageID
-      );
+      return; // صمت إذا كانت الإشعارات معطلة
     }
   }
 }
