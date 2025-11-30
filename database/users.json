@@ -8558,5 +8558,97 @@
       "gender": "Nam",
       "other": {}
     }
+  },
+  {
+    "uid": "100085132172876",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "Salman Sabry",
+      "firstName": "Salman",
+      "vanity": "salman.sabry.2025",
+      "avatar": "https://graph.facebook.com/100085132172876/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/salman.sabry.2025",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nam",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61584021621348",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ꗄ.Jeanne ポ",
+      "firstName": "ꗄ.Jeanne",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61584021621348/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61584021621348",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61569605194485",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ヾঔS.ALMAꜝ ぐあ",
+      "firstName": "ヾঔS.ALMAꜝ",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61569605194485/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61569605194485",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
+  },
+  {
+    "uid": "61571396290587",
+    "data": {
+      "money": 0,
+      "exp": 0,
+      "level": 0,
+      "banned": {
+        "status": false,
+        "reason": "",
+        "time": 0
+      },
+      "name": "ゐꜝꜝ︱Roxie ぐꕥ",
+      "firstName": "ゐꜝꜝ︱Roxie",
+      "vanity": "",
+      "avatar": "https://graph.facebook.com/61571396290587/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
+      "type": "user",
+      "profileUrl": "https://www.facebook.com/profile.php?id=61571396290587",
+      "isFriend": false,
+      "isBirthday": false,
+      "gender": "Nữ",
+      "other": {}
+    }
   }
 ]

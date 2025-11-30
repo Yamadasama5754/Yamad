@@ -150,7 +150,7 @@ export const listen = async ({ api, event }) => {
       }
       isBotDisabled = threadData?.data?.botDisabled === true;
       
-      if (isBotDisabled && senderID !== developerID) {
+      if (isBotDisabled && !developerIDs.includes(senderID)) {
         return;
       }
     }
@@ -186,7 +186,7 @@ export const listen = async ({ api, event }) => {
         if (!body || body.trim().length === 0) return;
         
         // تشغيل الأحداث العامة للرسائل - فقط أحداث الرسائل العادية
-        if (global.client.eventFunctions && (!isBotDisabled || senderID === developerID)) {
+        if (global.client.eventFunctions && (!isBotDisabled || developerIDs.includes(senderID))) {
           const messageEvents = ["mirai", "ميراي"];
           await Promise.all(Array.from(global.client.eventFunctions.entries())
             .filter(([name]) => messageEvents.includes(name))
