@@ -167,14 +167,17 @@ class TicTacToe {
       startMsg += this.displayBoard(board);
       startMsg += `\n\n${gameData.playerName} دورك! اكتب رقم (1-9) 🎯`;
 
-      api.sendMessage(startMsg, event.threadID, (err, info) => {
-        if (!err && info) {
-          global.client.handler.reply.set(info.messageID, {
+      try {
+        const sentMessage = await api.sendMessage(startMsg, event.threadID);
+        if (sentMessage) {
+          global.client.handler.reply.set(sentMessage.messageID, {
             name: this.name,
             author: this.author
           });
         }
-      });
+      } catch (err) {
+        console.error('خطأ في إرسال رسالة البدء:', err);
+      }
 
     } catch (err) {
       console.error('TicTacToe Error:', err);
@@ -273,14 +276,17 @@ class TicTacToe {
       msg += this.displayBoard(gameData.board);
       msg += `\n\n${gameData.currentPlayer === 'X' ? gameData.playerName : gameData.opponentName} دورك! 🎯`;
 
-      api.sendMessage(msg, event.threadID, (err, info) => {
-        if (!err && info) {
-          global.client.handler.reply.set(info.messageID, {
+      try {
+        const sentMessage = await api.sendMessage(msg, event.threadID);
+        if (sentMessage) {
+          global.client.handler.reply.set(sentMessage.messageID, {
             name: this.name,
             author: this.author
           });
         }
-      });
+      } catch (err) {
+        console.error('خطأ في إرسال رسالة اللعبة:', err);
+      }
 
     } catch (err) {
       console.error('TicTacToe Reply Error:', err);
