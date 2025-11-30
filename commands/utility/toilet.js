@@ -20,30 +20,24 @@ class ToiletCommand {
     console.log("[TOILET] تم تحضير أمر المرحاض بنجاح");
   }
 
-  async createImage(one, two) {
+  async createImage(targetID) {
     try {
       const cacheDir = path.join(__dirname, "cache");
       fs.ensureDirSync(cacheDir);
 
-      // تحميل الصور الدائرية
-      const avone = await jimp.read(
-        `https://graph.facebook.com/${one}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`
+      // تحميل صورة الهدف فقط
+      const avTarget = await jimp.read(
+        `https://graph.facebook.com/${targetID}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`
       );
-      avone.circle();
-
-      const avtwo = await jimp.read(
-        `https://graph.facebook.com/${two}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`
-      );
-      avtwo.circle();
+      avTarget.circle();
 
       // تحميل الخلفية من imgur
       const img = await jimp.read("https://i.imgur.com/sZW2vlz.png");
 
-      // تعديل حجم الخلفية والصور
+      // تعديل حجم الخلفية والصور - فقط صورة الهدف في المرحاض
       img
         .resize(1080, 1350)
-        .composite(avone.resize(360, 360), 50, 280) // الشخص الأول
-        .composite(avtwo.resize(450, 450), 300, 660); // الشخص الثاني
+        .composite(avTarget.resize(450, 450), 300, 660); // الشخص المرد عليه فقط
 
       const pth = path.join(cacheDir, `toilet_${Date.now()}.png`);
       await img.writeAsync(pth);
@@ -87,11 +81,10 @@ class ToiletCommand {
       }
       // إذا كان هناك منشنين
       else if (mentions.length >= 2) {
-        senderID = mentions[1];
         targetID = mentions[0];
       }
 
-      const imagePath = await this.createImage(senderID, targetID);
+      const imagePath = await this.createImage(targetID);
 
       api.setMessageReaction("📤", event.messageID, (err) => {}, true);
 

@@ -53,6 +53,9 @@ class SearchCommand {
             srlimit: 1,
             list: 'search'
           },
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
           timeout: 15000
         });
 
@@ -78,6 +81,9 @@ class SearchCommand {
             prop: 'extracts',
             explaintext: true,
             exsectionformat: 'wiki'
+          },
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
           },
           timeout: 15000
         });
