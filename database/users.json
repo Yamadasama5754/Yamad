@@ -2376,8 +2376,8 @@
     "uid": "61578918847847",
     "data": {
       "money": 0,
-      "exp": 5,
-      "level": 0,
+      "exp": 12,
+      "level": 2,
       "banned": {
         "status": false,
         "reason": "",
