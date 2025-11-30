@@ -1,40 +1,11 @@
 import axios from "axios";
-import fs from "fs-extra";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const statsFile = path.join(__dirname, "cache", "wyr_stats.json");
-
-const ensureStatsFile = () => {
-  const dir = path.dirname(statsFile);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(statsFile)) {
-    fs.writeFileSync(statsFile, JSON.stringify({}));
-  }
-};
-
-const getStats = (question) => {
-  ensureStatsFile();
-  const data = fs.readJsonSync(statsFile);
-  return data[question] || { choice1: 0, choice2: 0 };
-};
-
-const saveStats = (question, stats) => {
-  ensureStatsFile();
-  const data = fs.readJsonSync(statsFile);
-  data[question] = stats;
-  fs.writeFileSync(statsFile, JSON.stringify(data, null, 2));
-};
 
 class WYRCommand {
   constructor() {
     this.name = "لوخيروك";
-    this.author = "KAGUYA PROJECT & محسّن";
+    this.author = "KAGUYA PROJECT";
     this.cooldowns = 5;
-    this.description = "لعبة لو خيروك بسؤال عشوائي 🎲 مع إحصائيات";
+    this.description = "لعبة لو خيروك بسؤال عشوائي 🎲";
     this.role = 0;
     this.aliases = ["لوخيروك", "wyr", "خيار"];
   }
@@ -47,7 +18,6 @@ class WYRCommand {
       );
       return response?.data?.[0]?.[0]?.[0] || text;
     } catch (error) {
-      console.warn("[WYR] خطأ في الترجمة:", error.message);
       return text;
     }
   }
@@ -67,22 +37,7 @@ class WYRCommand {
       const option1 = await this.translateText(response.data.ops1);
       const option2 = await this.translateText(response.data.ops2);
 
-      // الحصول على الإحصائيات المحلية
-      const questionKey = `${option1}|${option2}`;
-      const localStats = getStats(questionKey);
-      
-      let statsText = "";
-      const totalVotes = localStats.choice1 + localStats.choice2;
-      
-      if (totalVotes > 0) {
-        const percentage1 = ((localStats.choice1 / totalVotes) * 100).toFixed(1);
-        const percentage2 = ((localStats.choice2 / totalVotes) * 100).toFixed(1);
-        statsText = `\n\n📊 نسب الاختيار:\n1️⃣ ${percentage1}% (${localStats.choice1} شخص)\n2️⃣ ${percentage2}% (${localStats.choice2} شخص)`;
-      } else {
-        statsText = `\n\n📊 كن أول من يختار!`;
-      }
-
-      const message = `لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}${statsText}\n\n👆 اختار 1 أو 2`;
+      const message = `لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}\n\n👆 اختار 1 أو 2`;
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
 
@@ -99,9 +54,7 @@ class WYRCommand {
           global.client.handler.reply.set(info.messageID, {
             name: this.name,
             option1,
-            option2,
-            questionKey,
-            localStats
+            option2
           });
 
           setTimeout(() => {
@@ -153,29 +106,12 @@ class WYRCommand {
         );
       }
 
-      // تحديث الإحصائيات
-      let updatedStats = replyData.localStats;
-      if (choice === "1") {
-        updatedStats.choice1 += 1;
-      } else {
-        updatedStats.choice2 += 1;
-      }
-      saveStats(replyData.questionKey, updatedStats);
-
       let message = "";
       if (choice === "1") {
-        message = `✅ اخترت: ${replyData.option1}\n\n`;
+        message = `✅ اخترت: ${replyData.option1}`;
       } else {
-        message = `✅ اخترت: ${replyData.option2}\n\n`;
+        message = `✅ اخترت: ${replyData.option2}`;
       }
-
-      const totalVotes = updatedStats.choice1 + updatedStats.choice2;
-      const percentage1 = ((updatedStats.choice1 / totalVotes) * 100).toFixed(1);
-      const percentage2 = ((updatedStats.choice2 / totalVotes) * 100).toFixed(1);
-      
-      message += `📊 إحصائيات عام الناس:\n`;
-      message += `1️⃣ ${percentage1}% (${updatedStats.choice1} شخص) اختاروا: ${replyData.option1}\n`;
-      message += `2️⃣ ${percentage2}% (${updatedStats.choice2} شخص) اختاروا: ${replyData.option2}`;
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
       api.sendMessage(message, event.threadID, event.messageID);
