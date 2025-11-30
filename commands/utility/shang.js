@@ -75,8 +75,8 @@ class ShangCommand {
       let circleTwo = await jimp.read(await this.makeCircle(avatarTwo));
 
       // ضع صورة الهدف في مكان الرأس بحجم مناسب
-      // الموضع: (300, 120) والحجم: 150x150 لتطابق حجم الرأس الطبيعي
-      baseImg.composite(circleTwo.resize(150, 150), 300, 120);
+      // الموضع: (300, 100) والحجم: 150x150 لتطابق حجم الرأس الطبيعي
+      baseImg.composite(circleTwo.resize(150, 150), 300, 100);
 
       let raw = await baseImg.getBufferAsync("image/png");
       fs.writeFileSync(outputPath, raw);
