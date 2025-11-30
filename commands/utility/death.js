@@ -1,6 +1,6 @@
 class DeathCommand {
   constructor() {
-    this.name = "موتتي";
+    this.name = "موتي";
     this.author = "S H A D O W";
     this.cooldowns = 1;
     this.description = "تجيبلك طريقة موتك 💀";
