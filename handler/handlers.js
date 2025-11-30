@@ -134,7 +134,10 @@ export class CommandHandler {
 
       // ✅ التحقق من الرد على رسالة
       if (event.messageReply && command.onReply) {
-        return await command.onReply({ ...this.arguments, args, reply: event.messageReply });
+        // تحقق من البيانات المحفوظة في handler.reply أولاً
+        const storedReply = this.handler.reply?.get(event.messageReply.messageID);
+        const replyData = storedReply || event.messageReply;
+        return await command.onReply({ ...this.arguments, args, reply: replyData });
       }
 
       // ✅ تنفيذ الأمر العادي
