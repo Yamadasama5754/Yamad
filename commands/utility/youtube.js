@@ -24,7 +24,7 @@ class YouTubeCommand {
       if (!args[0]) {
         api.setMessageReaction("❌", event.messageID, (err) => {}, true);
         return api.sendMessage(
-          "⚠️ | يرجى إدخال اسم الفيديو للبحث.\n💡 مثال: .يوتيب رقصة مشهورة",
+          "⚠️ | يرجى إدخال اسم الفيديو للبحث.\n💡 مثال: .يوتيب رقصة مشهورة\n🎵 أو مع نوع: .يوتيب صوت اسم الأغنية",
           event.threadID,
           event.messageID
         );
@@ -32,7 +32,28 @@ class YouTubeCommand {
 
       api.setMessageReaction("🔍", event.messageID, (err) => {}, true);
 
-      const query = args.join(" ");
+      // تحديد نوع التنزيل (فيديو أو صوت)
+      let downloadType = "video"; // الافتراضي
+      let queryArgs = args;
+
+      if (args[0] === "صوت" || args[0] === "audio") {
+        downloadType = "audio";
+        queryArgs = args.slice(1);
+      } else if (args[0] === "فيديو" || args[0] === "video") {
+        downloadType = "video";
+        queryArgs = args.slice(1);
+      }
+
+      if (queryArgs.length === 0) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "⚠️ | يرجى إدخال اسم الفيديو/الأغنية للبحث.\n💡 مثال: .يوتيب رقصة مشهورة\n🎵 أو: .يوتيب صوت اسم الأغنية",
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      const query = queryArgs.join(" ");
       const apiKey = "AIzaSyC_CVzKGFtLAqxNdAZ_EyLbL0VRGJ-FaMU";
       const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${apiKey}&type=video&maxResults=6`;
 
@@ -49,7 +70,7 @@ class YouTubeCommand {
       }
 
       const searchResults = results.slice(0, 4);
-      let message = "🎥 نتائج البحث:\n\n";
+      let message = downloadType === "audio" ? "🎵 نتائج البحث (صوت):\n\n" : "🎥 نتائج البحث:\n\n";
       const attachments = [];
       const cacheDir = path.join(__dirname, "cache");
       fs.ensureDirSync(cacheDir);
@@ -79,7 +100,7 @@ class YouTubeCommand {
 
       api.sendMessage(
         {
-          body: message + "\n👆 قم بالرد برقم الفيديو الذي تريد تحميله (1-4).",
+          body: message + (downloadType === "audio" ? "\n👆 قم بالرد برقم الأغنية الذي تريد تحميلها (1-4)." : "\n👆 قم بالرد برقم الفيديو الذي تريد تحميله (1-4)."),
           attachment: attachments.map(att => fs.createReadStream(att.path))
         },
         event.threadID,
@@ -93,7 +114,8 @@ class YouTubeCommand {
           global.client.handler.reply.set(info.messageID, {
             name: this.name,
             searchResults,
-            attachments
+            attachments,
+            downloadType
           });
 
           setTimeout(() => {
@@ -137,11 +159,16 @@ class YouTubeCommand {
       const selectedVideo = reply.searchResults[index];
       const videoId = selectedVideo.id.videoId;
       const title = selectedVideo.snippet.title;
+      const downloadType = reply.downloadType || "video";
 
       api.setMessageReaction("⏱️", event.messageID, (err) => {}, true);
 
+      const downloadMessage = downloadType === "audio" 
+        ? `⏱️ | جاري تنزيل الأغنية: ${title}\nقد يستغرق هذا بعض الوقت، يرجى الانتظار...`
+        : `⏱️ | جاري تنزيل الفيديو: ${title}\nقد يستغرق هذا بعض الوقت، يرجى الانتظار...`;
+
       api.sendMessage(
-        `⏱️ | جاري تنزيل الفيديو: ${title}\nقد يستغرق هذا بعض الوقت، يرجى الانتظار...`,
+        downloadMessage,
         event.threadID,
         event.messageID
       );
@@ -151,10 +178,11 @@ class YouTubeCommand {
         { timeout: 30000 }
       );
 
-      const downloadLink = res.data.data.high;
+      const downloadLink = downloadType === "audio" ? res.data.data.audio : res.data.data.high;
       const cacheDir = path.join(__dirname, "cache");
       fs.ensureDirSync(cacheDir);
-      const filePath = path.join(cacheDir, `video_${Date.now()}.mp4`);
+      const fileExt = downloadType === "audio" ? "mp3" : "mp4";
+      const filePath = path.join(cacheDir, `${downloadType}_${Date.now()}.${fileExt}`);
 
       api.setMessageReaction("⬇️", event.messageID, (err) => {}, true);
 
@@ -172,8 +200,11 @@ class YouTubeCommand {
 
           if (fileSize > 26214400) {
             api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
+            const sizeWarning = downloadType === "audio"
+              ? "⚠️ | تعذر إرسال الأغنية لأن حجمها يتجاوز 25 ميغابايت."
+              : "⚠️ | تعذر إرسال الفيديو لأن حجمه يتجاوز 25 ميغابايت.";
             api.sendMessage(
-              "⚠️ | تعذر إرسال الفيديو لأن حجمه يتجاوز 25 ميغابايت.",
+              sizeWarning,
               event.threadID,
               (err) => {
                 try {
