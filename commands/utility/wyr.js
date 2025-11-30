@@ -10,6 +10,19 @@ class WYRCommand {
     this.aliases = ["لوخيروك", "wyr", "خيار"];
   }
 
+  async translateText(text) {
+    try {
+      const response = await axios.get(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(text)}`,
+        { timeout: 10000 }
+      );
+      return response?.data?.[0]?.[0]?.[0] || text;
+    } catch (error) {
+      console.warn("[WYR] خطأ في الترجمة:", error.message);
+      return text; // إرجاع النص الأصلي في حالة الخطأ
+    }
+  }
+
   async execute({ api, event }) {
     try {
       api.setMessageReaction("🎲", event.messageID, () => {}, true);
@@ -22,7 +35,11 @@ class WYRCommand {
         throw new Error("Invalid or missing response from the API");
       }
 
-      const message = `لو خيروك بين:\n\n1️⃣ ${response.data.ops1}\n\n2️⃣ ${response.data.ops2}`;
+      // ترجمة الخيارات إلى العربية
+      const option1 = await this.translateText(response.data.ops1);
+      const option2 = await this.translateText(response.data.ops2);
+
+      const message = `لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}`;
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
 

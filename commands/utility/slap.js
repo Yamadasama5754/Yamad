@@ -52,7 +52,22 @@ class SlapCommand {
     const cacheDir = path.join(__dirname, "cache/canvas");
     fs.ensureDirSync(cacheDir);
 
-    let baseImg = await jimp.read(path.join(cacheDir, "sato.png"));
+    // تحميل الصورة الأساسية مع ضمان وجودها
+    const imagePath = path.join(cacheDir, "sato.png");
+    if (!fs.existsSync(imagePath)) {
+      try {
+        const response = await axios.get("https://i.imgur.com/dsrmtlg.jpg", {
+          responseType: "arraybuffer",
+          timeout: 10000
+        });
+        fs.writeFileSync(imagePath, Buffer.from(response.data));
+      } catch (err) {
+        console.error("[SLAP] خطأ في تحميل الصورة الأساسية:", err.message);
+        throw err;
+      }
+    }
+
+    let baseImg = await jimp.read(imagePath);
     let outputPath = path.join(cacheDir, `sato_${one}_${two}.png`);
     let avatarOne = path.join(cacheDir, `avt_slap_${one}.png`);
     let avatarTwo = path.join(cacheDir, `avt_slap_${two}.png`);

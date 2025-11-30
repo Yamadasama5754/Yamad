@@ -71,29 +71,11 @@ class ShangCommand {
       ).data;
       fs.writeFileSync(avatarTwo, Buffer.from(avatarTwoData));
 
-      // إنشاء دائرة للهدف
+      // إنشاء دائرة للهدف (صورة الشخص المشنوق فقط)
       let circleTwo = await jimp.read(await this.makeCircle(avatarTwo));
 
-      // إذا كانت رد: ضع صورة الهدف فقط
-      if (isReply) {
-        baseImg.composite(circleTwo.resize(200, 200), 255, 250);
-      } else {
-        // إذا كانت منشن: ضع صورة المرسل والهدف
-        let avatarOneData = (
-          await axios.get(
-            `https://graph.facebook.com/${one}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`,
-            { responseType: "arraybuffer" }
-          )
-        ).data;
-        fs.writeFileSync(avatarOne, Buffer.from(avatarOneData));
-
-        let circleOne = await jimp.read(await this.makeCircle(avatarOne));
-        baseImg
-          .composite(circleOne.resize(200, 200), 255, 250)
-          .composite(circleTwo.resize(118, 118), 350, 80);
-        
-        fs.unlinkSync(avatarOne);
-      }
+      // ضع صورة الهدف فقط في مكان الشنق (بدون صورة المرسل)
+      baseImg.composite(circleTwo.resize(200, 200), 255, 250);
 
       let raw = await baseImg.getBufferAsync("image/png");
       fs.writeFileSync(outputPath, raw);
