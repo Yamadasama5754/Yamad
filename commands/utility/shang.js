@@ -74,8 +74,9 @@ class ShangCommand {
       // إنشاء دائرة للهدف (صورة الشخص المشنوق فقط)
       let circleTwo = await jimp.read(await this.makeCircle(avatarTwo));
 
-      // ضع صورة الهدف فقط في مكان الشنق (بدون صورة المرسل)
-      baseImg.composite(circleTwo.resize(200, 200), 255, 250);
+      // ضع صورة الهدف في مكان الرأس بحجم مناسب
+      // الموضع: (280, 160) والحجم: 220x220 لتطابق حجم الرأس الأصلي
+      baseImg.composite(circleTwo.resize(220, 220), 280, 160);
 
       let raw = await baseImg.getBufferAsync("image/png");
       fs.writeFileSync(outputPath, raw);
