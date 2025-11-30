@@ -4768,7 +4768,7 @@
     "uid": "61555842448187",
     "data": {
       "money": 0,
-      "exp": 0,
+      "exp": 5,
       "level": 0,
       "banned": {
         "status": false,
@@ -6723,7 +6723,7 @@
     "uid": "61574682021938",
     "data": {
       "money": 0,
-      "exp": 0,
+      "exp": 1,
       "level": 0,
       "banned": {
         "status": false,
@@ -7735,7 +7735,7 @@
     "uid": "61551391851180",
     "data": {
       "money": 0,
-      "exp": 1,
+      "exp": 2,
       "level": 0,
       "banned": {
         "status": false,
@@ -8793,7 +8793,7 @@
     "uid": "100088342613271",
     "data": {
       "money": 0,
-      "exp": 2,
+      "exp": 3,
       "level": 0,
       "banned": {
         "status": false,
