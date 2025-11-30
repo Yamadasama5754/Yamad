@@ -203,10 +203,28 @@ export const listen = async ({ api, event }) => {
         
         await checkBadWords(api, event);
 
-        const parsed = parseCommand(body, threadID, isGroup);
-        if (!parsed) return;
+        const prefix = getPrefix(threadID, isGroup);
+        
+        // فحص إذا كانت الرسالة تبدأ بالبادئة
+        if (!body.startsWith(prefix)) return;
+        
+        // فحص إذا كانت الرسالة "البادئة فقط" بدون أمر
+        const afterPrefix = body.slice(prefix.length).trim();
+        if (!afterPrefix) {
+          // في الخاص: ترسل رسالة
+          if (!isGroup) {
+            return api.sendMessage(
+              `💡 أرسل أمر بعد البادئة "."\n\n📜 مثال: .اوامر`,
+              threadID
+            );
+          }
+          return;
+        }
 
-        let { name: commandName, args } = parsed;
+        const tokens = afterPrefix.split(/\s+/);
+        const commandName = tokens[0];
+        const args = tokens.slice(1);
+
         let exists = false;
         let finalCommandName = commandName;
 
@@ -242,23 +260,16 @@ export const listen = async ({ api, event }) => {
           }
         }
 
-
-
         if (exists) {
           event.commandName = finalCommandName;
           event.args = args;
           return await handler.handleCommand();
         }
 
-        // في الخاص: لا ترسل رسالة خطأ
-        if (!isGroup) {
-          return;
-        }
-
-        // في المجموعات: ترسل رسالة الخطأ
+        // الأمر غير موجود - ترسل رسالة خطأ في كل مكان (خاص ومجموعات)
         return api.sendMessage(
           `❌ | الأمر "${commandName}" غير موجود.\n` +
-          `📜 | تحقق من الأوامر المتاحة بكتابة: ${getPrefix(threadID, isGroup)}اوامر`,
+          `📜 | تحقق من الأوامر المتاحة بكتابة: ${prefix}اوامر`,
           threadID
         );
       }
