@@ -11,14 +11,14 @@ const piVoiceModels = {
   8: "بي 8"
 };
 
-class PiCommand {
+class MiraiCommand {
   constructor() {
-    this.name = "بي";
+    this.name = "ميراي";
     this.author = "Tanvir - تُرجم بواسطة عمر";
     this.cooldowns = 5;
-    this.description = "محادثة مع ذكاء بي AI مع دعم الصوت والنصوص 🤖";
+    this.description = "محادثة مع ميراي الذكية مع دعم الصوت والنصوص 🤖";
     this.role = 0;
-    this.aliases = ["pi", "chat"];
+    this.aliases = ["mirai", "chat"];
   }
 
   async execute({ api, event, args, Users }) {
@@ -30,9 +30,9 @@ class PiCommand {
       if (!input) {
         return api.sendMessage(
           "❌ | أرسل رسالة أو استخدم:\n" +
-          "🔊 .بي ضبط_الصوت on|off|1-8\n" +
-          "📋 .بي قائمة\n" +
-          "💬 .بي رسالتك هنا",
+          "🔊 .ميراي ضبط_الصوت on|off|1-8\n" +
+          "📋 .ميراي قائمة\n" +
+          "💬 .ميراي رسالتك هنا",
           threadID,
           event.messageID
         );
@@ -51,16 +51,16 @@ class PiCommand {
       }
 
       // محادثة عادية
-      const session = `pi-${senderID}`;
+      const session = `mirai-${senderID}`;
       try {
         const res = await this.callPi(input, session, voiceSetting.voice, voiceSetting.model);
         
         if (!res?.text) {
-          return api.sendMessage("❌ | بي لم يرد على رسالتك", threadID, event.messageID);
+          return api.sendMessage("❌ | ميراي لم ترد على رسالتك", threadID, event.messageID);
         }
 
         const replyPayload = {
-          body: `🤖 بي: ${res.text}`
+          body: `🤖 ميراي: ${res.text}`
         };
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
@@ -70,11 +70,11 @@ class PiCommand {
         });
 
       } catch (err) {
-        return api.sendMessage("⚠️ | فشل الاتصال بـ بي: " + err.message, threadID, event.messageID);
+        return api.sendMessage("⚠️ | فشل الاتصال بـ ميراي: " + err.message, threadID, event.messageID);
       }
 
     } catch (error) {
-      console.error("[PI Command Error]", error);
+      console.error("[Mirai Command Error]", error);
       return api.sendMessage("❌ | حدث خطأ: " + error.message, event.threadID, event.messageID);
     }
   }
@@ -90,17 +90,17 @@ class PiCommand {
       if (senderID !== Reply.author) return;
 
       let voiceSetting = Reply.voiceSetting || await this.getUserVoiceSetting(senderID);
-      const session = Reply.session || `pi-${senderID}`;
+      const session = Reply.session || `mirai-${senderID}`;
 
       try {
         const res = await this.callPi(query, session, voiceSetting.voice, voiceSetting.model);
 
         if (!res?.text) {
-          return api.sendMessage("❌ | بي لم يرد على رسالتك", threadID);
+          return api.sendMessage("❌ | ميراي لم ترد على رسالتك", threadID);
         }
 
         const replyPayload = {
-          body: `🤖 بي: ${res.text}`
+          body: `🤖 ميراي: ${res.text}`
         };
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
@@ -110,11 +110,11 @@ class PiCommand {
         });
 
       } catch (err) {
-        return api.sendMessage("⚠️ | فشل الاتصال بـ بي: " + err.message, threadID);
+        return api.sendMessage("⚠️ | فشل الاتصال بـ ميراي: " + err.message, threadID);
       }
 
     } catch (error) {
-      console.error("[PI Reply Error]", error);
+      console.error("[Mirai Reply Error]", error);
       return api.sendMessage("❌ | حدث خطأ: " + error.message, event.threadID);
     }
   }
@@ -125,9 +125,9 @@ class PiCommand {
     if (!cmd || (!["on", "off"].includes(cmd) && isNaN(cmd))) {
       return api.sendMessage(
         "⚙️ | استخدام:\n" +
-        "`.بي ضبط_الصوت on` - تفعيل الصوت\n" +
-        "`.بي ضبط_الصوت off` - إيقاف الصوت\n" +
-        "`.بي ضبط_الصوت 1-8` - اختر نموذج",
+        "`.ميراي ضبط_الصوت on` - تفعيل الصوت\n" +
+        "`.ميراي ضبط_الصوت off` - إيقاف الصوت\n" +
+        "`.ميراي ضبط_الصوت 1-8` - اختر نموذج",
         threadID,
         messageID
       );
@@ -160,7 +160,7 @@ class PiCommand {
       .map(([id, name]) => `🔢 ${id} → ${name}`).join("\n");
 
     return api.sendMessage(
-      `📊 | معلومات صوت بي:\n` +
+      `📊 | معلومات صوت ميراي:\n` +
       `🔊 | الصوت: ${voiceSetting.voice ? "✅ مُفعّل" : "❌ مُيقّف"}\n` +
       `🎙️ | النموذج: ${currentModel}\n\n` +
       `🎭 | نماذج الصوت:\n${modelList}`,
@@ -171,12 +171,12 @@ class PiCommand {
 
   async getUserVoiceSetting(userId) {
     // استخدام Global storage (يمكن تحسينه لاحقاً بـ database)
-    if (!global.piVoiceSettings) global.piVoiceSettings = new Map();
+    if (!global.miraiVoiceSettings) global.miraiVoiceSettings = new Map();
     
-    if (!global.piVoiceSettings.has(userId)) {
-      global.piVoiceSettings.set(userId, { voice: false, model: 1 });
+    if (!global.miraiVoiceSettings.has(userId)) {
+      global.miraiVoiceSettings.set(userId, { voice: false, model: 1 });
     }
-    return global.piVoiceSettings.get(userId);
+    return global.miraiVoiceSettings.get(userId);
   }
 
   saveReplyHandler(messageID, senderID, session, voiceSetting) {
@@ -204,10 +204,10 @@ class PiCommand {
       
       return data.data;
     } catch (error) {
-      console.error("[Pi API Error]", error.message);
-      throw new Error("فشل الاتصال بخادم بي");
+      console.error("[Mirai API Error]", error.message);
+      throw new Error("فشل الاتصال بخادم ميراي");
     }
   }
 }
 
-export default new PiCommand();
+export default new MiraiCommand();
