@@ -2,7 +2,10 @@ import axios from "axios";
 import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
+import { exec } from "child_process";
+import { promisify } from "util";
 
+const execAsync = promisify(exec);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class YouTubeCommand {
@@ -178,11 +181,13 @@ class YouTubeCommand {
         { timeout: 30000 }
       );
 
-      const downloadLink = downloadType === "audio" ? res.data.data.audio : res.data.data.high;
+      // API فقط يعطي فيديو، سنحوله لصوت إذا طلب المستخدم
+      const downloadLink = res.data.data.high;
       const cacheDir = path.join(__dirname, "cache");
       fs.ensureDirSync(cacheDir);
-      const fileExt = downloadType === "audio" ? "mp3" : "mp4";
-      const filePath = path.join(cacheDir, `${downloadType}_${Date.now()}.${fileExt}`);
+      const videoPath = path.join(cacheDir, `video_${Date.now()}.mp4`);
+      const audioPath = path.join(cacheDir, `audio_${Date.now()}.mp3`);
+      const filePath = downloadType === "audio" ? audioPath : videoPath;
 
       api.setMessageReaction("⬇️", event.messageID, (err) => {}, true);
 
@@ -194,57 +199,92 @@ class YouTubeCommand {
       });
 
       videoStream.data
-        .pipe(fs.createWriteStream(filePath))
-        .on("close", () => {
-          const fileSize = fs.statSync(filePath).size;
-
-          if (fileSize > 26214400) {
-            api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
-            const sizeWarning = downloadType === "audio"
-              ? "⚠️ | تعذر إرسال الأغنية لأن حجمها يتجاوز 25 ميغابايت."
-              : "⚠️ | تعذر إرسال الفيديو لأن حجمه يتجاوز 25 ميغابايت.";
-            api.sendMessage(
-              sizeWarning,
-              event.threadID,
-              (err) => {
-                try {
-                  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-                } catch (e) {}
-              },
-              event.messageID
-            );
-          } else {
-            api.setMessageReaction("📤", event.messageID, (err) => {}, true);
-
-            api.sendMessage(
-              {
-                body: `✅ ${title}`,
-                attachment: fs.createReadStream(filePath)
-              },
-              event.threadID,
-              (err, info) => {
-                setTimeout(() => {
-                  try {
-                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-                  } catch (e) {}
-                }, 3000);
-
-                api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-              },
-              event.messageID
-            );
-          }
-
-          // تنظيف الصور المؤقتة
+        .pipe(fs.createWriteStream(videoPath))
+        .on("close", async () => {
           try {
-            if (reply.attachments) {
-              reply.attachments.forEach(att => {
-                if (fs.existsSync(att.path)) {
-                  fs.unlinkSync(att.path);
-                }
-              });
+            let finalPath = videoPath;
+            let finalSize = fs.statSync(videoPath).size;
+
+            // إذا كان النوع صوت، حول الفيديو لصوت
+            if (downloadType === "audio") {
+              api.setMessageReaction("🎵", event.messageID, (err) => {}, true);
+              try {
+                await execAsync(`ffmpeg -i "${videoPath}" -q:a 0 -map a "${audioPath}" -y 2>/dev/null`);
+                // حذف الفيديو الأصلي
+                if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+                finalPath = audioPath;
+                finalSize = fs.statSync(audioPath).size;
+              } catch (ffmpegErr) {
+                console.warn("[YOUTUBE] تحويل FFmpeg فشل، سيتم إرسال الفيديو بدلاً من الصوت:", ffmpegErr.message);
+                finalPath = videoPath;
+                finalSize = fs.statSync(videoPath).size;
+              }
             }
-          } catch (e) {}
+
+            const fileSize = finalSize;
+
+            if (fileSize > 26214400) {
+              api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
+              const sizeWarning = downloadType === "audio"
+                ? "⚠️ | تعذر إرسال الأغنية لأن حجمها يتجاوز 25 ميغابايت."
+                : "⚠️ | تعذر إرسال الفيديو لأن حجمه يتجاوز 25 ميغابايت.";
+              api.sendMessage(
+                sizeWarning,
+                event.threadID,
+                (err) => {
+                  try {
+                    if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+                    if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+                  } catch (e) {}
+                },
+                event.messageID
+              );
+            } else {
+              api.setMessageReaction("📤", event.messageID, (err) => {}, true);
+
+              api.sendMessage(
+                {
+                  body: `✅ ${title}`,
+                  attachment: fs.createReadStream(finalPath)
+                },
+                event.threadID,
+                (err, info) => {
+                  setTimeout(() => {
+                    try {
+                      if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+                      if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+                    } catch (e) {}
+                  }, 3000);
+
+                  api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+                },
+                event.messageID
+              );
+            }
+
+            // تنظيف الصور المؤقتة
+            try {
+              if (reply.attachments) {
+                reply.attachments.forEach(att => {
+                  if (fs.existsSync(att.path)) {
+                    fs.unlinkSync(att.path);
+                  }
+                });
+              }
+            } catch (e) {}
+          } catch (innerErr) {
+            console.error("[YOUTUBE] خطأ في معالجة الملف:", innerErr);
+            api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+            api.sendMessage(
+              `⛔ | حدث خطأ: ${innerErr.message}`,
+              event.threadID,
+              event.messageID
+            );
+            try {
+              if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+              if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+            } catch (e) {}
+          }
         })
         .on("error", (error) => {
           console.error("[YOUTUBE] خطأ في التنزيل:", error);
