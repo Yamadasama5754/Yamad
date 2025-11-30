@@ -1,4 +1,33 @@
 import axios from "axios";
+import fs from "fs-extra";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const statsFile = path.join(__dirname, "cache", "wyr_stats.json");
+
+const ensureStatsFile = () => {
+  const dir = path.dirname(statsFile);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!fs.existsSync(statsFile)) {
+    fs.writeFileSync(statsFile, JSON.stringify({}));
+  }
+};
+
+const getStats = (question) => {
+  ensureStatsFile();
+  const data = fs.readJsonSync(statsFile);
+  return data[question] || { choice1: 0, choice2: 0 };
+};
+
+const saveStats = (question, stats) => {
+  ensureStatsFile();
+  const data = fs.readJsonSync(statsFile);
+  data[question] = stats;
+  fs.writeFileSync(statsFile, JSON.stringify(data, null, 2));
+};
 
 class WYRCommand {
   constructor() {
@@ -38,41 +67,19 @@ class WYRCommand {
       const option1 = await this.translateText(response.data.ops1);
       const option2 = await this.translateText(response.data.ops2);
 
-      // Debug: طبع جميع البيانات من API
-      console.log("[WYR] API Response Keys:", Object.keys(response.data));
-      console.log("[WYR] Full API Data:", JSON.stringify(response.data, null, 2));
-
-      // الحصول على الإحصائيات من API بصيغ مختلفة
-      let stats1 = 0;
-      let stats2 = 0;
-      
-      // محاولة الحصول على البيانات من عدة مصادر محتملة
-      if (response.data.votes1 !== undefined && response.data.votes2 !== undefined) {
-        stats1 = parseInt(response.data.votes1) || 0;
-        stats2 = parseInt(response.data.votes2) || 0;
-        console.log("[WYR] Found in votes1/votes2:", stats1, stats2);
-      } else if (response.data.vote1 !== undefined && response.data.vote2 !== undefined) {
-        stats1 = parseInt(response.data.vote1) || 0;
-        stats2 = parseInt(response.data.vote2) || 0;
-        console.log("[WYR] Found in vote1/vote2:", stats1, stats2);
-      } else if (response.data.rating1 !== undefined && response.data.rating2 !== undefined) {
-        stats1 = parseInt(response.data.rating1) || 0;
-        stats2 = parseInt(response.data.rating2) || 0;
-        console.log("[WYR] Found in rating1/rating2:", stats1, stats2);
-      } else {
-        console.log("[WYR] No stats found, checking all available fields...");
-        console.log("[WYR] All available data:", response.data);
-      }
+      // الحصول على الإحصائيات المحلية
+      const questionKey = `${option1}|${option2}`;
+      const localStats = getStats(questionKey);
       
       let statsText = "";
-      const totalVotes = stats1 + stats2;
+      const totalVotes = localStats.choice1 + localStats.choice2;
       
       if (totalVotes > 0) {
-        const percentage1 = ((stats1 / totalVotes) * 100).toFixed(1);
-        const percentage2 = ((stats2 / totalVotes) * 100).toFixed(1);
-        statsText = `\n\n📊 نسب الاختيار:\n1️⃣ ${percentage1}% (${stats1} شخص)\n2️⃣ ${percentage2}% (${stats2} شخص)`;
+        const percentage1 = ((localStats.choice1 / totalVotes) * 100).toFixed(1);
+        const percentage2 = ((localStats.choice2 / totalVotes) * 100).toFixed(1);
+        statsText = `\n\n📊 نسب الاختيار:\n1️⃣ ${percentage1}% (${localStats.choice1} شخص)\n2️⃣ ${percentage2}% (${localStats.choice2} شخص)`;
       } else {
-        statsText = `\n\n📊 لا توجد إحصائيات حالياً`;
+        statsText = `\n\n📊 كن أول من يختار!`;
       }
 
       const message = `لو خيروك بين:\n\n1️⃣ ${option1}\n\n2️⃣ ${option2}${statsText}\n\n👆 اختار 1 أو 2`;
@@ -93,9 +100,8 @@ class WYRCommand {
             name: this.name,
             option1,
             option2,
-            stats1,
-            stats2,
-            totalVotes
+            questionKey,
+            localStats
           });
 
           setTimeout(() => {
@@ -147,6 +153,15 @@ class WYRCommand {
         );
       }
 
+      // تحديث الإحصائيات
+      let updatedStats = replyData.localStats;
+      if (choice === "1") {
+        updatedStats.choice1 += 1;
+      } else {
+        updatedStats.choice2 += 1;
+      }
+      saveStats(replyData.questionKey, updatedStats);
+
       let message = "";
       if (choice === "1") {
         message = `✅ اخترت: ${replyData.option1}\n\n`;
@@ -154,16 +169,13 @@ class WYRCommand {
         message = `✅ اخترت: ${replyData.option2}\n\n`;
       }
 
-      const totalVotes = replyData.stats1 + replyData.stats2;
-      if (totalVotes > 0) {
-        const percentage1 = ((replyData.stats1 / totalVotes) * 100).toFixed(1);
-        const percentage2 = ((replyData.stats2 / totalVotes) * 100).toFixed(1);
-        message += `📊 النسب الكلية:\n`;
-        message += `1️⃣ ${percentage1}% اختاروا: ${replyData.option1}\n`;
-        message += `2️⃣ ${percentage2}% اختاروا: ${replyData.option2}`;
-      } else {
-        message += `📊 لا توجد إحصائيات متاحة حالياً`;
-      }
+      const totalVotes = updatedStats.choice1 + updatedStats.choice2;
+      const percentage1 = ((updatedStats.choice1 / totalVotes) * 100).toFixed(1);
+      const percentage2 = ((updatedStats.choice2 / totalVotes) * 100).toFixed(1);
+      
+      message += `📊 إحصائيات عام الناس:\n`;
+      message += `1️⃣ ${percentage1}% (${updatedStats.choice1} شخص) اختاروا: ${replyData.option1}\n`;
+      message += `2️⃣ ${percentage2}% (${updatedStats.choice2} شخص) اختاروا: ${replyData.option2}`;
 
       api.setMessageReaction("✅", event.messageID, () => {}, true);
       api.sendMessage(message, event.threadID, event.messageID);
