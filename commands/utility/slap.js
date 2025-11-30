@@ -17,8 +17,35 @@ class SlapCommand {
   }
 
   async onLoad() {
-    // لا نحتاج إلى تحميل صورة أساسية
+    const dirMaterial = path.join(__dirname, "cache/canvas/");
+    const imagePath = path.join(dirMaterial, "slap_bg.png");
+    
+    if (!fs.existsSync(dirMaterial)) {
+      fs.mkdirSync(dirMaterial, { recursive: true });
+    }
+    
+    if (!fs.existsSync(imagePath)) {
+      await this.downloadFile(
+        "https://i.imgur.com/qdUzeRP.png",
+        imagePath
+      );
+    }
     console.log("[SLAP] تم تحضير أمر الاصفعي بنجاح");
+  }
+
+  async downloadFile(url, filePath) {
+    try {
+      const response = await axios.get(url, { 
+        responseType: "arraybuffer",
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 10000
+      });
+      fs.writeFileSync(filePath, Buffer.from(response.data));
+    } catch (err) {
+      console.warn(`[SLAP] فشل تحميل ${url}:`, err.message);
+    }
   }
 
   async makeCircle(imagePath) {
@@ -36,8 +63,8 @@ class SlapCommand {
     const cacheDir = path.join(__dirname, "cache/canvas");
     fs.ensureDirSync(cacheDir);
 
-    // إنشاء صورة بيضاء بسيطة كخلفية
-    let baseImg = new jimp(600, 600, 0xffffffff);
+    const bgPath = path.join(cacheDir, "slap_bg.png");
+    let baseImg = await jimp.read(bgPath);
     let outputPath = path.join(cacheDir, `sato_${one}_${two}.png`);
     let avatarOne = path.join(cacheDir, `avt_slap_${one}.png`);
     let avatarTwo = path.join(cacheDir, `avt_slap_${two}.png`);
