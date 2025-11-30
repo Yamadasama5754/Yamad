@@ -10,7 +10,7 @@ class WaifuCommand {
     this.name = "وايفو";
     this.author = "Kaguya Project";
     this.cooldowns = 5;
-    this.description = "احصل على صورة عشوائية لشخصية أنمي من قاعدة بيانات عملاقة 🌸";
+    this.description = "لعبة تخمين شخصيات الأنمي - خمن اسم الشخصية من الصورة 🌸";
     this.role = 0;
     this.aliases = ["وايفو", "waifu"];
   }
@@ -37,8 +37,7 @@ class WaifuCommand {
 
       const waifu = waifuData[0];
       const imageUrl = waifu.url;
-      const name = waifu.source ? waifu.source.split("/").pop() : "شخصية أنمي";
-      const source = waifu.source || "وسيط";
+      const correctAnswer = waifu.source ? waifu.source.split("/").pop() : "شخصية";
 
       const cacheDir = path.join(__dirname, "cache");
       if (!fs.existsSync(cacheDir)) {
@@ -57,7 +56,7 @@ class WaifuCommand {
 
         fs.writeFileSync(tempImagePath, Buffer.from(imageResponse.data));
 
-        const message = `✨ اسم الشخصية: ${name}\n📺 المصدر: ${source}\n\n🌸 من قاعدة بيانات تحتوي على آلاف الشخصيات`;
+        const message = `🌸 ما اسم هذه الشخصية؟\n\n💡 رد على هذه الرسالة بالاسم`;
 
         api.setMessageReaction("📤", event.messageID, (err) => {}, true);
 
@@ -68,6 +67,27 @@ class WaifuCommand {
           },
           event.threadID,
           (err, info) => {
+            if (!err) {
+              if (!global.client?.handler?.reply) {
+                if (!global.client) global.client = {};
+                if (!global.client.handler) global.client.handler = {};
+                global.client.handler.reply = new Map();
+              }
+
+              global.client.handler.reply.set(info.messageID, {
+                name: this.name,
+                correctAnswer: correctAnswer.toLowerCase(),
+                type: "waifu_guess",
+                messageID: info.messageID
+              });
+
+              setTimeout(() => {
+                try {
+                  global.client.handler.reply.delete(info.messageID);
+                } catch (e) {}
+              }, 60000);
+            }
+
             setTimeout(() => {
               try {
                 if (fs.existsSync(tempImagePath)) {
@@ -82,10 +102,8 @@ class WaifuCommand {
         );
       } catch (imgErr) {
         console.error("[WAIFU] خطأ في تحميل الصورة:", imgErr.message);
-        api.setMessageReaction("⚠️", event.messageID, (err) => {}, true);
-
-        const message = `✨ اسم الشخصية: ${name}\n📺 المصدر: ${source}\n🔗 الرابط: ${imageUrl}`;
-        api.sendMessage(message, event.threadID, event.messageID);
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        api.sendMessage("❌ خطأ في تحميل الصورة. حاول مرة أخرى", event.threadID, event.messageID);
 
         try {
           if (fs.existsSync(tempImagePath)) fs.unlinkSync(tempImagePath);
@@ -100,6 +118,29 @@ class WaifuCommand {
       } else {
         api.sendMessage(`❌ حدث خطأ: ${error.message}`, event.threadID, event.messageID);
       }
+    }
+  }
+
+  async onReply({ api, event, reply }) {
+    try {
+      if (reply && reply.type === "waifu_guess" && reply.name === "وايفو") {
+        const userAnswer = event.body.trim().toLowerCase();
+        const correctAnswer = reply.correctAnswer.toLowerCase();
+
+        if (userAnswer === correctAnswer) {
+          api.setMessageReaction("✅", event.messageID, (err) => {}, true);
+          api.sendMessage(`✅ تهانينا! 🎉 الإجابة صحيحة!`, event.threadID, event.messageID);
+          
+          try {
+            api.unsendMessage(reply.messageID);
+          } catch (e) {}
+        } else {
+          api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+          api.sendMessage(`❌ خطأ، حاول مرة أخرى! الإجابة الصحيحة: ${reply.correctAnswer}`, event.threadID, event.messageID);
+        }
+      }
+    } catch (error) {
+      console.error("[WAIFU] خطأ في onReply:", error);
     }
   }
 }

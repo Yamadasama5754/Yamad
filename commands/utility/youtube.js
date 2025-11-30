@@ -186,6 +186,16 @@ class YouTubeCommand {
       }
 
       const selectedVideo = replyData.searchResults[index];
+      
+      if (!selectedVideo || !selectedVideo.id || !selectedVideo.id.videoId) {
+        api.setMessageReaction("❌", event.messageID, (err) => {}, true);
+        return api.sendMessage(
+          "❌ | خطأ في بيانات الفيديو. يرجى محاولة البحث مرة أخرى.",
+          event.threadID,
+          event.messageID
+        );
+      }
+      
       const videoId = selectedVideo.id.videoId;
       const title = selectedVideo.snippet.title;
       const downloadType = replyData.downloadType || "video";
