@@ -55,8 +55,8 @@ async function sendMessageWithRetry(api, body, threadID, attempts = 0) {
 }
 
 function getPrefix(threadID, isGroup) {
-  // في الرسائل الخاصة، البادئة افتراضياً فارغة (بدون بادئة)
-  if (!isGroup) return "";
+  // في الرسائل الخاصة، البادئة دائماً "." ولا يمكن تغييرها
+  if (!isGroup) return ".";
   
   if (!fs.existsSync(prefixFile)) return ".";
   const prefixes = JSON.parse(fs.readFileSync(prefixFile, "utf8"));
@@ -66,15 +66,6 @@ function getPrefix(threadID, isGroup) {
 function parseCommand(body, threadID, isGroup) {
   const prefix = getPrefix(threadID, isGroup);
   if (!body || typeof body !== "string") return null;
-  
-  // إذا كانت البادئة فارغة (خاص بدون بادئة)، اعتبر أي رسالة أمر
-  if (prefix === "") {
-    const tokens = body.trim().split(/\s+/);
-    if (!tokens.length) return null;
-    const name = tokens[0];
-    const args = tokens.slice(1);
-    return { name, args };
-  }
   
   if (!body.startsWith(prefix)) return null;
 
@@ -259,15 +250,15 @@ export const listen = async ({ api, event }) => {
           return await handler.handleCommand();
         }
 
-        // إذا كانت البادئة فارغة في مجموعة، تجاهل الرسالة ولا ترسل رسالة خطأ
-        const prefix = getPrefix(threadID, isGroup);
-        if (prefix === "" && isGroup) {
+        // في الخاص: لا ترسل رسالة خطأ
+        if (!isGroup) {
           return;
         }
 
+        // في المجموعات: ترسل رسالة الخطأ
         return api.sendMessage(
           `❌ | الأمر "${commandName}" غير موجود.\n` +
-          `📜 | تحقق من الأوامر المتاحة بكتابة: ${getPrefix(threadID)}اوامر`,
+          `📜 | تحقق من الأوامر المتاحة بكتابة: ${getPrefix(threadID, isGroup)}اوامر`,
           threadID
         );
       }
