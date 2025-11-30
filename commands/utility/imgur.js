@@ -46,16 +46,7 @@ class ImgurCommand {
 
       api.setMessageReaction("✅", event.messageID, (err) => {}, true);
 
-      const resultMessage = `
-🖼️ تم الرفع بنجاح على Imgur!
-━━━━━━━━━━━━━━
-🔗 الرابط: ${imgurData.link}
-💽 النوع: ${imgurData.type}
-━━━━━━━━━━━━━━
-✨ بواسطة Yamada KJ
-      `;
-
-      return api.sendMessage(resultMessage, event.threadID, event.messageID);
+      return api.sendMessage(imgurData.link, event.threadID, event.messageID);
 
     } catch (error) {
       console.error("❌ خطأ في رفع الصورة على Imgur:", error.message);
