@@ -1,24 +1,24 @@
 import axios from 'axios';
 
 const piVoiceModels = {
-  1: "بي 1 ✨",
-  2: "بي 2 ✨",
-  3: "بي 3 ✨",
-  4: "بي 4",
-  5: "بي 5",
-  6: "بي 6",
-  7: "بي 7",
-  8: "بي 8"
+  1: "Pi 1 ✨",
+  2: "Pi 2 ✨",
+  3: "Pi 3 ✨",
+  4: "Pi 4",
+  5: "Pi 5",
+  6: "Pi 6",
+  7: "Pi 7",
+  8: "Pi 8"
 };
 
-class MiraiCommand {
+class PiCommand {
   constructor() {
-    this.name = "ميراي";
+    this.name = "بي";
     this.author = "Tanvir - تُرجم بواسطة عمر";
     this.cooldowns = 5;
-    this.description = "محادثة مع ميراي الذكية مع دعم الصوت والنصوص 🤖";
+    this.description = "محادثة مع ذكاء بي AI مع دعم الصوت والنصوص 🤖";
     this.role = 0;
-    this.aliases = ["mirai", "chat"];
+    this.aliases = ["pi", "chat"];
   }
 
   async execute({ api, event, args, Users }) {
@@ -30,9 +30,9 @@ class MiraiCommand {
       if (!input) {
         return api.sendMessage(
           "❌ | أرسل رسالة أو استخدم:\n" +
-          "🔊 .ميراي ضبط_الصوت on|off|1-8\n" +
-          "📋 .ميراي قائمة\n" +
-          "💬 .ميراي رسالتك هنا",
+          "🔊 .بي ضبط_الصوت on|off|1-8\n" +
+          "📋 .بي قائمة\n" +
+          "💬 .بي رسالتك هنا",
           threadID,
           event.messageID
         );
@@ -51,16 +51,16 @@ class MiraiCommand {
       }
 
       // محادثة عادية
-      const session = `mirai-${senderID}`;
+      const session = `pi-${senderID}`;
       try {
         const res = await this.callPi(input, session, voiceSetting.voice, voiceSetting.model);
         
         if (!res?.text) {
-          return api.sendMessage("❌ | ميراي لم ترد على رسالتك", threadID, event.messageID);
+          return api.sendMessage("❌ | بي لم يرد على رسالتك", threadID, event.messageID);
         }
 
         const replyPayload = {
-          body: `🤖 ميراي: ${res.text}`
+          body: `🤖 بي: ${res.text}`
         };
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
@@ -70,11 +70,11 @@ class MiraiCommand {
         });
 
       } catch (err) {
-        return api.sendMessage("⚠️ | فشل الاتصال بـ ميراي: " + err.message, threadID, event.messageID);
+        return api.sendMessage("⚠️ | فشل الاتصال بـ بي: " + err.message, threadID, event.messageID);
       }
 
     } catch (error) {
-      console.error("[Mirai Command Error]", error);
+      console.error("[PI Command Error]", error);
       return api.sendMessage("❌ | حدث خطأ: " + error.message, event.threadID, event.messageID);
     }
   }
@@ -90,17 +90,17 @@ class MiraiCommand {
       if (senderID !== Reply.author) return;
 
       let voiceSetting = Reply.voiceSetting || await this.getUserVoiceSetting(senderID);
-      const session = Reply.session || `mirai-${senderID}`;
+      const session = Reply.session || `pi-${senderID}`;
 
       try {
         const res = await this.callPi(query, session, voiceSetting.voice, voiceSetting.model);
 
         if (!res?.text) {
-          return api.sendMessage("❌ | ميراي لم ترد على رسالتك", threadID);
+          return api.sendMessage("❌ | بي لم يرد على رسالتك", threadID);
         }
 
         const replyPayload = {
-          body: `🤖 ميراي: ${res.text}`
+          body: `🤖 بي: ${res.text}`
         };
 
         return api.sendMessage(replyPayload, threadID, (err, info) => {
@@ -110,11 +110,11 @@ class MiraiCommand {
         });
 
       } catch (err) {
-        return api.sendMessage("⚠️ | فشل الاتصال بـ ميراي: " + err.message, threadID);
+        return api.sendMessage("⚠️ | فشل الاتصال بـ بي: " + err.message, threadID);
       }
 
     } catch (error) {
-      console.error("[Mirai Reply Error]", error);
+      console.error("[PI Reply Error]", error);
       return api.sendMessage("❌ | حدث خطأ: " + error.message, event.threadID);
     }
   }
@@ -125,9 +125,9 @@ class MiraiCommand {
     if (!cmd || (!["on", "off"].includes(cmd) && isNaN(cmd))) {
       return api.sendMessage(
         "⚙️ | استخدام:\n" +
-        "`.ميراي ضبط_الصوت on` - تفعيل الصوت\n" +
-        "`.ميراي ضبط_الصوت off` - إيقاف الصوت\n" +
-        "`.ميراي ضبط_الصوت 1-8` - اختر نموذج",
+        "`.بي ضبط_الصوت on` - تفعيل الصوت\n" +
+        "`.بي ضبط_الصوت off` - إيقاف الصوت\n" +
+        "`.بي ضبط_الصوت 1-8` - اختر نموذج",
         threadID,
         messageID
       );
@@ -160,7 +160,7 @@ class MiraiCommand {
       .map(([id, name]) => `🔢 ${id} → ${name}`).join("\n");
 
     return api.sendMessage(
-      `📊 | معلومات صوت ميراي:\n` +
+      `📊 | معلومات صوت بي:\n` +
       `🔊 | الصوت: ${voiceSetting.voice ? "✅ مُفعّل" : "❌ مُيقّف"}\n` +
       `🎙️ | النموذج: ${currentModel}\n\n` +
       `🎭 | نماذج الصوت:\n${modelList}`,
@@ -170,13 +170,12 @@ class MiraiCommand {
   }
 
   async getUserVoiceSetting(userId) {
-    // استخدام Global storage (يمكن تحسينه لاحقاً بـ database)
-    if (!global.miraiVoiceSettings) global.miraiVoiceSettings = new Map();
+    if (!global.piVoiceSettings) global.piVoiceSettings = new Map();
     
-    if (!global.miraiVoiceSettings.has(userId)) {
-      global.miraiVoiceSettings.set(userId, { voice: false, model: 1 });
+    if (!global.piVoiceSettings.has(userId)) {
+      global.piVoiceSettings.set(userId, { voice: false, model: 1 });
     }
-    return global.miraiVoiceSettings.get(userId);
+    return global.piVoiceSettings.get(userId);
   }
 
   saveReplyHandler(messageID, senderID, session, voiceSetting) {
@@ -204,10 +203,10 @@ class MiraiCommand {
       
       return data.data;
     } catch (error) {
-      console.error("[Mirai API Error]", error.message);
-      throw new Error("فشل الاتصال بخادم ميراي");
+      console.error("[Pi API Error]", error.message);
+      throw new Error("فشل الاتصال بخادم بي");
     }
   }
 }
 
-export default new MiraiCommand();
+export default new PiCommand();
