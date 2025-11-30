@@ -52,6 +52,11 @@ export class CommandHandler {
       }
       
       if (!command) {
+        // في الخاص: لا نرسل رسالة خطأ
+        if (!isGroup) {
+          return;
+        }
+        // في المجموعات: نرسل رسالة الخطأ
         return api.sendMessage(
           `❌ | الأمر "${commandName}" غير موجود.\n💡 | تحقق من الأوامر المتاحة بكتابة: ${this.config.prefix}اوامر`,
           threadID
