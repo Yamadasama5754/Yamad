@@ -86,9 +86,10 @@ class PiCommand {
       const query = event.body?.trim();
 
       if (!query) return;
+      if (!Reply || !Reply.author) return;
       if (senderID !== Reply.author) return;
 
-      let voiceSetting = await this.getUserVoiceSetting(senderID);
+      let voiceSetting = Reply.voiceSetting || await this.getUserVoiceSetting(senderID);
       const session = Reply.session || `pi-${senderID}`;
 
       try {
