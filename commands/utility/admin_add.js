@@ -98,10 +98,24 @@ class ادخلني {
 
       // إذا كان المطور -> عرض قائمة المجموعات
       const allThreads = await api.getThreadList(100, null, ["INBOX"]);
-      const groupThreads = allThreads.filter(t => t.isGroup && t.name);
+      const botID = api.getCurrentUserID();
+      
+      // فلترة المجموعات التي يوجد البوت فيها فقط
+      const groupThreads = [];
+      for (const thread of allThreads) {
+        if (!thread.isGroup || !thread.name) continue;
+        try {
+          const threadInfo = await api.getThreadInfo(thread.threadID);
+          if (threadInfo.participantIDs && threadInfo.participantIDs.includes(botID)) {
+            groupThreads.push(thread);
+          }
+        } catch (e) {
+          // تجاهل المجموعات التي حدث فيها خطأ
+        }
+      }
 
       if (groupThreads.length === 0) {
-        return api.sendMessage("❌ | للأسف ما في مجموعات متاحة الآن.", threadID);
+        return api.sendMessage("❌ | للأسف ما في مجموعات متاحة الآن (البوت يجب يكون موجود فيها).", threadID);
       }
 
       const limitedGroups = groupThreads.slice(0, 25);

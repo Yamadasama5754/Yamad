@@ -82,7 +82,16 @@ class MiraiEvent {
       return api.sendMessage("يامادا حبيبي وروحي وتاج راسكم 💞🙃", threadID);
     }
 
-    if (event.body.indexOf("كيوتتي") === 0 || event.body.indexOf("ميراي") === 0) {
+    // تحقق فقط من أن الرسالة تبدأ بـ "كيوتتي" أو "ميراي"
+    // وتأكد من عدم تطابق أي شرط سابق
+    if (bodyLower.startsWith("كيوتتي") && !bodyLower.includes("شسمك")) {
+      const msg = {
+        body: rand
+      };
+      return api.sendMessage(msg, threadID, messageID);
+    }
+
+    if (bodyLower.startsWith("ميراي") && !bodyLower.includes("شسمك")) {
       const msg = {
         body: rand
       };
