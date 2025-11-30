@@ -1,22 +1,9 @@
-import fs from "fs";
-import path from "path";
-import axios from "axios";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const tempImageFilePath = path.join(__dirname, "cache", "characters.jpg");
-
-const cacheDir = path.join(__dirname, "cache");
-if (!fs.existsSync(cacheDir)) {
-  fs.mkdirSync(cacheDir, { recursive: true });
-}
-
 class CharactersCommand {
   constructor() {
     this.name = "تخمين";
     this.author = "KAGUYA PROJECT";
     this.cooldowns = 5;
-    this.description = "تخمين اسم شخصيات الأنمي من خلال الصورة 🎲";
+    this.description = "تخمين اسم شخصيات الأنمي 🎲";
     this.role = 0;
     this.aliases = ["تخمين", "شخصية", "غيس"];
   }
@@ -28,40 +15,40 @@ class CharactersCommand {
   async execute({ api, event }) {
     try {
       const characters = [
-        { answer: "اوبيتو", image: "https://i.imgur.com/zG4ehpe.png" },
-        { answer: "اوروتشيمارو", image: "https://i.imgur.com/qQK7r3E.jpeg" },
-        { answer: "اوسوب", image: "https://i.imgur.com/HkJ5D24.png" },
-        { answer: "اوكيجي", image: "https://i.imgur.com/febnZ0y.jpeg" },
-        { answer: "ايرين", image: "https://i.imgur.com/gAHKduw.png" },
-        { answer: "ايتاشي", image: "https://i.imgur.com/uP01IFu.jpeg" },
-        { answer: "ايتشيغو", image: "https://i.imgur.com/3ImTGnT.png" },
-        { answer: "ميدوريا", image: "https://i.imgur.com/zAP7sPD.png" },
-        { answer: "انيل", image: "https://i.imgur.com/eMswF26.jpeg" },
-        { answer: "بارتولوميو", image: "https://i.imgur.com/aR0DAZz.png" },
-        { answer: "بروك", image: "https://i.imgur.com/v0j9d3s.jpeg" },
-        { answer: "بوروتو", image: "https://i.imgur.com/q58bBoG.jpeg" },
-        { answer: "بيكولا", image: "https://i.imgur.com/yQCm3HI.png" },
-        { answer: "ترافاجار دي لاو", image: "https://i.imgur.com/pbDipVq.jpeg" },
-        { answer: "ترانكس", image: "https://i.imgur.com/4b25jQP.jpeg" },
-        { answer: "جيرايا", image: "https://i.imgur.com/OluJyts.png" },
-        { answer: "لوفي", image: "https://i.imgur.com/jAJSd7r.jpeg" },
-        { answer: "دورايمون", image: "https://i.imgur.com/xFoxuOT.png" },
-        { answer: "دوفلامينغو", image: "https://i.imgur.com/FazFYLr.png" },
-        { answer: "زورو", image: "https://i.imgur.com/2kY8hov.png" },
-        { answer: "سابو", image: "https://i.imgur.com/fjJ5ElD.jpeg" },
-        { answer: "سانجي", image: "https://i.imgur.com/kKFx3j1.jpeg" },
-        { answer: "غوكو", image: "https://i.imgur.com/LnOKuOx.png" },
-        { answer: "كونان", image: "https://i.imgur.com/5ymjg5R.jpeg" },
-        { answer: "غارا", image: "https://i.imgur.com/yUCd3D6.png" },
-        { answer: "كابتن كورو", image: "https://i.imgur.com/aZWvR7q.jpeg" },
-        { answer: "كايتو كيد", image: "https://i.imgur.com/6ckK6nT.jpeg" },
-        { answer: "كوبي", image: "https://i.imgur.com/ICVEr1p.png" },
-        { answer: "ياغامي لايت", image: "https://i.imgur.com/09NjhBv.jpeg" },
-        { answer: "ليفاي", image: "https://i.imgur.com/zW132oo.png" },
-        { answer: "ماركو", image: "https://i.imgur.com/5BunLah.png" },
-        { answer: "مادارا", image: "https://i.imgur.com/OLzeUHD.png" },
-        { answer: "ميكاسا", image: "https://i.imgur.com/83wmWDQ.png" },
-        { answer: "نيزكو", image: "https://i.imgur.com/0UkUSR4.jpeg" }
+        { answer: "اوبيتو", description: "شخصية من Naruto، قناع أسود، قوة الزمان والمكان" },
+        { answer: "اوروتشيمارو", description: "شخصية من Naruto، عالم الجراحة السوداء، طويل الذراعين" },
+        { answer: "اوسوب", description: "شخصية من One Piece، الكاذب الذي أصبح محارب، قناص ماهر" },
+        { answer: "اوكيجي", description: "شخصية من One Piece، بحار سابق، يتحكم بالثلج والجليد" },
+        { answer: "ايرين", description: "شخصية من Attack on Titan، تحول إلى عملاق، تخطيط ذكي" },
+        { answer: "ايتاشي", description: "شخصية من Naruto، مكحول سوداء، قتل عشيرته" },
+        { answer: "ايتشيغو", description: "شخصية من Bleach، بطل الأنمي، يرى الأرواح" },
+        { answer: "ميدوريا", description: "شخصية من My Hero Academia، بطل المدرسة، أخضر الشعر" },
+        { answer: "انيل", description: "شخصية من One Piece، إله سماوي، يتحكم بالكهرباء" },
+        { answer: "بارتولوميو", description: "شخصية من One Piece، حاجز شفاف، معجب بلوفي" },
+        { answer: "بروك", description: "شخصية من One Piece، هيكل عظمي يغني، عازف موسيقار" },
+        { answer: "بوروتو", description: "شخصية من Boruto، ابن ناروتو، بطل جديد" },
+        { answer: "بيكولا", description: "شخصية من Dragon Ball، تنين قاهر، ملك الأكوان" },
+        { answer: "ترافاجار دي لاو", description: "شخصية من One Piece، عملية تقطيع، قبطان متحالف" },
+        { answer: "ترانكس", description: "شخصية من Dragon Ball، السفر عبر الزمن، شعر أزرق" },
+        { answer: "جيرايا", description: "شخصية من Naruto، ساحر الضفادع، معلم ناروتو" },
+        { answer: "لوفي", description: "شخصية من One Piece، ملك القراصنة، يحب اللحم" },
+        { answer: "دورايمون", description: "شخصية من Doraemon، ربوت أزرق، يسافر عبر الزمن" },
+        { answer: "دوفلامينغو", description: "شخصية من One Piece، خيوط حمراء، إمبراطور الكوليسيوم" },
+        { answer: "زورو", description: "شخصية من One Piece، ثلاث سيوف، أخضر الشعر" },
+        { answer: "سابو", description: "شخصية من One Piece، يستخدم النار السوداء" },
+        { answer: "سانجي", description: "شخصية من One Piece، رجل ساحر، طاهي السفينة" },
+        { answer: "غوكو", description: "شخصية من Dragon Ball، أقوى محارب، شعر أسود شائك" },
+        { answer: "كونان", description: "شخصية من Detective Conan، محقق صغير، عبقري" },
+        { answer: "غارا", description: "شخصية من Naruto، يتحكم بالرمل، جنو أحمر الشعر" },
+        { answer: "كابتن كورو", description: "شخصية من One Piece، قاتل محترف، سلاح المخالب" },
+        { answer: "كايتو كيد", description: "شخصية من Detective Conan، لص سماوي، متخفي" },
+        { answer: "كوبي", description: "شخصية من One Piece، بحار شاب، تلميذ لوفي" },
+        { answer: "ياغامي لايت", description: "شخصية من Death Note، كتاب الموت، ملك الشياطين" },
+        { answer: "ليفاي", description: "شخصية من Attack on Titan، فيلق استطلاع، قصير البنية" },
+        { answer: "ماركو", description: "شخصية من One Piece، فينيكس الأسطورية، قبطان سابق" },
+        { answer: "مادارا", description: "شخصية من Naruto، أسطورة، قوة مطلقة لا تقهر" },
+        { answer: "ميكاسا", description: "شخصية من Attack on Titan، شعر أسود، مخلصة جداً" },
+        { answer: "نيزكو", description: "شخصية من Demon Slayer، وحش بإنسانية، أخت تانجيرو" }
       ];
 
       const randomCharacter = characters[Math.floor(Math.random() * characters.length)];
@@ -69,27 +56,11 @@ class CharactersCommand {
 
       api.setMessageReaction("🎲", event.messageID, (err) => {}, true);
 
-      let messagePayload = {
-        body: "🎲 خمن اسم الشخصية?\nرد على هذه الرسالة بالاسم"
-      };
-
-      // محاولة تحميل الصورة بدون خطأ
-      try {
-        const imageResponse = await axios.get(randomCharacter.image, { 
-          responseType: "arraybuffer", 
-          timeout: 8000 
-        });
-        fs.writeFileSync(tempImageFilePath, Buffer.from(imageResponse.data, "binary"));
-        messagePayload.attachment = fs.createReadStream(tempImageFilePath);
-        console.log(`[CHARACTERS] تم تحميل الصورة: ${randomCharacter.image}`);
-      } catch (imgErr) {
-        console.warn(`[CHARACTERS] تعذر تحميل الصورة (${randomCharacter.image}): ${imgErr.message}`);
-        // سيتم الإرسال بدون صورة
-      }
+      const message = `🎲 خمن اسم الشخصية:\n\n"${randomCharacter.description}"\n\n💡 رد على هذه الرسالة باسم الشخصية`;
 
       api.sendMessage(
-        messagePayload, 
-        event.threadID, 
+        message,
+        event.threadID,
         (error, info) => {
           if (!error) {
             if (!global.client?.handler?.reply) {
@@ -101,7 +72,6 @@ class CharactersCommand {
             global.client.handler.reply.set(info.messageID, {
               name: this.name,
               correctAnswer: correctAnswer,
-              image: randomCharacter.image,
               type: "characters"
             });
 
@@ -113,15 +83,9 @@ class CharactersCommand {
           } else {
             console.error("[CHARACTERS] خطأ في إرسال الرسالة:", error);
           }
-        }, 
-        event.messageID);
-        
-      setTimeout(() => {
-        try {
-          if (fs.existsSync(tempImageFilePath)) fs.unlinkSync(tempImageFilePath);
-        } catch (e) {}
-      }, 65000);
-
+        },
+        event.messageID
+      );
     } catch (error) {
       console.error("[CHARACTERS] خطأ في تنفيذ الأمر:", error);
       api.sendMessage("❌ حدث خطأ في الأمر.", event.threadID, event.messageID);
@@ -137,16 +101,19 @@ class CharactersCommand {
         const userInfo = await api.getUserInfo(event.senderID);
         const userName = userInfo ? userInfo[event.senderID].name : "المستخدم";
 
-        // التحقق من الإجابة
-        if (correctAnswer.split(' ').some(part => userAnswer.includes(part))) {
+        if (correctAnswer.split(" ").some(part => userAnswer.includes(part))) {
           api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-          
+
           let successMessage = `◆❯━━━━━▣✦▣━━━━━━❮◆\n✅ | تهانينا يا ${userName} 🥳\n🎯 | الجواب: ${correctAnswer}\n◆❯━━━━━▣✦▣━━━━━━❮◆`;
-          
+
           api.sendMessage(successMessage, event.threadID, event.messageID);
         } else {
           api.setMessageReaction("❌", event.messageID, (err) => {}, true);
-          api.sendMessage(`❌ | آسف، الإجابة خاطئة. حاول مرة أخرى!`, event.threadID, event.messageID);
+          api.sendMessage(
+            `❌ | آسف، الإجابة خاطئة. حاول مرة أخرى!`,
+            event.threadID,
+            event.messageID
+          );
         }
       }
     } catch (error) {
