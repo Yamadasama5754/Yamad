@@ -27,16 +27,9 @@ async function execute({ api, event, Users, Threads }) {
       break;
     }
     case "log:subscribe": {
-      const { addedParticipants } = event.logMessageData;
-      const botUserID = api.getCurrentUserID();
-      const botAdded = addedParticipants.some(participant => participant.userFbId === botUserID);
-
-      if (botAdded) {
-        // التعامل مع إضافة البوت
-        await handleBotAddition(api, event, ownerFbIds);
-      }
-
-      break;  // لا ترسل رسالة ترحيب
+      // ✅ إضافة البوت يتم التعامل معها من قبل subscribe.js فقط
+      // لتجنب الرسائل المكررة
+      break;
     }
   }
 }
