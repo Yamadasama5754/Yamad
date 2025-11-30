@@ -39,10 +39,19 @@ export default {
   onReply: async ({ api, event, Users, Threads }) => {
     try {
       const { threadID, messageID, senderID } = event;
-      const targetID = event.body.trim();
+
+      let targetID = null;
+      
+      // إذا كان رد على رسالة من شخص آخر
+      if (event.messageReply && event.messageReply.senderID) {
+        targetID = event.messageReply.senderID;
+      } else {
+        // أو اكتب معرف مباشر
+        targetID = event.body.trim();
+      }
 
       if (!targetID) {
-        return api.sendMessage("⚠️ الرجاء كتابة معرف المستخدم أو الرد على الشخص المطلوب.", threadID);
+        return api.sendMessage("⚠️ الرجاء الرد على رسالة شخص أو كتابة معرفه.", threadID);
       }
 
       api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
@@ -51,6 +60,7 @@ export default {
 
     } catch (error) {
       console.error(error);
+      api.setMessageReaction("❌", event.messageID, (err) => {}, true);
       api.sendMessage("❌ حدث خطأ: " + error.message, event.threadID);
     }
   }

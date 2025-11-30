@@ -187,7 +187,19 @@ class TicTacToe {
     const userID = event.senderID;
 
     try {
-      const gameData = global.tictactoeGames.get(gameKey);
+      let gameData = global.tictactoeGames.get(gameKey);
+
+      // إذا لم توجد لعبة وهناك رد على رسالة، ابدأ لعبة مع الشخص الأصلي
+      if (!gameData && event.messageReply && event.messageReply.senderID) {
+        const moveText = event.body?.trim();
+        const move = parseInt(moveText);
+
+        if (isNaN(move) || move < 1 || move > 9) {
+          return api.sendMessage("❌ ابدأ اللعبة بكتابة: .اكس او أو .اكس او @منشن", event.threadID);
+        }
+
+        return api.sendMessage("❌ لا توجد لعبة جارية! ابدأ اللعبة بـ: .اكس او أو .اكس او @منشن", event.threadID);
+      }
 
       if (!gameData) {
         return api.sendMessage("❌ لا توجد لعبة جارية حالياً!", event.threadID);
