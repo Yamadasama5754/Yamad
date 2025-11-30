@@ -27,12 +27,22 @@ class PiCommand {
       const senderID = event.senderID;
       const input = args.join(" ").trim();
 
-      if (!input) {
+      // فحص إذا كانت هناك صور مرفقة
+      let imageQuery = input;
+      if (event.attachments && event.attachments.length > 0) {
+        const images = event.attachments.filter(att => att.type === "photo");
+        if (images.length > 0) {
+          imageQuery = `${input} [تم إرسال ${images.length} صورة - اشرح محتواها]`.trim();
+        }
+      }
+
+      if (!input && !imageQuery.includes("صورة")) {
         return api.sendMessage(
           "❌ | أرسل رسالة أو استخدم:\n" +
-          "🔊 .بي ضبط_الصوت on|off|1-8\n" +
-          "📋 .بي قائمة\n" +
-          "💬 .بي رسالتك هنا",
+          "🔊 .بي ضبط_الصوت on|off|1-8 → تفعيل/إيقاف الصوت أو اختيار نموذج صوتي\n" +
+          "📋 .بي قائمة → عرض نماذج الصوت\n" +
+          "📸 .بي + صورة → وصف الصورة\n" +
+          "💬 .بي رسالتك هنا → محادثة عادية",
           threadID,
           event.messageID
         );
@@ -50,13 +60,14 @@ class PiCommand {
         return this.handleListCommand(api, threadID, event.messageID, senderID, voiceSetting);
       }
 
-      // محادثة عادية
+      // محادثة عادية أو تحليل صور
       const session = `pi-${senderID}`;
+      const finalQuery = imageQuery || input;
       try {
-        const res = await this.callPi(input, session, voiceSetting.voice, voiceSetting.model);
+        const res = await this.callPi(finalQuery, session, voiceSetting.voice, voiceSetting.model);
         
         if (!res?.text) {
-          return api.sendMessage("❌ | بي لم يرد على رسالتك", threadID, event.messageID);
+          return api.sendMessage("❌ | بي لم ترد على رسالتك", threadID, event.messageID);
         }
 
         const replyPayload = {
@@ -83,11 +94,19 @@ class PiCommand {
     try {
       const threadID = event.threadID;
       const senderID = event.senderID;
-      const query = event.body?.trim();
+      let query = event.body?.trim();
 
-      if (!query) return;
+      if (!query && (!event.attachments || event.attachments.length === 0)) return;
       if (!Reply || !Reply.author) return;
       if (senderID !== Reply.author) return;
+
+      // فحص الصور في الرد
+      if (event.attachments && event.attachments.length > 0) {
+        const images = event.attachments.filter(att => att.type === "photo");
+        if (images.length > 0) {
+          query = `${query || ""} [تم إرسال ${images.length} صورة - اشرح محتواها]`.trim();
+        }
+      }
 
       let voiceSetting = Reply.voiceSetting || await this.getUserVoiceSetting(senderID);
       const session = Reply.session || `pi-${senderID}`;
@@ -96,7 +115,7 @@ class PiCommand {
         const res = await this.callPi(query, session, voiceSetting.voice, voiceSetting.model);
 
         if (!res?.text) {
-          return api.sendMessage("❌ | بي لم يرد على رسالتك", threadID);
+          return api.sendMessage("❌ | بي لم ترد على رسالتك", threadID);
         }
 
         const replyPayload = {
@@ -124,10 +143,11 @@ class PiCommand {
 
     if (!cmd || (!["on", "off"].includes(cmd) && isNaN(cmd))) {
       return api.sendMessage(
-        "⚙️ | استخدام:\n" +
-        "`.بي ضبط_الصوت on` - تفعيل الصوت\n" +
-        "`.بي ضبط_الصوت off` - إيقاف الصوت\n" +
-        "`.بي ضبط_الصوت 1-8` - اختر نموذج",
+        "⚙️ | استخدام ضبط الصوت:\n" +
+        "`.بي ضبط_الصوت on` - 🔊 تفعيل الصوت (ترسل الردود مع صوت)\n" +
+        "`.بي ضبط_الصوت off` - 🔇 إيقاف الصوت (نصوص فقط)\n" +
+        "`.بي ضبط_الصوت 1-8` - 🎙️ اختر نموذج صوتي (1-8)\n\n" +
+        "ملاحظة: النموذج يتطلب تفعيل الصوت أولاً",
         threadID,
         messageID
       );
